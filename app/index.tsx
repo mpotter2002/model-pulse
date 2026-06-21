@@ -14,6 +14,21 @@ export default function HomeScreen() {
   const { snapshots, theme, demoMode, refreshing, refreshAll } = useAppStore();
   const totalMonthlySpend = PROVIDER_ORDER.reduce((sum, id) => sum + snapshots[id].usage.monthlySpendUsd, 0);
   const totalTokens = PROVIDER_ORDER.reduce((sum, id) => sum + snapshots[id].usage.tokensUsed, 0);
+  const modes = PROVIDER_ORDER.map((id) => snapshots[id].mode);
+  const liveCount = modes.filter((m) => m === "live").length;
+  const failedCount = modes.filter((m) => m === "failed").length;
+  const needsKeyCount = modes.filter((m) => m === "needs-key").length;
+  const statusLabel = demoMode
+    ? "DEMO MODE"
+    : failedCount > 0
+      ? `${failedCount} FAILED`
+      : liveCount === PROVIDER_ORDER.length
+        ? "ALL LIVE"
+        : liveCount > 0
+          ? `${liveCount}/${PROVIDER_ORDER.length} LIVE`
+          : needsKeyCount > 0
+            ? "ADD KEYS"
+            : "READY";
 
   return (
     <ScrollView
@@ -65,7 +80,7 @@ export default function HomeScreen() {
             }}
           >
             <Text selectable style={{ color: theme.text, fontSize: 11, fontWeight: "700", textAlign: "center" }}>
-              {demoMode ? "DEMO MODE" : "LIVE READY"}
+              {statusLabel}
             </Text>
           </BlurView>
         </View>
@@ -91,6 +106,28 @@ export default function HomeScreen() {
           <WidgetPreview />
         </View>
       </View>
+
+      {failedCount > 0 ? (
+        <View
+          style={{
+            gap: 4,
+            borderRadius: 20,
+            padding: 14,
+            backgroundColor: "#F8DAD7",
+            borderWidth: 1,
+            borderColor: "#E2A8A2",
+          }}
+        >
+          <Text style={{ color: "#7A1F1A", fontSize: 12, fontWeight: "800", letterSpacing: 0.4 }}>
+            {failedCount} REFRESH ISSUE{failedCount === 1 ? "" : "S"}
+          </Text>
+          <Text style={{ color: "#5C1714", fontSize: 13, lineHeight: 18 }}>
+            {PROVIDER_ORDER.filter((id) => snapshots[id].mode === "failed")
+              .map((id) => snapshots[id].lastError ?? "Unknown error")
+              .join(" · ")}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={{ gap: 12 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
