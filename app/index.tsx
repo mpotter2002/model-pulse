@@ -8,10 +8,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProviderCard } from "@/components/provider-card";
 import { PROVIDER_ORDER } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
+import type { ThemeMode } from "@/types/domain";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { snapshots, theme, demoMode, refreshing, refreshAll } = useAppStore();
+  const { snapshots, theme, themeMode, demoMode, refreshing, refreshAll, setThemeMode } = useAppStore();
   const totalMonthlySpend = PROVIDER_ORDER.reduce((sum, id) => sum + snapshots[id].usage.monthlySpendUsd, 0);
   const totalTokens = PROVIDER_ORDER.reduce((sum, id) => sum + snapshots[id].usage.tokensUsed, 0);
   const modes = PROVIDER_ORDER.map((id) => snapshots[id].mode);
@@ -34,6 +35,12 @@ export default function HomeScreen() {
   const statusColor =
     failedCount > 0 ? "#EF4444" : demoMode ? "#F59E0B" : liveCount === PROVIDER_ORDER.length ? "#10B981" : "#8E8E93";
 
+  const cycleTheme = () => {
+    const order: ThemeMode[] = ["light", "dark", "system"];
+    const next = order[(order.indexOf(themeMode) + 1) % order.length];
+    void setThemeMode(next);
+  };
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="never"
@@ -50,12 +57,19 @@ export default function HomeScreen() {
       style={{ flex: 1, backgroundColor: theme.background }}
     >
       <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 40 }}>
-        {/* Title */}
+        {/* Title + theme toggle */}
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text style={{ color: theme.text, fontSize: 28, fontWeight: "800" }}>SignalStack</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
-            <Text style={{ color: theme.muted, fontSize: 13, fontWeight: "600" }}>{statusLabel}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Pressable onPress={cycleTheme} style={{ padding: 8, borderRadius: 8, backgroundColor: theme.subtlePanel }}>
+              <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
+                {themeMode === "light" ? "☀️" : themeMode === "dark" ? "🌙" : "🔘"}
+              </Text>
+            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
+              <Text style={{ color: theme.muted, fontSize: 13, fontWeight: "600" }}>{statusLabel}</Text>
+            </View>
           </View>
         </View>
         <Text style={{ color: theme.muted, fontSize: 14, marginTop: 4 }}>AI subscription telemetry</Text>

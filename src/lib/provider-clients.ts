@@ -6,6 +6,10 @@ export async function buildSnapshot(providerId: ProviderId, config: ProviderConf
     return demoSnapshot(providerId);
   }
 
+  if (config.mode.includes("subscription")) {
+    return refreshSubscriptionProvider(providerId, config);
+  }
+
   if (providerId === "openai") {
     return refreshOpenAI(config);
   }
@@ -19,6 +23,16 @@ export async function buildSnapshot(providerId: ProviderId, config: ProviderConf
   }
 
   return refreshManualProvider(providerId, config);
+}
+
+async function refreshSubscriptionProvider(providerId: ProviderId, config: ProviderConfig): Promise<ProviderSnapshot> {
+  const fallback = demoSnapshot(providerId);
+  return {
+    ...fallback,
+    mode: "subscription",
+    statusLabel: "Subscription not yet supported",
+    note: "Your subscription data cannot be accessed through the provider API. This requires a direct OAuth integration with the service, which is not yet available for these providers. Use an API key or admin key instead for now.",
+  };
 }
 
 async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> {

@@ -4,8 +4,8 @@ import { useColorScheme } from "react-native";
 import { buildSnapshot } from "@/lib/provider-clients";
 import { DEFAULT_STORED_STATE, PROVIDER_ORDER, demoSnapshot } from "@/lib/providers";
 import { loadStoredState, saveStoredState } from "@/lib/storage";
+import type { ProviderConfig, ProviderId, ProviderSnapshot, StoredState, ThemeMode } from "@/types/domain";
 import { syncSignalStackWidget } from "@/widgets/widget-sync";
-import type { ProviderConfig, ProviderId, ProviderSnapshot, StoredState } from "@/types/domain";
 
 const AppStoreContext = React.createContext<AppStoreValue | null>(null);
 
@@ -52,18 +52,19 @@ interface AppStoreValue {
   hydrated: boolean;
   refreshing: boolean;
   demoMode: boolean;
+  themeMode: ThemeMode;
   providerConfigs: Record<ProviderId, ProviderConfig>;
   snapshots: Record<ProviderId, ProviderSnapshot>;
   theme: Theme;
   setDemoMode: (value: boolean) => Promise<void>;
+  setThemeMode: (value: ThemeMode) => Promise<void>;
   saveProviderConfig: (providerId: ProviderId, config: ProviderConfig) => Promise<void>;
   refreshAll: () => Promise<void>;
   refreshProvider: (providerId: ProviderId) => Promise<void>;
 }
 
 export function AppStoreProvider({ children }: React.PropsWithChildren) {
-  const colorScheme = useColorScheme();
-  const theme = useMemo<Theme>(() => (colorScheme === "dark" ? darkTheme : lightTheme), [colorScheme]);
+  const systemColorScheme = useColorScheme();
   const [hydrated, setHydrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [storedState, setStoredState] = useState<StoredState>(DEFAULT_STORED_STATE);
@@ -72,6 +73,12 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     anthropic: demoSnapshot("anthropic"),
     kimi: demoSnapshot("kimi"),
   });
+
+  const theme = useMemo<Theme>(() => {
+    const mode = storedState.themeMode;
+    const isDark = mode === "dark" || (mode === "system" && systemColorScheme === "dark");
+    return isDark ? darkTheme : lightTheme;
+  }, [storedState.themeMode, systemColorScheme]);
 
   useEffect(() => {
     loadStoredState()
@@ -131,12 +138,24 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     hydrated,
     refreshing,
     demoMode: storedState.demoMode,
+    themeMode: storedState.themeMode,
     providerConfigs: storedState.providerConfigs,
     snapshots,
     theme,
     setDemoMode: async (value) => {
       const previous = storedState;
       const nextState = { ...storedState, demoMode: value };
+      setStoredState(nextState);
+      try {
+        await saveStoredState(nextState);
+      } catch (error) {
+        setStoredState(previous);
+        throw error;
+      }
+    },
+    setThemeMode: async (value) => {
+      const previous = storedState;
+      const nextState = { ...storedState, themeMode: value };
       setStoredState(nextState);
       try {
         await saveStoredState(nextState);

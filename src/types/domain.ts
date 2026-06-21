@@ -1,6 +1,8 @@
 export type ProviderId = "openai" | "anthropic" | "kimi";
 
-export type SnapshotMode = "demo" | "live" | "needs-key" | "failed" | "manual";
+export type SnapshotMode = "demo" | "live" | "needs-key" | "failed" | "manual" | "subscription";
+
+export type ThemeMode = "light" | "dark" | "system";
 
 export interface ProviderConfig {
   mode: string;
@@ -38,5 +40,6 @@ export interface ProviderSnapshot {
 
 export interface StoredState {
   demoMode: boolean;
+  themeMode: ThemeMode;
   providerConfigs: Record<ProviderId, ProviderConfig>;
 }

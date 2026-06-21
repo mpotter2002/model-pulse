@@ -71,6 +71,7 @@ const MODE_DOT: Record<SnapshotMode, string> = {
   manual: "#3B82F6",
   "needs-key": "#F59E0B",
   failed: "#EF4444",
+  subscription: "#A855F7",
 };
 
 function ModeDot({ mode }: { mode: SnapshotMode }) {

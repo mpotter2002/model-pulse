@@ -30,6 +30,7 @@ export async function loadStoredState(): Promise<StoredState> {
     );
     return {
       demoMode: typeof parsed.demoMode === "boolean" ? parsed.demoMode : DEFAULT_STORED_STATE.demoMode,
+      themeMode: (typeof parsed.themeMode === "string" && ["light", "dark", "system"].includes(parsed.themeMode)) ? parsed.themeMode : DEFAULT_STORED_STATE.themeMode,
       providerConfigs,
     };
   } catch (error) {

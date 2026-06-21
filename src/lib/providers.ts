@@ -38,6 +38,7 @@ export const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
 
 export const DEFAULT_STORED_STATE: StoredState = {
   demoMode: true,
+  themeMode: "system",
   providerConfigs: {
     openai: { ...DEFAULT_PROVIDER_CONFIG, mode: "openai-admin" },
     anthropic: { ...DEFAULT_PROVIDER_CONFIG, mode: "anthropic-manual" },
