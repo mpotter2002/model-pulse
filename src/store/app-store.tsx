@@ -5,7 +5,6 @@ import { buildSnapshot } from "@/lib/provider-clients";
 import { DEFAULT_STORED_STATE, PROVIDER_ORDER, demoSnapshot } from "@/lib/providers";
 import { loadStoredState, saveStoredState } from "@/lib/storage";
 import type { ProviderConfig, ProviderId, ProviderSnapshot, StoredState } from "@/types/domain";
-import { syncSignalStackWidget } from "@/widgets/widget-sync";
 
 const AppStoreContext = React.createContext<AppStoreValue | null>(null);
 
@@ -90,11 +89,6 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     if (!hydrated) return;
     void refreshAllInternal(storedState);
   }, [hydrated, storedState.demoMode]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    void syncSignalStackWidget(snapshots);
-  }, [hydrated, snapshots]);
 
   async function refreshAllInternal(nextState: StoredState) {
     setRefreshing(true);

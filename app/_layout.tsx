@@ -7,14 +7,25 @@ import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppStoreProvider, useAppStore } from "@/store/app-store";
+import { AppErrorBoundary } from "@/components/error-boundary";
+
+
+declare const ErrorUtils: { setGlobalHandler: (fn: (err: Error, isFatal?: boolean) => void) => void } | undefined;
+if (typeof ErrorUtils !== "undefined") {
+  ErrorUtils.setGlobalHandler((error, isFatal) => {
+    console.warn("[SignalStack] global JS error", { isFatal, message: error?.message, stack: error?.stack });
+  });
+}
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <AppStoreProvider>
-        <RootNavigator />
-      </AppStoreProvider>
-    </SafeAreaProvider>
+    <AppErrorBoundary>
+      <SafeAreaProvider>
+        <AppStoreProvider>
+          <RootNavigator />
+        </AppStoreProvider>
+      </SafeAreaProvider>
+    </AppErrorBoundary>
   );
 }
 
