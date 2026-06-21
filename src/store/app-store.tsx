@@ -138,11 +138,18 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     snapshots,
     theme,
     setDemoMode: async (value) => {
+      const previous = storedState;
       const nextState = { ...storedState, demoMode: value };
       setStoredState(nextState);
-      await saveStoredState(nextState);
+      try {
+        await saveStoredState(nextState);
+      } catch (error) {
+        setStoredState(previous);
+        throw error;
+      }
     },
     saveProviderConfig: async (providerId, config) => {
+      const previous = storedState;
       const nextState = {
         ...storedState,
         providerConfigs: {
@@ -151,7 +158,12 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
         },
       };
       setStoredState(nextState);
-      await saveStoredState(nextState);
+      try {
+        await saveStoredState(nextState);
+      } catch (error) {
+        setStoredState(previous);
+        throw error;
+      }
     },
     refreshAll: async () => {
       await refreshAllInternal(storedState);

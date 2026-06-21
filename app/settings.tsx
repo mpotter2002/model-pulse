@@ -16,6 +16,7 @@ type TestState =
 export default function SettingsScreen() {
   const { providerConfigs, demoMode, setDemoMode, saveProviderConfig, theme } = useAppStore();
   const [drafts, setDrafts] = useState(providerConfigs);
+  const [saveState, setSaveState] = useState<{ status: "idle" | "saving" | "ok" | "error"; message?: string }>({ status: "idle" });
 
   useEffect(() => {
     setDrafts(providerConfigs);
@@ -55,9 +56,16 @@ export default function SettingsScreen() {
           </Text>
           <Switch
             value={demoMode}
-            onValueChange={(value) => {
+            onValueChange={async (value) => {
               Haptics.selectionAsync();
-              void setDemoMode(value);
+              try {
+                await setDemoMode(value);
+              } catch (error) {
+                setSaveState({
+                  status: "error",
+                  message: error instanceof Error ? error.message : "Could not toggle demo mode",
+                });
+              }
             }}
           />
         </View>
@@ -79,24 +87,47 @@ export default function SettingsScreen() {
       ))}
 
       <Pressable
-        disabled={!hasChanges}
-        onPress={() => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          PROVIDER_ORDER.forEach((providerId) => {
-            void saveProviderConfig(providerId, drafts[providerId]);
-          });
+        disabled={!hasChanges || saveState.status === "saving"}
+        onPress={async () => {
+          setSaveState({ status: "saving" });
+          try {
+            for (const providerId of PROVIDER_ORDER) {
+              await saveProviderConfig(providerId, drafts[providerId]);
+            }
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setSaveState({ status: "ok", message: "Saved to secure storage." });
+          } catch (error) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setSaveState({
+              status: "error",
+              message: error instanceof Error ? error.message : "Unknown save error",
+            });
+          }
         }}
         style={{
           borderRadius: 18,
           paddingVertical: 15,
           alignItems: "center",
           backgroundColor: hasChanges ? theme.action : theme.border,
+          opacity: saveState.status === "saving" ? 0.6 : 1,
         }}
       >
         <Text selectable style={{ color: hasChanges ? "#071015" : theme.muted, fontSize: 16, fontWeight: "800" }}>
-          Save connections
+          {saveState.status === "saving" ? "Saving…" : "Save connections"}
         </Text>
       </Pressable>
+
+      {saveState.status === "ok" ? (
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#DFF1E4" }}>
+          <Text style={{ color: "#1F6B3A", fontSize: 13 }}>{saveState.message}</Text>
+        </View>
+      ) : null}
+      {saveState.status === "error" ? (
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#F8DAD7" }}>
+          <Text style={{ color: "#7A1F1A", fontWeight: "700", fontSize: 13 }}>Save failed</Text>
+          <Text style={{ color: "#5C1714", fontSize: 13 }}>{saveState.message}</Text>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
