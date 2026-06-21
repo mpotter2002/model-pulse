@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-nati
 
 import { buildSnapshot } from "@/lib/provider-clients";
 import { PROVIDER_ORDER, PROVIDERS } from "@/lib/providers";
+import { shadowProps } from "@/lib/theme";
 import { useAppStore } from "@/store/app-store";
 import type { ProviderConfig, ProviderId } from "@/types/domain";
 
@@ -30,30 +31,24 @@ export default function SettingsScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 20, gap: 16 }}
+      contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
       style={{ flex: 1, backgroundColor: theme.background }}
     >
       <View
         style={{
           gap: 10,
-          borderRadius: 24,
+          borderRadius: 20,
           padding: 18,
           backgroundColor: theme.panel,
-          borderWidth: 1,
-          borderColor: theme.border,
-          boxShadow: theme.shadow,
+          ...shadowProps("#000000", 0.05),
         }}
       >
-        <Text selectable style={{ color: theme.text, fontSize: 19, fontWeight: "800" }}>
-          Prototype mode
-        </Text>
-        <Text selectable style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
+        <Text style={{ color: theme.text, fontSize: 18, fontWeight: "800" }}>Prototype mode</Text>
+        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
           Leave demo mode on while the connectors are still being wired. Turn it off to favor live provider fetches when credentials exist.
         </Text>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text selectable style={{ color: theme.text, fontSize: 16, fontWeight: "700" }}>
-            Demo overlays
-          </Text>
+          <Text style={{ color: theme.text, fontSize: 15, fontWeight: "700" }}>Demo overlays</Text>
           <Switch
             value={demoMode}
             onValueChange={async (value) => {
@@ -105,27 +100,27 @@ export default function SettingsScreen() {
           }
         }}
         style={{
-          borderRadius: 18,
-          paddingVertical: 15,
+          borderRadius: 16,
+          paddingVertical: 14,
           alignItems: "center",
-          backgroundColor: hasChanges ? theme.action : theme.border,
+          backgroundColor: hasChanges ? theme.action : theme.chip,
           opacity: saveState.status === "saving" ? 0.6 : 1,
         }}
       >
-        <Text selectable style={{ color: hasChanges ? "#071015" : theme.muted, fontSize: 16, fontWeight: "800" }}>
+        <Text style={{ color: hasChanges ? "#FFFFFF" : theme.muted, fontSize: 15, fontWeight: "800" }}>
           {saveState.status === "saving" ? "Saving…" : "Save connections"}
         </Text>
       </Pressable>
 
       {saveState.status === "ok" ? (
-        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#DFF1E4" }}>
-          <Text style={{ color: "#1F6B3A", fontSize: 13 }}>{saveState.message}</Text>
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#D1FAE5" }}>
+          <Text style={{ color: "#065F46", fontSize: 13 }}>{saveState.message}</Text>
         </View>
       ) : null}
       {saveState.status === "error" ? (
-        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#F8DAD7" }}>
-          <Text style={{ color: "#7A1F1A", fontWeight: "700", fontSize: 13 }}>Save failed</Text>
-          <Text style={{ color: "#5C1714", fontSize: 13 }}>{saveState.message}</Text>
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#FEE2E2" }}>
+          <Text style={{ color: "#991B1B", fontWeight: "700", fontSize: 13 }}>Save failed</Text>
+          <Text style={{ color: "#991B1B", fontSize: 13 }}>{saveState.message}</Text>
         </View>
       ) : null}
     </ScrollView>
@@ -158,10 +153,7 @@ function ProviderConfigForm({
         setTest({ status: "ok", message: snapshot.statusLabel + " — " + snapshot.note });
       }
     } catch (error) {
-      setTest({
-        status: "error",
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
+      setTest({ status: "error", message: error instanceof Error ? error.message : "Unknown error" });
     }
   }
 
@@ -169,58 +161,23 @@ function ProviderConfigForm({
     <View
       style={{
         gap: 12,
-        borderRadius: 24,
+        borderRadius: 20,
         padding: 18,
         backgroundColor: theme.panel,
-        borderWidth: 1,
-        borderColor: theme.border,
-        boxShadow: theme.shadow,
+        ...shadowProps("#000000", 0.05),
       }}
     >
       <View style={{ gap: 4 }}>
-        <Text selectable style={{ color: provider.accent, fontSize: 17, fontWeight: "800" }}>
-          {provider.label}
-        </Text>
-        <Text selectable style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
-          {provider.connectionHint}
-        </Text>
+        <Text style={{ color: provider.accent, fontSize: 16, fontWeight: "800" }}>{provider.label}</Text>
+        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>{provider.connectionHint}</Text>
       </View>
 
       <LabeledInput label="Mode" value={draft.mode} theme={theme} onChangeText={(value) => onChange({ ...draft, mode: value })} />
-      <LabeledInput
-        label="API key"
-        value={draft.apiKey}
-        theme={theme}
-        secure
-        onChangeText={(value) => onChange({ ...draft, apiKey: value })}
-      />
-      <LabeledInput
-        label="Admin key"
-        value={draft.adminKey}
-        theme={theme}
-        secure
-        onChangeText={(value) => onChange({ ...draft, adminKey: value })}
-      />
-      <LabeledInput
-        label="Workspace / org / project"
-        value={draft.workspaceId}
-        theme={theme}
-        onChangeText={(value) => onChange({ ...draft, workspaceId: value })}
-      />
-      <LabeledInput
-        label="Requests per minute"
-        value={draft.requestsPerMinuteLimit}
-        theme={theme}
-        keyboardType="number-pad"
-        onChangeText={(value) => onChange({ ...draft, requestsPerMinuteLimit: value })}
-      />
-      <LabeledInput
-        label="Tokens per minute"
-        value={draft.tokensPerMinuteLimit}
-        theme={theme}
-        keyboardType="number-pad"
-        onChangeText={(value) => onChange({ ...draft, tokensPerMinuteLimit: value })}
-      />
+      <LabeledInput label="API key" value={draft.apiKey} theme={theme} secure onChangeText={(value) => onChange({ ...draft, apiKey: value })} />
+      <LabeledInput label="Admin key" value={draft.adminKey} theme={theme} secure onChangeText={(value) => onChange({ ...draft, adminKey: value })} />
+      <LabeledInput label="Workspace / org / project" value={draft.workspaceId} theme={theme} onChangeText={(value) => onChange({ ...draft, workspaceId: value })} />
+      <LabeledInput label="Requests per minute" value={draft.requestsPerMinuteLimit} theme={theme} keyboardType="number-pad" onChangeText={(value) => onChange({ ...draft, requestsPerMinuteLimit: value })} />
+      <LabeledInput label="Tokens per minute" value={draft.tokensPerMinuteLimit} theme={theme} keyboardType="number-pad" onChangeText={(value) => onChange({ ...draft, tokensPerMinuteLimit: value })} />
 
       <Pressable
         onPress={() => {
@@ -230,34 +187,28 @@ function ProviderConfigForm({
         disabled={test.status === "loading"}
         style={{
           alignSelf: "flex-start",
-          borderRadius: 14,
+          borderRadius: 12,
           paddingHorizontal: 14,
           paddingVertical: 10,
           backgroundColor: theme.subtlePanel,
-          borderWidth: 1,
-          borderColor: theme.border,
           opacity: test.status === "loading" ? 0.6 : 1,
         }}
       >
-        <Text style={{ color: theme.text, fontWeight: "800" }}>
+        <Text style={{ color: theme.text, fontWeight: "800", fontSize: 13 }}>
           {test.status === "loading" ? "Testing…" : "Test connection"}
         </Text>
       </Pressable>
 
       {test.status === "ok" ? (
-        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#DFF1E4" }}>
-          <Text style={{ color: "#1F6B3A", fontWeight: "700", fontSize: 13 }}>OK</Text>
-          <Text selectable style={{ color: "#1F6B3A", fontSize: 13, lineHeight: 18 }}>
-            {test.message}
-          </Text>
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#D1FAE5" }}>
+          <Text style={{ color: "#065F46", fontWeight: "700", fontSize: 12 }}>OK</Text>
+          <Text style={{ color: "#065F46", fontSize: 12, lineHeight: 17 }}>{test.message}</Text>
         </View>
       ) : null}
       {test.status === "error" ? (
-        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#F8DAD7" }}>
-          <Text style={{ color: "#7A1F1A", fontWeight: "700", fontSize: 13 }}>Failed</Text>
-          <Text selectable style={{ color: "#5C1714", fontSize: 13, lineHeight: 18 }}>
-            {test.message}
-          </Text>
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#FEE2E2" }}>
+          <Text style={{ color: "#991B1B", fontWeight: "700", fontSize: 12 }}>Failed</Text>
+          <Text style={{ color: "#991B1B", fontSize: 12, lineHeight: 17 }}>{test.message}</Text>
         </View>
       ) : null}
     </View>
@@ -280,10 +231,8 @@ function LabeledInput({
   keyboardType?: "default" | "number-pad";
 }) {
   return (
-    <View style={{ gap: 6 }}>
-      <Text selectable style={{ color: theme.muted, fontSize: 13, fontWeight: "700" }}>
-        {label}
-      </Text>
+    <View style={{ gap: 5 }}>
+      <Text style={{ color: theme.muted, fontSize: 12, fontWeight: "700" }}>{label}</Text>
       <TextInput
         value={value}
         secureTextEntry={secure}
@@ -292,13 +241,14 @@ function LabeledInput({
         autoCorrect={false}
         onChangeText={onChangeText}
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           borderWidth: 1,
           borderColor: theme.border,
           backgroundColor: theme.subtlePanel,
           color: theme.text,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          fontSize: 14,
         }}
       />
     </View>

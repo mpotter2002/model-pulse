@@ -4,6 +4,7 @@ import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { PROVIDERS } from "@/lib/providers";
+import { shadowProps } from "@/lib/theme";
 import { useAppStore } from "@/store/app-store";
 import type { ProviderId } from "@/types/domain";
 
@@ -39,7 +40,7 @@ export default function ProviderDetailScreen() {
           backgroundColor: theme.panel,
           borderWidth: 1,
           borderColor: theme.border,
-          boxShadow: theme.shadow,
+          ...shadowProps("#000000", 0.06),
         }}
       >
         <View style={{ gap: 6 }}>
@@ -146,7 +147,6 @@ function MetricBlock({
     border: string;
     text: string;
     muted: string;
-    shadow: string;
   };
 }) {
   return (
@@ -158,7 +158,7 @@ function MetricBlock({
         backgroundColor: theme.panel,
         borderWidth: 1,
         borderColor: theme.border,
-        boxShadow: theme.shadow,
+        ...shadowProps("#000000", 0.06),
       }}
     >
       <Text selectable style={{ color: theme.text, fontSize: 18, fontWeight: "800" }}>

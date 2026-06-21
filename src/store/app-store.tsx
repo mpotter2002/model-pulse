@@ -9,29 +9,27 @@ import type { ProviderConfig, ProviderId, ProviderSnapshot, StoredState } from "
 const AppStoreContext = React.createContext<AppStoreValue | null>(null);
 
 const lightTheme = {
-  background: "#F4F1EA",
-  panel: "#FFFDF8",
-  subtlePanel: "#ECE5D8",
-  chip: "#E8E0D0",
-  border: "#D6C9B2",
-  text: "#231B12",
-  muted: "#6E6255",
-  action: "#9EE6B8",
-  shadow: "0 10px 24px rgba(54, 38, 18, 0.08)",
+  background: "#F8FAFC",
+  panel: "#FFFFFF",
+  subtlePanel: "#F1F5F9",
+  chip: "#E2E8F0",
+  border: "#E2E8F0",
+  text: "#0F172A",
+  muted: "#64748B",
+  action: "#10B981",
   blurTint: "light" as const,
   statusBar: "dark" as const,
 };
 
 const darkTheme = {
-  background: "#0D1418",
-  panel: "#152027",
-  subtlePanel: "#1B2932",
-  chip: "#1B2932",
-  border: "#243641",
-  text: "#F5F8FA",
-  muted: "#8EA0AB",
-  action: "#7ADAA6",
-  shadow: "0 10px 24px rgba(0, 0, 0, 0.35)",
+  background: "#0B1120",
+  panel: "#151D2E",
+  subtlePanel: "#1E293B",
+  chip: "#1E293B",
+  border: "#1E293B",
+  text: "#F1F5F9",
+  muted: "#94A3B8",
+  action: "#34D399",
   blurTint: "dark" as const,
   statusBar: "light" as const,
 };
@@ -45,7 +43,6 @@ type Theme = {
   text: string;
   muted: string;
   action: string;
-  shadow: string;
   blurTint: "light" | "dark" | "default";
   statusBar: "light" | "dark" | "auto";
 };
