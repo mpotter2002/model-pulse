@@ -5,7 +5,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { PROVIDERS } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
-import type { ProviderId, SnapshotMode } from "@/types/domain";
+import type { ProviderId, ProviderSnapshot, SnapshotMode } from "@/types/domain";
 
 export function ProviderCard({ providerId }: { providerId: ProviderId }) {
   const { snapshots, theme } = useAppStore();
@@ -53,6 +53,8 @@ export function ProviderCard({ providerId }: { providerId: ProviderId }) {
             theme={theme}
           />
         </View>
+
+        <UtilizationBars snapshot={snapshot} accent={provider.accent} theme={theme} />
       </Pressable>
     </Link>
   );
@@ -82,6 +84,86 @@ function ModeBadge({ mode }: { mode: SnapshotMode }) {
       </Text>
     </View>
   );
+}
+
+function UtilizationBars({
+  snapshot,
+  accent,
+  theme,
+}: {
+  snapshot: ProviderSnapshot;
+  accent: string;
+  theme: ReturnType<typeof useAppStore>["theme"];
+}) {
+  const rpmPercent = computeRpmPercent(snapshot);
+  const tpmPercent = computeTpmPercent(snapshot);
+
+  if (rpmPercent === null && tpmPercent === null) {
+    return null;
+  }
+
+  return (
+    <View style={{ gap: 8 }}>
+      {rpmPercent !== null ? (
+        <UsageBar label="Requests / min" percent={rpmPercent} accent={accent} theme={theme} />
+      ) : null}
+      {tpmPercent !== null ? (
+        <UsageBar label="Tokens / min" percent={tpmPercent} accent={accent} theme={theme} />
+      ) : null}
+    </View>
+  );
+}
+
+function UsageBar({
+  label,
+  percent,
+  accent,
+  theme,
+}: {
+  label: string;
+  percent: number;
+  accent: string;
+  theme: ReturnType<typeof useAppStore>["theme"];
+}) {
+  const clamped = Math.max(0, Math.min(percent, 1));
+  const color = clamped >= 0.9 ? "#C8442C" : clamped >= 0.7 ? "#D9893A" : accent;
+
+  return (
+    <View style={{ gap: 4 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ color: theme.muted, fontSize: 12, fontWeight: "700" }}>{label}</Text>
+        <Text style={{ color: theme.text, fontSize: 12, fontWeight: "800", fontVariant: ["tabular-nums"] }}>
+          {Math.round(clamped * 100)}%
+        </Text>
+      </View>
+      <View style={{ height: 6, borderRadius: 3, backgroundColor: theme.subtlePanel, overflow: "hidden" }}>
+        <View style={{ width: `${clamped * 100}%`, height: "100%", backgroundColor: color }} />
+      </View>
+    </View>
+  );
+}
+
+function computeRpmPercent(snapshot: ProviderSnapshot): number | null {
+  const limit = snapshot.limits.requestsPerMinuteLimit;
+  const remaining = snapshot.limits.requestsRemaining;
+  if (typeof limit !== "number" || limit <= 0) return null;
+  if (typeof remaining === "number") {
+    return (limit - Math.max(0, remaining)) / limit;
+  }
+  // No remaining info — fall back to requestsUsed against limit but cap at 1.
+  if (snapshot.usage.requestsUsed > 0) {
+    return Math.min(snapshot.usage.requestsUsed / limit, 1);
+  }
+  return null;
+}
+
+function computeTpmPercent(snapshot: ProviderSnapshot): number | null {
+  const limit = snapshot.limits.tokensPerMinuteLimit;
+  if (typeof limit !== "number" || limit <= 0) return null;
+  if (snapshot.usage.tokensUsed > 0) {
+    return Math.min(snapshot.usage.tokensUsed / limit, 1);
+  }
+  return null;
 }
 
 function Stat({

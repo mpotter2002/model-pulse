@@ -1,4 +1,5 @@
-import React, { startTransition, useEffect, useState } from "react";
+import React, { startTransition, useEffect, useMemo, useState } from "react";
+import { useColorScheme } from "react-native";
 
 import { buildSnapshot } from "@/lib/provider-clients";
 import { DEFAULT_STORED_STATE, PROVIDER_ORDER, demoSnapshot } from "@/lib/providers";
@@ -22,7 +23,33 @@ const lightTheme = {
   statusBar: "dark" as const,
 };
 
-type Theme = typeof lightTheme;
+const darkTheme = {
+  background: "#0D1418",
+  panel: "#152027",
+  subtlePanel: "#1B2932",
+  chip: "#1B2932",
+  border: "#243641",
+  text: "#F5F8FA",
+  muted: "#8EA0AB",
+  action: "#7ADAA6",
+  shadow: "0 10px 24px rgba(0, 0, 0, 0.35)",
+  blurTint: "dark" as const,
+  statusBar: "light" as const,
+};
+
+type Theme = {
+  background: string;
+  panel: string;
+  subtlePanel: string;
+  chip: string;
+  border: string;
+  text: string;
+  muted: string;
+  action: string;
+  shadow: string;
+  blurTint: "light" | "dark" | "default";
+  statusBar: "light" | "dark" | "auto";
+};
 
 interface AppStoreValue {
   hydrated: boolean;
@@ -38,6 +65,8 @@ interface AppStoreValue {
 }
 
 export function AppStoreProvider({ children }: React.PropsWithChildren) {
+  const colorScheme = useColorScheme();
+  const theme = useMemo<Theme>(() => (colorScheme === "dark" ? darkTheme : lightTheme), [colorScheme]);
   const [hydrated, setHydrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [storedState, setStoredState] = useState<StoredState>(DEFAULT_STORED_STATE);
@@ -107,7 +136,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     demoMode: storedState.demoMode,
     providerConfigs: storedState.providerConfigs,
     snapshots,
-    theme: lightTheme,
+    theme,
     setDemoMode: async (value) => {
       const nextState = { ...storedState, demoMode: value };
       setStoredState(nextState);
