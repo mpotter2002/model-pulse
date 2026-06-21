@@ -1,40 +1,30 @@
+import { Widget } from "expo-widgets";
+
 import { PROVIDERS, PROVIDER_ORDER } from "@/lib/providers";
 import type { ProviderId, ProviderSnapshot } from "@/types/domain";
 
 type SnapshotMap = Record<ProviderId, ProviderSnapshot>;
 
-let widgetModulePromise: Promise<{ signalStackWidget?: any } | null> | null = null;
+let widgetInstance: Widget | null = null;
 let warnedMissing = false;
 
-async function loadWidgetModule() {
-  if (!widgetModulePromise) {
-    widgetModulePromise = (async () => {
-      try {
-        // Lazy import so the JS app still boots when the native widget
-        // module / @expo/ui isn't linked (Expo Go, web, JS-only dev client).
-        const mod = await import("@/widgets/signal-stack-widget");
-        return mod as { signalStackWidget?: any };
-      } catch (error) {
-        if (!warnedMissing) {
-          warnedMissing = true;
-          console.warn(
-            "[SignalStack] Native widget bridge unavailable; skipping widget sync.",
-            error instanceof Error ? error.message : error,
-          );
-        }
-        return null;
+function getWidget() {
+  if (!widgetInstance) {
+    try {
+      widgetInstance = new Widget("SignalStackWidget", (() => null) as any);
+    } catch (error) {
+      if (!warnedMissing) {
+        warnedMissing = true;
+        console.warn("[SignalStack] Widget native module unavailable; skipping widget sync.", error);
       }
-    })();
+    }
   }
-  return widgetModulePromise;
+  return widgetInstance;
 }
 
 export async function syncSignalStackWidget(snapshots: SnapshotMap) {
-  const mod = await loadWidgetModule();
-  const widget = mod?.signalStackWidget;
-  if (!widget?.updateTimeline) {
-    return;
-  }
+  const widget = getWidget();
+  if (!widget) return;
 
   const totalSpend = PROVIDER_ORDER.reduce(
     (sum, providerId) => sum + snapshots[providerId].usage.monthlySpendUsd,
@@ -67,9 +57,6 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap) {
       },
     ]);
   } catch (error) {
-    console.warn(
-      "[SignalStack] Widget timeline update failed:",
-      error instanceof Error ? error.message : error,
-    );
+    console.warn("[SignalStack] Widget timeline update failed:", error);
   }
 }
