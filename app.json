@@ -1,13 +1,19 @@
 {
   "expo": {
-    "name": "ai-subscriptions-widget",
+    "name": "SignalStack",
     "slug": "ai-subscriptions-widget",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "scheme": "signalstack",
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.michaelpotter.signalstack",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,6 +26,87 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-image",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.michaelpotter.signalstack",
+          "widgets": [
+            {
+              "name": "SignalStackWidget",
+              "displayName": "SignalStack",
+              "description": "Track AI usage, rate limits, and spend from your iPhone Home Screen.",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ],
+              "contentMarginsDisabled": false,
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ],
+                "configuration": {
+                  "title": "SignalStack",
+                  "description": "Choose which widget view to pin.",
+                  "parameters": {
+                    "focus": {
+                      "title": "View",
+                      "type": "enum",
+                      "default": "overview",
+                      "values": [
+                        {
+                          "name": "Overview",
+                          "value": "overview"
+                        },
+                        {
+                          "name": "OpenAI",
+                          "value": "openai"
+                        },
+                        {
+                          "name": "Anthropic",
+                          "value": "anthropic"
+                        },
+                        {
+                          "name": "Kimi",
+                          "value": "kimi"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.michaelpotter.signalstack.ExpoWidgetsTarget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.michaelpotter.signalstack"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "2a6f227a-70dd-4702-8b59-281b30bf36d0"
+      }
     }
   }
 }
