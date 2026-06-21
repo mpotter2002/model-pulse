@@ -63,7 +63,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Pressable onPress={cycleTheme} style={{ padding: 8, borderRadius: 8, backgroundColor: theme.subtlePanel }}>
               <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
-                {themeMode === "light" ? "☀️" : themeMode === "dark" ? "🌙" : "🔘"}
+                {themeMode === "light" ? "Light" : themeMode === "dark" ? "Dark" : "Auto"}
               </Text>
             </Pressable>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
