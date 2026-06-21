@@ -53,6 +53,7 @@ export function demoSnapshot(providerId: ProviderId): ProviderSnapshot {
 
   if (providerId === "openai") {
     return {
+      mode: "demo",
       statusLabel: "Healthy burn",
       note: "24h usage is being simulated until an admin key is stored. This maps cleanly to a future widget timeline.",
       usage: {
@@ -74,6 +75,7 @@ export function demoSnapshot(providerId: ProviderId): ProviderSnapshot {
 
   if (providerId === "anthropic") {
     return {
+      mode: "demo",
       statusLabel: "Near request cap",
       note: "Claude is trending close to its manual request ceiling. A live refresh path can replace this card once admin reporting is connected.",
       usage: {
@@ -94,6 +96,7 @@ export function demoSnapshot(providerId: ProviderId): ProviderSnapshot {
   }
 
   return {
+    mode: "demo",
     statusLabel: "Manual tracking",
     note: "Kimi is included in the prototype, but its usage pipeline still needs a stronger programmatic source than the major US APIs expose today.",
     usage: {

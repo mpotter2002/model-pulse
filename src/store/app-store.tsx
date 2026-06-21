@@ -80,9 +80,11 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
               providerId,
               {
                 ...demoSnapshot(providerId),
+                mode: "failed",
                 statusLabel: "Refresh failed",
                 note: error instanceof Error ? error.message : "Unknown provider error",
                 updatedAtLabel: "Failed",
+                lastError: error instanceof Error ? error.message : "Unknown provider error",
               },
             ] as const;
           }
@@ -138,9 +140,11 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
           ...current,
           [providerId]: {
             ...current[providerId],
+            mode: "failed",
             statusLabel: "Refresh failed",
             note: error instanceof Error ? error.message : "Unknown provider error",
             updatedAtLabel: "Failed",
+            lastError: error instanceof Error ? error.message : "Unknown provider error",
           },
         }));
       } finally {

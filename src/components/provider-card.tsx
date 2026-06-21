@@ -5,7 +5,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { PROVIDERS } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
-import type { ProviderId } from "@/types/domain";
+import type { ProviderId, SnapshotMode } from "@/types/domain";
 
 export function ProviderCard({ providerId }: { providerId: ProviderId }) {
   const { snapshots, theme } = useAppStore();
@@ -27,9 +27,12 @@ export function ProviderCard({ providerId }: { providerId: ProviderId }) {
       >
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text selectable style={{ color: provider.accent, fontSize: 13, fontWeight: "800", letterSpacing: 0.4 }}>
-              {provider.label.toUpperCase()}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text selectable style={{ color: provider.accent, fontSize: 13, fontWeight: "800", letterSpacing: 0.4 }}>
+                {provider.label.toUpperCase()}
+              </Text>
+              <ModeBadge mode={snapshot.mode} />
+            </View>
             <Text selectable style={{ color: theme.text, fontSize: 22, fontWeight: "800" }}>
               {snapshot.statusLabel}
             </Text>
@@ -52,6 +55,32 @@ export function ProviderCard({ providerId }: { providerId: ProviderId }) {
         </View>
       </Pressable>
     </Link>
+  );
+}
+
+const MODE_STYLE: Record<SnapshotMode, { label: string; bg: string; fg: string }> = {
+  demo: { label: "DEMO", bg: "#E8E0D0", fg: "#6E6255" },
+  live: { label: "LIVE", bg: "#CFEFD9", fg: "#1F6B3A" },
+  manual: { label: "MANUAL", bg: "#E1E7F2", fg: "#3F5375" },
+  "needs-key": { label: "NEEDS KEY", bg: "#FCE6C3", fg: "#7A4A11" },
+  failed: { label: "FAILED", bg: "#F3C9C7", fg: "#7A1F1A" },
+};
+
+function ModeBadge({ mode }: { mode: SnapshotMode }) {
+  const style = MODE_STYLE[mode] ?? MODE_STYLE.demo;
+  return (
+    <View
+      style={{
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 999,
+        backgroundColor: style.bg,
+      }}
+    >
+      <Text style={{ color: style.fg, fontSize: 10, fontWeight: "800", letterSpacing: 0.6 }}>
+        {style.label}
+      </Text>
+    </View>
   );
 }
 

@@ -25,6 +25,7 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
   if (!config.adminKey) {
     return {
       ...demoSnapshot("openai"),
+      mode: "needs-key",
       statusLabel: "Admin key needed",
       note: "OpenAI usage and cost reporting can be fetched live once an admin key is stored. Limits can still be entered manually.",
     };
@@ -54,6 +55,7 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
   const monthlySpendUsd = costBucket.reduce((sum, item) => sum + readNestedNumber(item, ["amount", "value"]), 0);
 
   return {
+    mode: "live",
     statusLabel: "Live org usage",
     note: "Usage and cost are being fetched from the OpenAI admin API. RPM and TPM still rely on your manual caps unless a stronger rate-limit source is added.",
     usage: {
@@ -77,6 +79,7 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
   if (!config.adminKey) {
     return {
       ...demoSnapshot("anthropic"),
+      mode: "needs-key",
       statusLabel: "Admin key needed",
       note: "Anthropic usage, cost, and organization rate limits can be fetched live once an Admin API key is stored.",
     };
@@ -122,6 +125,7 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
     findLimitValue(modelGroup, "input_tokens_per_minute") ?? toNumber(config.tokensPerMinuteLimit);
 
   return {
+    mode: "live",
     statusLabel: "Live admin telemetry",
     note: "Anthropic usage, cost, and organization rate limits are being read from the Admin API.",
     usage: {
@@ -145,6 +149,7 @@ async function refreshKimi(config: ProviderConfig): Promise<ProviderSnapshot> {
   if (!config.apiKey) {
     return {
       ...demoSnapshot("kimi"),
+      mode: "needs-key",
       statusLabel: "API key needed",
       note: "Kimi can at least provide live account balance once an API key is stored. Usage and rate limits remain partly manual in this prototype.",
     };
@@ -167,6 +172,7 @@ async function refreshKimi(config: ProviderConfig): Promise<ProviderSnapshot> {
 
   return {
     ...fallback,
+    mode: "live",
     statusLabel: typeof availableBalance === "number" ? "Live balance connected" : "Live key connected",
     note:
       typeof availableBalance === "number"
@@ -187,6 +193,7 @@ async function refreshManualProvider(providerId: ProviderId, config: ProviderCon
 
   return {
     ...fallback,
+    mode: "manual",
     statusLabel: config.apiKey ? "Manual limits + key stored" : "Manual setup",
     note: config.apiKey
       ? `${fallback.note} Live request telemetry for this provider still needs a hardened endpoint strategy.`

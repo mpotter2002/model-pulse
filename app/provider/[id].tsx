@@ -73,6 +73,26 @@ export default function ProviderDetailScreen() {
         </Pressable>
       </View>
 
+      {snapshot.lastError ? (
+        <View
+          style={{
+            gap: 6,
+            borderRadius: 20,
+            padding: 16,
+            backgroundColor: "#F8DAD7",
+            borderWidth: 1,
+            borderColor: "#E2A8A2",
+          }}
+        >
+          <Text style={{ color: "#7A1F1A", fontSize: 13, fontWeight: "800", letterSpacing: 0.4 }}>
+            LAST ERROR
+          </Text>
+          <Text selectable style={{ color: "#5C1714", fontSize: 14, lineHeight: 19 }}>
+            {snapshot.lastError}
+          </Text>
+        </View>
+      ) : null}
+
       <MetricBlock
         title="Usage"
         rows={[

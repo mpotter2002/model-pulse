@@ -2,9 +2,16 @@ import * as Haptics from "expo-haptics";
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 
+import { buildSnapshot } from "@/lib/provider-clients";
 import { PROVIDER_ORDER, PROVIDERS } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
 import type { ProviderConfig, ProviderId } from "@/types/domain";
+
+type TestState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ok"; message: string }
+  | { status: "error"; message: string };
 
 export default function SettingsScreen() {
   const { providerConfigs, demoMode, setDemoMode, saveProviderConfig, theme } = useAppStore();
@@ -106,6 +113,26 @@ function ProviderConfigForm({
   onChange: (next: ProviderConfig) => void;
 }) {
   const provider = PROVIDERS[providerId];
+  const [test, setTest] = useState<TestState>({ status: "idle" });
+
+  async function onTest() {
+    setTest({ status: "loading" });
+    try {
+      const snapshot = await buildSnapshot(providerId, draft, false);
+      if (snapshot.mode === "needs-key") {
+        setTest({ status: "error", message: snapshot.note });
+      } else if (snapshot.mode === "failed") {
+        setTest({ status: "error", message: snapshot.lastError ?? snapshot.note });
+      } else {
+        setTest({ status: "ok", message: snapshot.statusLabel + " — " + snapshot.note });
+      }
+    } catch (error) {
+      setTest({
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
 
   return (
     <View
@@ -163,6 +190,45 @@ function ProviderConfigForm({
         keyboardType="number-pad"
         onChangeText={(value) => onChange({ ...draft, tokensPerMinuteLimit: value })}
       />
+
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          void onTest();
+        }}
+        disabled={test.status === "loading"}
+        style={{
+          alignSelf: "flex-start",
+          borderRadius: 14,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          backgroundColor: theme.subtlePanel,
+          borderWidth: 1,
+          borderColor: theme.border,
+          opacity: test.status === "loading" ? 0.6 : 1,
+        }}
+      >
+        <Text style={{ color: theme.text, fontWeight: "800" }}>
+          {test.status === "loading" ? "Testing…" : "Test connection"}
+        </Text>
+      </Pressable>
+
+      {test.status === "ok" ? (
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#DFF1E4" }}>
+          <Text style={{ color: "#1F6B3A", fontWeight: "700", fontSize: 13 }}>OK</Text>
+          <Text selectable style={{ color: "#1F6B3A", fontSize: 13, lineHeight: 18 }}>
+            {test.message}
+          </Text>
+        </View>
+      ) : null}
+      {test.status === "error" ? (
+        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#F8DAD7" }}>
+          <Text style={{ color: "#7A1F1A", fontWeight: "700", fontSize: 13 }}>Failed</Text>
+          <Text selectable style={{ color: "#5C1714", fontSize: 13, lineHeight: 18 }}>
+            {test.message}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }

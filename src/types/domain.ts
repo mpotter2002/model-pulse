@@ -1,5 +1,7 @@
 export type ProviderId = "openai" | "anthropic" | "kimi";
 
+export type SnapshotMode = "demo" | "live" | "needs-key" | "failed" | "manual";
+
 export interface ProviderConfig {
   mode: string;
   apiKey: string;
@@ -24,12 +26,14 @@ export interface LimitSnapshot {
 }
 
 export interface ProviderSnapshot {
+  mode: SnapshotMode;
   statusLabel: string;
   note: string;
   usage: UsageSnapshot;
   limits: LimitSnapshot;
   balanceLabel?: string | null;
   updatedAtLabel: string;
+  lastError?: string | null;
 }
 
 export interface StoredState {
