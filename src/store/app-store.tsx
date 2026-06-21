@@ -10,27 +10,27 @@ import type { ProviderConfig, ProviderId, ProviderSnapshot, StoredState } from "
 const AppStoreContext = React.createContext<AppStoreValue | null>(null);
 
 const lightTheme = {
-  background: "#F8FAFC",
+  background: "#FFFFFF",
   panel: "#FFFFFF",
-  subtlePanel: "#F1F5F9",
-  chip: "#E2E8F0",
-  border: "#E2E8F0",
-  text: "#0F172A",
-  muted: "#64748B",
-  action: "#10B981",
+  subtlePanel: "#F5F5F7",
+  chip: "#F5F5F7",
+  border: "#E5E5EA",
+  text: "#000000",
+  muted: "#8E8E93",
+  action: "#000000",
   blurTint: "light" as const,
   statusBar: "dark" as const,
 };
 
 const darkTheme = {
-  background: "#0B1120",
-  panel: "#151D2E",
-  subtlePanel: "#1E293B",
-  chip: "#1E293B",
-  border: "#1E293B",
-  text: "#F1F5F9",
-  muted: "#94A3B8",
-  action: "#34D399",
+  background: "#000000",
+  panel: "#1C1C1E",
+  subtlePanel: "#2C2C2E",
+  chip: "#2C2C2E",
+  border: "#38383A",
+  text: "#FFFFFF",
+  muted: "#8E8E93",
+  action: "#FFFFFF",
   blurTint: "dark" as const,
   statusBar: "light" as const,
 };

@@ -4,7 +4,6 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { PROVIDERS } from "@/lib/providers";
-import { shadowProps } from "@/lib/theme";
 import { useAppStore } from "@/store/app-store";
 import type { ProviderId, ProviderSnapshot, SnapshotMode } from "@/types/domain";
 
@@ -17,73 +16,70 @@ export function ProviderCard({ providerId }: { providerId: ProviderId }) {
     <Link href={`/provider/${providerId}`} asChild>
       <Pressable
         style={{
-          flexDirection: "row",
-          borderRadius: 20,
           backgroundColor: theme.panel,
-          overflow: "hidden",
-          ...shadowProps("#000000", 0.05),
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: theme.border,
+          padding: 20,
+          marginBottom: 12,
         }}
       >
-        {/* Left accent strip */}
-        <View style={{ width: 4, backgroundColor: provider.accent }} />
-
-        <View style={{ flex: 1, padding: 16, gap: 12 }}>
-          {/* Header row */}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: provider.accent }} />
-              <Text style={{ color: provider.accent, fontSize: 12, fontWeight: "800", letterSpacing: 0.5 }}>
-                {provider.label.toUpperCase()}
-              </Text>
-            </View>
-            <ModeBadge mode={snapshot.mode} />
+        {/* Top row: dot + name + mode + chevron */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: provider.accent }} />
+            <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
+              {provider.label}
+            </Text>
           </View>
-
-          {/* Status */}
-          <Text style={{ color: theme.text, fontSize: 20, fontWeight: "800" }}>
-            {snapshot.statusLabel}
-          </Text>
-
-          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 18 }}>
-            {snapshot.note}
-          </Text>
-
-          {/* Stats row */}
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <Stat label="Tokens" value={compact(snapshot.usage.tokensUsed)} theme={theme} />
-            <Stat label="Spend" value={`$${snapshot.usage.monthlySpendUsd.toFixed(2)}`} theme={theme} />
-            <Stat
-              label={snapshot.balanceLabel ? "Balance" : "RPM left"}
-              value={snapshot.balanceLabel ?? snapshot.limits.requestsRemaining?.toString() ?? "?"}
-              theme={theme}
-            />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <ModeDot mode={snapshot.mode} />
+            <Image source="sf:chevron.right" style={{ width: 12, height: 12, tintColor: theme.muted }} />
           </View>
-
-          <UtilizationBars snapshot={snapshot} accent={provider.accent} theme={theme} />
         </View>
 
-        <View style={{ justifyContent: "center", paddingRight: 12 }}>
-          <Image source="sf:chevron.right" style={{ width: 14, height: 14, tintColor: theme.muted }} />
+        {/* Status */}
+        <Text style={{ color: theme.text, fontSize: 20, fontWeight: "800", marginTop: 8 }}>
+          {snapshot.statusLabel}
+        </Text>
+
+        {/* Note */}
+        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 18, marginTop: 4 }}>
+          {snapshot.note}
+        </Text>
+
+        {/* Stats row */}
+        <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
+          <Stat label="Tokens" value={compact(snapshot.usage.tokensUsed)} theme={theme} />
+          <Stat label="Spend" value={`$${snapshot.usage.monthlySpendUsd.toFixed(2)}`} theme={theme} />
+          <Stat
+            label={snapshot.balanceLabel ? "Balance" : "RPM left"}
+            value={snapshot.balanceLabel ?? snapshot.limits.requestsRemaining?.toString() ?? "?"}
+            theme={theme}
+          />
         </View>
+
+        <UtilizationBars snapshot={snapshot} accent={provider.accent} theme={theme} />
       </Pressable>
     </Link>
   );
 }
 
-const MODE_STYLE: Record<SnapshotMode, { label: string; bg: string; fg: string }> = {
-  demo: { label: "DEMO", bg: "#FEF3C7", fg: "#92400E" },
-  live: { label: "LIVE", bg: "#D1FAE5", fg: "#065F46" },
-  manual: { label: "MANUAL", bg: "#DBEAFE", fg: "#1E40AF" },
-  "needs-key": { label: "NEEDS KEY", bg: "#FED7AA", fg: "#9A3412" },
-  failed: { label: "FAILED", bg: "#FEE2E2", fg: "#991B1B" },
+const MODE_DOT: Record<SnapshotMode, string> = {
+  demo: "#8E8E93",
+  live: "#10B981",
+  manual: "#3B82F6",
+  "needs-key": "#F59E0B",
+  failed: "#EF4444",
 };
 
-function ModeBadge({ mode }: { mode: SnapshotMode }) {
-  const style = MODE_STYLE[mode] ?? MODE_STYLE.demo;
+function ModeDot({ mode }: { mode: SnapshotMode }) {
+  const color = MODE_DOT[mode] ?? MODE_DOT.demo;
   return (
-    <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: style.bg }}>
-      <Text style={{ color: style.fg, fontSize: 9, fontWeight: "800", letterSpacing: 0.6 }}>
-        {style.label}
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
+      <Text style={{ color, fontSize: 11, fontWeight: "700" }}>
+        {mode === "needs-key" ? "needs key" : mode}
       </Text>
     </View>
   );
@@ -103,7 +99,7 @@ function UtilizationBars({
   if (rpmPercent === null && tpmPercent === null) return null;
 
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: 8, marginTop: 14 }}>
       {rpmPercent !== null && <UsageBar label="Requests / min" percent={rpmPercent} accent={accent} theme={theme} />}
       {tpmPercent !== null && <UsageBar label="Tokens / min" percent={tpmPercent} accent={accent} theme={theme} />}
     </View>
@@ -132,8 +128,8 @@ function UsageBar({
           {Math.round(clamped * 100)}%
         </Text>
       </View>
-      <View style={{ height: 4, borderRadius: 2, backgroundColor: theme.subtlePanel, overflow: "hidden" }}>
-        <View style={{ width: `${clamped * 100}%`, height: "100%", backgroundColor: color, borderRadius: 2 }} />
+      <View style={{ height: 3, borderRadius: 1.5, backgroundColor: theme.subtlePanel, overflow: "hidden" }}>
+        <View style={{ width: `${clamped * 100}%`, height: "100%", backgroundColor: color, borderRadius: 1.5 }} />
       </View>
     </View>
   );
@@ -165,9 +161,9 @@ function Stat({
   theme: ReturnType<typeof useAppStore>["theme"];
 }) {
   return (
-    <View style={{ flex: 1, gap: 2, borderRadius: 12, padding: 10, backgroundColor: theme.subtlePanel }}>
+    <View style={{ flex: 1 }}>
       <Text style={{ color: theme.muted, fontSize: 11, fontWeight: "600" }}>{label}</Text>
-      <Text style={{ color: theme.text, fontSize: 15, fontWeight: "800", fontVariant: ["tabular-nums"] }}>
+      <Text style={{ color: theme.text, fontSize: 15, fontWeight: "800", marginTop: 2, fontVariant: ["tabular-nums"] }}>
         {value}
       </Text>
     </View>

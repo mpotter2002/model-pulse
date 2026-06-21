@@ -1,10 +1,10 @@
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { buildSnapshot } from "@/lib/provider-clients";
 import { PROVIDER_ORDER, PROVIDERS } from "@/lib/providers";
-import { shadowProps } from "@/lib/theme";
 import { useAppStore } from "@/store/app-store";
 import type { ProviderConfig, ProviderId } from "@/types/domain";
 
@@ -15,6 +15,7 @@ type TestState =
   | { status: "error"; message: string };
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const { providerConfigs, demoMode, setDemoMode, saveProviderConfig, theme } = useAppStore();
   const [drafts, setDrafts] = useState(providerConfigs);
   const [saveState, setSaveState] = useState<{ status: "idle" | "saving" | "ok" | "error"; message?: string }>({ status: "idle" });
@@ -30,25 +31,31 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 40 }}
       style={{ flex: 1, backgroundColor: theme.background }}
     >
+      <Text style={{ color: theme.text, fontSize: 28, fontWeight: "800" }}>Connections</Text>
+      <Text style={{ color: theme.muted, fontSize: 14, marginTop: 4 }}>Manage provider credentials and limits</Text>
+
+      {/* Demo mode toggle */}
       <View
         style={{
+          marginTop: 24,
           gap: 10,
-          borderRadius: 20,
+          borderRadius: 16,
           padding: 18,
           backgroundColor: theme.panel,
-          ...shadowProps("#000000", 0.05),
+          borderWidth: 1,
+          borderColor: theme.border,
         }}
       >
-        <Text style={{ color: theme.text, fontSize: 18, fontWeight: "800" }}>Prototype mode</Text>
-        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
+        <Text style={{ color: theme.text, fontSize: 16, fontWeight: "700" }}>Prototype mode</Text>
+        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 18 }}>
           Leave demo mode on while the connectors are still being wired. Turn it off to favor live provider fetches when credentials exist.
         </Text>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={{ color: theme.text, fontSize: 15, fontWeight: "700" }}>Demo overlays</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>Demo overlays</Text>
           <Switch
             value={demoMode}
             onValueChange={async (value) => {
@@ -100,10 +107,11 @@ export default function SettingsScreen() {
           }
         }}
         style={{
+          marginTop: 8,
           borderRadius: 16,
           paddingVertical: 14,
           alignItems: "center",
-          backgroundColor: hasChanges ? theme.action : theme.chip,
+          backgroundColor: hasChanges ? theme.text : theme.border,
           opacity: saveState.status === "saving" ? 0.6 : 1,
         }}
       >
@@ -113,12 +121,12 @@ export default function SettingsScreen() {
       </Pressable>
 
       {saveState.status === "ok" ? (
-        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#D1FAE5" }}>
+        <View style={{ marginTop: 12, borderRadius: 12, padding: 12, backgroundColor: "#D1FAE5" }}>
           <Text style={{ color: "#065F46", fontSize: 13 }}>{saveState.message}</Text>
         </View>
       ) : null}
       {saveState.status === "error" ? (
-        <View style={{ borderRadius: 12, padding: 12, backgroundColor: "#FEE2E2" }}>
+        <View style={{ marginTop: 12, borderRadius: 12, padding: 12, backgroundColor: "#FEE2E2" }}>
           <Text style={{ color: "#991B1B", fontWeight: "700", fontSize: 13 }}>Save failed</Text>
           <Text style={{ color: "#991B1B", fontSize: 13 }}>{saveState.message}</Text>
         </View>
@@ -160,16 +168,21 @@ function ProviderConfigForm({
   return (
     <View
       style={{
+        marginTop: 16,
         gap: 12,
-        borderRadius: 20,
+        borderRadius: 16,
         padding: 18,
         backgroundColor: theme.panel,
-        ...shadowProps("#000000", 0.05),
+        borderWidth: 1,
+        borderColor: theme.border,
       }}
     >
       <View style={{ gap: 4 }}>
-        <Text style={{ color: provider.accent, fontSize: 16, fontWeight: "800" }}>{provider.label}</Text>
-        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>{provider.connectionHint}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: provider.accent }} />
+          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "800" }}>{provider.label}</Text>
+        </View>
+        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 18 }}>{provider.connectionHint}</Text>
       </View>
 
       <LabeledInput label="Mode" value={draft.mode} theme={theme} onChangeText={(value) => onChange({ ...draft, mode: value })} />
