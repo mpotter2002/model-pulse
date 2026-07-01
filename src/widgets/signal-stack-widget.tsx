@@ -3,14 +3,15 @@
 import { Capsule, HStack, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import type { RateLimitStyle } from "@/types/domain";
 import {
+  background as viewBackground,
   containerBackground,
-  cornerRadius,
   font,
   foregroundStyle,
   frame,
   lineLimit,
   monospacedDigit,
   padding,
+  shapes,
   truncationMode,
 } from "@expo/ui/swift-ui/modifiers";
 import { createWidget } from "expo-widgets";
@@ -136,22 +137,24 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ]}
       >
         {/* Header */}
-        <HStack spacing={8} alignment="top">
-          <VStack alignment="leading" spacing={1}>
-            <Text modifiers={[foregroundStyle(text), font({ size: isSmall ? 13 : 15, weight: "bold" }), lineLimit(1)]}>
-              SignalStack
-            </Text>
-            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
-              {modelsShown}
-            </Text>
-          </VStack>
-          <Spacer />
-          {isLarge ? null : (
-            <Text modifiers={[foregroundStyle(primary.accent || accent), font({ size: 16, weight: "bold" })]}>
-              •
-            </Text>
-          )}
-        </HStack>
+        {isMedium ? null : (
+          <HStack spacing={8} alignment="top">
+            <VStack alignment="leading" spacing={1}>
+              <Text modifiers={[foregroundStyle(text), font({ size: isSmall ? 13 : 15, weight: "bold" }), lineLimit(1)]}>
+                SignalStack
+              </Text>
+              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
+                {modelsShown}
+              </Text>
+            </VStack>
+            <Spacer />
+            {isLarge ? null : (
+              <Text modifiers={[foregroundStyle(primary.accent || accent), font({ size: 16, weight: "bold" })]}>
+                •
+              </Text>
+            )}
+          </HStack>
+        )}
 
         {/* Summary bar (large only) */}
         {isLarge ? (
@@ -161,8 +164,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             modifiers={[
               frame({ maxWidth: 10000, alignment: "leading" }),
               padding({ horizontal: 10, vertical: 7 }),
-              containerBackground(panel, "widget"),
-              cornerRadius(14),
+              viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 14, roundedCornerStyle: "continuous" })),
             ]}
           >
             <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 10, weight: "bold", design: "monospaced" }), lineLimit(1)]}>
@@ -182,8 +184,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             modifiers={[
               frame({ maxWidth: 10000, alignment: "leading" }),
               padding({ horizontal: 10, vertical: 8 }),
-              containerBackground(panel, "widget"),
-              cornerRadius(16),
+              viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 16, roundedCornerStyle: "continuous" })),
             ]}
           >
             <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
@@ -201,8 +202,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               modifiers={[
                 frame({ maxWidth: 10000, alignment: "leading" }),
                 padding({ horizontal: 10, vertical: 8 }),
-                containerBackground(panel, "widget"),
-                cornerRadius(16),
+                viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 16, roundedCornerStyle: "continuous" })),
               ]}
             >
               <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
@@ -221,8 +221,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               modifiers={[
                 frame({ maxWidth: 10000, alignment: "leading" }),
                 padding({ horizontal: 10, vertical: 8 }),
-                containerBackground(panel, "widget"),
-                cornerRadius(16),
+                viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 16, roundedCornerStyle: "continuous" })),
               ]}
             >
               <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
