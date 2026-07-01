@@ -46,7 +46,7 @@
                 "systemMedium",
                 "systemLarge"
               ],
-              "contentMarginsDisabled": false,
+              "contentMarginsDisabled": true,
               "ios": {
                 "supportedFamilies": [
                   "systemSmall",

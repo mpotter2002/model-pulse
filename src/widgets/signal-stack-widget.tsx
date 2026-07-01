@@ -1,6 +1,6 @@
 "use widget";
 
-import { HStack, Spacer, Text, VStack, ProgressView } from "@expo/ui/swift-ui";
+import { Capsule, HStack, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import type { RateLimitStyle } from "@/types/domain";
 import {
   containerBackground,
@@ -8,10 +8,10 @@ import {
   font,
   foregroundStyle,
   frame,
+  lineLimit,
   monospacedDigit,
   padding,
-  progressViewStyle,
-  tint,
+  truncationMode,
 } from "@expo/ui/swift-ui/modifiers";
 import { createWidget } from "expo-widgets";
 
@@ -63,6 +63,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const text = "#F1F1F1";
     const muted = "#8E939A";
     const accent = "#3B82F6";
+    const track = "#2A2B2E";
+    const segments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
     const family = environment.widgetFamily;
     const isSmall = family === "systemSmall";
@@ -96,8 +98,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const modelsShown = cards.length === 1 ? "1 model shown" : `${cards.length} models shown`;
     const primaryTileLabel = props.metricLabel === "Balance" ? "BALANCE" : "SPEND";
     const primaryTileValue = props.metricLabel === "Balance" ? props.totalBalance : props.totalSpend;
-    const rowLimit = isLarge ? 6 : isMedium ? 4 : 3;
-    const labelWidth = isSmall ? 54 : isMedium ? 74 : 96;
+    const rowLimit = isLarge ? 8 : isMedium ? 8 : 3;
+    const labelWidth = isSmall ? 54 : isMedium ? 78 : 92;
+    const leftLimitRows = flatLimitRows.slice(0, Math.ceil(Math.min(rowLimit, flatLimitRows.length) / 2));
+    const rightLimitRows = flatLimitRows.slice(Math.ceil(Math.min(rowLimit, flatLimitRows.length) / 2), rowLimit);
 
     if (!primary) {
       return (
@@ -105,15 +109,15 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           alignment="leading"
           spacing={6}
           modifiers={[
-            frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
+            frame({ maxWidth: 10000, alignment: "topLeading" }),
             padding({ all: 14 }),
             containerBackground(background, "widget"),
           ]}
         >
-          <Text modifiers={[foregroundStyle(text), font({ textStyle: "headline", weight: "bold" })]}>
+          <Text modifiers={[foregroundStyle(text), font({ size: 15, weight: "bold" })]}>
             SignalStack
           </Text>
-          <Text modifiers={[foregroundStyle(muted), font({ textStyle: "caption2" })]}>
+          <Text modifiers={[foregroundStyle(muted), font({ size: 11 })]}>
             Open SignalStack to sync data
           </Text>
           <Spacer />
@@ -124,26 +128,26 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     return (
       <VStack
         alignment="leading"
-        spacing={isSmall ? 7 : 9}
+        spacing={isSmall ? 6 : 8}
         modifiers={[
-          frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-          padding({ all: 14 }),
+          frame({ maxWidth: 10000, alignment: "topLeading" }),
+          padding({ all: isSmall ? 12 : 14 }),
           containerBackground(background, "widget"),
         ]}
       >
         {/* Header */}
         <HStack spacing={8} alignment="top">
           <VStack alignment="leading" spacing={1}>
-            <Text modifiers={[foregroundStyle(text), font({ textStyle: "subheadline", weight: "bold" })]}>
+            <Text modifiers={[foregroundStyle(text), font({ size: isSmall ? 13 : 15, weight: "bold" }), lineLimit(1)]}>
               SignalStack
             </Text>
-            <Text modifiers={[foregroundStyle(muted), font({ textStyle: "caption2" })]}>
+            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
               {modelsShown}
             </Text>
           </VStack>
           <Spacer />
           {isLarge ? null : (
-            <Text modifiers={[foregroundStyle(primary.accent || accent), font({ textStyle: "headline", weight: "bold" })]}>
+            <Text modifiers={[foregroundStyle(primary.accent || accent), font({ size: 16, weight: "bold" })]}>
               •
             </Text>
           )}
@@ -161,10 +165,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               cornerRadius(14),
             ]}
           >
-            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ textStyle: "caption2", weight: "bold" })]}>
+            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 10, weight: "bold", design: "monospaced" }), lineLimit(1)]}>
               {`${props.metricLabel.toUpperCase()} · ${modelsLabel}`}
             </Text>
-            <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ textStyle: "title", weight: "heavy" })]}>
+            <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 25, weight: "heavy" }), lineLimit(1)]}>
               {summaryValue}
             </Text>
           </VStack>
@@ -182,10 +186,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               cornerRadius(16),
             ]}
           >
-            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ textStyle: "caption2" })]}>
+            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
               {primaryTileLabel}
             </Text>
-            <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ textStyle: "title3", weight: "heavy" })]}>
+            <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
               {primaryTileValue}
             </Text>
           </VStack>
@@ -201,10 +205,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 cornerRadius(16),
               ]}
             >
-              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ textStyle: "caption2" })]}>
+              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
                 TOKENS
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ textStyle: "title3", weight: "heavy" })]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
                 {props.totalTokens}
               </Text>
             </VStack>
@@ -221,10 +225,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 cornerRadius(16),
               ]}
             >
-              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ textStyle: "caption2" })]}>
+              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
                 MODELS
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ textStyle: "title3", weight: "heavy" })]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
                 {`${cards.length}`}
               </Text>
             </VStack>
@@ -232,47 +236,101 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         </HStack>
 
         {/* Limit bars, or per-model metric rows */}
-        <VStack alignment="leading" spacing={isLarge ? 7 : 6}>
-          {hasLimits
-            ? flatLimitRows.slice(0, rowLimit).map((row, i) => (
-                <HStack key={`${row.id}-${i}`} spacing={7} alignment="center">
-                  <Text modifiers={[foregroundStyle(row.accent)]}>•</Text>
+        {isMedium && hasLimits ? (
+          <HStack spacing={12} alignment="top">
+            <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
+              {leftLimitRows.map((row, i) => (
+                <HStack key={`${row.id}-left-${i}`} spacing={6} alignment="center">
+                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
                   <Text
                     modifiers={[
                       foregroundStyle(text),
-                      font({ textStyle: "caption", weight: "bold" }),
-                      frame({ width: labelWidth, alignment: "leading" }),
+                      font({ size: 12, weight: "bold" }),
+                      frame({ width: 66, alignment: "leading" }),
+                      lineLimit(1),
+                      truncationMode("tail"),
                     ]}
                   >
                     {row.label}
                   </Text>
-                  {props.rateLimitStyle === "bar" ? (
-                    <ProgressView
-                      value={Math.max(0, Math.min(1, row.ratio))}
-                      modifiers={[progressViewStyle("linear"), tint(row.accent)]}
-                    />
-                  ) : (
-                    <Spacer />
-                  )}
-                  {props.rateLimitStyle === "bar" ? (
-                    <Spacer />
-                  ) : (
-                    <Text
-                      modifiers={[
-                        foregroundStyle(muted),
-                        monospacedDigit(),
-                        font({ textStyle: "caption", weight: "bold" }),
-                      ]}
-                    >
-                      {`${Math.round(Math.max(0, Math.min(1, 1 - row.ratio)) * 100)}%`}
-                    </Text>
-                  )}
+                  <HStack spacing={3}>
+                    {segments.map((segment) => (
+                      <Capsule
+                        key={`${row.id}-left-segment-${segment}`}
+                        modifiers={[
+                          frame({ width: 3, height: 10 }),
+                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                        ]}
+                      />
+                    ))}
+                  </HStack>
+                </HStack>
+              ))}
+            </VStack>
+            <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
+              {rightLimitRows.map((row, i) => (
+                <HStack key={`${row.id}-right-${i}`} spacing={6} alignment="center">
+                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                  <Text
+                    modifiers={[
+                      foregroundStyle(text),
+                      font({ size: 12, weight: "bold" }),
+                      frame({ width: 66, alignment: "leading" }),
+                      lineLimit(1),
+                      truncationMode("tail"),
+                    ]}
+                  >
+                    {row.label}
+                  </Text>
+                  <HStack spacing={3}>
+                    {segments.map((segment) => (
+                      <Capsule
+                        key={`${row.id}-right-segment-${segment}`}
+                        modifiers={[
+                          frame({ width: 3, height: 10 }),
+                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                        ]}
+                      />
+                    ))}
+                  </HStack>
+                </HStack>
+              ))}
+            </VStack>
+          </HStack>
+        ) : (
+        <VStack alignment="leading" spacing={isLarge ? 7 : 5}>
+          {hasLimits
+            ? flatLimitRows.slice(0, rowLimit).map((row, i) => (
+                <HStack key={`${row.id}-${i}`} spacing={7} alignment="center">
+                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                  <Text
+                    modifiers={[
+                      foregroundStyle(text),
+                      font({ size: isSmall ? 11 : 12, weight: "bold" }),
+                      frame({ width: labelWidth, alignment: "leading" }),
+                      lineLimit(1),
+                      truncationMode("tail"),
+                    ]}
+                  >
+                    {row.label}
+                  </Text>
+                  <HStack spacing={3}>
+                    {segments.map((segment) => (
+                      <Capsule
+                        key={`${row.id}-segment-${segment}`}
+                        modifiers={[
+                          frame({ width: isSmall ? 3 : 4, height: isSmall ? 8 : 10 }),
+                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                        ]}
+                      />
+                    ))}
+                  </HStack>
                 </HStack>
               ))
             : cards.slice(0, rowLimit).map((card) => (
                 <HStack key={card.id} spacing={7} alignment="center">
-                  <Text modifiers={[foregroundStyle(card.accent)]}>•</Text>
-                  <Text modifiers={[foregroundStyle(text), font({ textStyle: "caption", weight: "bold" })]}>
+                  <Text modifiers={[foregroundStyle(card.accent), font({ size: 10 })]}>•</Text>
+                  <Text modifiers={[foregroundStyle(text), font({ size: 12, weight: "bold" }), lineLimit(1), truncationMode("tail")]}>
                     {card.label}
                   </Text>
                   <Spacer />
@@ -280,7 +338,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                     modifiers={[
                       foregroundStyle(muted),
                       monospacedDigit(),
-                      font({ textStyle: "caption", weight: "bold" }),
+                      font({ size: 12, weight: "bold" }),
                     ]}
                   >
                     {card.metric}
@@ -288,11 +346,12 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 </HStack>
               ))}
         </VStack>
+        )}
 
         <Spacer />
 
         {/* Footer */}
-        <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ textStyle: "caption2" })]}>
+        <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, design: "monospaced" }), lineLimit(1)]}>
           Updated {props.updatedAt}
         </Text>
       </VStack>
