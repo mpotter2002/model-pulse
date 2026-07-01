@@ -37,8 +37,32 @@ export const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
 };
 
 export const DEFAULT_STORED_STATE: StoredState = {
-  demoMode: true,
+  demoMode: false,
   themeMode: "system",
+  rateLimitStyle: "bar",
+  modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory"],
+  hiddenModelCardIds: [],
+  widgetConfig: {
+    headline: "SignalStack",
+    metricMode: "api",
+    visibleProviderIds: ["openai", "anthropic", "kimi"],
+    visibleModelCardIds: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory"],
+    focusedModelCardId: "openai",
+    subscriptionPricesUsd: {
+      openai: "20",
+      anthropic: "20",
+      kimi: "",
+      minimax: "",
+      zai: "",
+      gemini: "20",
+      elevenlabs: "",
+      poe: "",
+      codebuff: "",
+      copilot: "",
+      chutes: "",
+      factory: "",
+    },
+  },
   providerConfigs: {
     openai: { ...DEFAULT_PROVIDER_CONFIG, mode: "openai-admin" },
     anthropic: { ...DEFAULT_PROVIDER_CONFIG, mode: "anthropic-manual" },

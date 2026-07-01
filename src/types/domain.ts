@@ -4,6 +4,12 @@ export type SnapshotMode = "demo" | "live" | "needs-key" | "failed" | "manual" |
 
 export type ThemeMode = "light" | "dark" | "system";
 
+export type ModelCardId = "openai" | "anthropic" | "kimi" | "minimax" | "zai" | "gemini" | "elevenlabs" | "poe" | "codebuff" | "copilot" | "chutes" | "factory";
+
+export type WidgetMetricMode = "api" | "subscription";
+
+export type RateLimitStyle = "bar" | "dots" | "dash" | "none";
+
 export interface ProviderConfig {
   mode: string;
   apiKey: string;
@@ -41,5 +47,18 @@ export interface ProviderSnapshot {
 export interface StoredState {
   demoMode: boolean;
   themeMode: ThemeMode;
+  rateLimitStyle: RateLimitStyle;
   providerConfigs: Record<ProviderId, ProviderConfig>;
+  modelCardOrder: ModelCardId[];
+  hiddenModelCardIds: ModelCardId[];
+  widgetConfig: WidgetConfig;
+}
+
+export interface WidgetConfig {
+  headline: string;
+  metricMode: WidgetMetricMode;
+  visibleProviderIds: ProviderId[];
+  visibleModelCardIds: ModelCardId[];
+  focusedModelCardId: ModelCardId;
+  subscriptionPricesUsd: Record<ModelCardId, string>;
 }

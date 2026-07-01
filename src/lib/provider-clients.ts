@@ -211,7 +211,7 @@ async function refreshManualProvider(providerId: ProviderId, config: ProviderCon
     statusLabel: config.apiKey ? "Manual limits + key stored" : "Manual setup",
     note: config.apiKey
       ? `${fallback.note} Live request telemetry for this provider still needs a hardened endpoint strategy.`
-      : `${fallback.note} Add keys and caps in Connections to move beyond the placeholder state.`,
+      : `${fallback.note} Add keys and caps in Settings to move beyond the placeholder state.`,
     limits: {
       requestsPerMinuteLimit: toNumber(config.requestsPerMinuteLimit) ?? fallback.limits.requestsPerMinuteLimit,
       requestsRemaining: fallback.limits.requestsRemaining,

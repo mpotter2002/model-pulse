@@ -43,13 +43,15 @@
               "description": "Track AI usage, rate limits, and spend from your iPhone Home Screen.",
               "supportedFamilies": [
                 "systemSmall",
-                "systemMedium"
+                "systemMedium",
+                "systemLarge"
               ],
               "contentMarginsDisabled": false,
               "ios": {
                 "supportedFamilies": [
                   "systemSmall",
-                  "systemMedium"
+                  "systemMedium",
+                  "systemLarge"
                 ],
                 "configuration": {
                   "title": "SignalStack",
@@ -75,6 +77,42 @@
                         {
                           "name": "Kimi",
                           "value": "kimi"
+                        },
+                        {
+                          "name": "MiniMax",
+                          "value": "minimax"
+                        },
+                        {
+                          "name": "Z.ai GLM",
+                          "value": "zai"
+                        },
+                        {
+                          "name": "Gemini",
+                          "value": "gemini"
+                        },
+                        {
+                          "name": "ElevenLabs",
+                          "value": "elevenlabs"
+                        },
+                        {
+                          "name": "Poe",
+                          "value": "poe"
+                        },
+                        {
+                          "name": "Codebuff",
+                          "value": "codebuff"
+                        },
+                        {
+                          "name": "Copilot",
+                          "value": "copilot"
+                        },
+                        {
+                          "name": "Chutes",
+                          "value": "chutes"
+                        },
+                        {
+                          "name": "Factory",
+                          "value": "factory"
                         }
                       ]
                     }

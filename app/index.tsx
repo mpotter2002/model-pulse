@@ -1,132 +1,219 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import React from "react";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useEffect, useState } from "react";
+import { Pressable, RefreshControl, View } from "react-native";
 
-import { ProviderCard } from "@/components/provider-card";
+import { AIModelCard } from "@/components/ai-model-card";
+import { Card } from "@/components/ui/card";
+import { ScreenScrollView } from "@/components/ui/screen";
+import { Text } from "@/components/ui/text";
+import { useTheme } from "@/components/ui/theme";
+import { makeModelCards } from "@/lib/model-cards";
+import { getConnectionStatus, type ConnectionStatus } from "@/lib/oauth/manager";
 import { PROVIDER_ORDER } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
-import type { ThemeMode } from "@/types/domain";
+import type { ModelCardId, ThemeMode } from "@/types/domain";
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
-  const { snapshots, theme, themeMode, demoMode, refreshing, refreshAll, setThemeMode } = useAppStore();
-  const totalMonthlySpend = PROVIDER_ORDER.reduce((sum, id) => sum + snapshots[id].usage.monthlySpendUsd, 0);
-  const totalTokens = PROVIDER_ORDER.reduce((sum, id) => sum + snapshots[id].usage.tokensUsed, 0);
-  const modes = PROVIDER_ORDER.map((id) => snapshots[id].mode);
-  const liveCount = modes.filter((m) => m === "live").length;
-  const failedCount = modes.filter((m) => m === "failed").length;
-  const needsKeyCount = modes.filter((m) => m === "needs-key").length;
+  const {
+    snapshots,
+    themeMode,
+    demoMode,
+    refreshing,
+    refreshAll,
+    modelCardOrder,
+    hiddenModelCardIds,
+    widgetConfig,
+    setThemeMode,
+  } = useAppStore();
+  const theme = useTheme();
+  const [subRefreshNonce, setSubRefreshNonce] = useState(0);
+  const [subscriptionStatuses, setSubscriptionStatuses] = useState<Partial<Record<ModelCardId, ConnectionStatus | null>>>({});
 
-  const statusLabel = demoMode
-    ? "Demo"
-    : failedCount > 0
-      ? `${failedCount} failed`
-      : liveCount === PROVIDER_ORDER.length
-        ? "All live"
-        : liveCount > 0
-          ? `${liveCount}/${PROVIDER_ORDER.length} live`
-          : needsKeyCount > 0
-            ? "Add keys"
-            : "Ready";
+  const modelCards = makeModelCards()
+    .filter((item) => !hiddenModelCardIds.includes(item.id))
+    .sort((a, b) => modelCardOrder.indexOf(a.id) - modelCardOrder.indexOf(b.id));
 
-  const statusColor =
-    failedCount > 0 ? "#EF4444" : demoMode ? "#F59E0B" : liveCount === PROVIDER_ORDER.length ? "#10B981" : "#8E8E93";
+  useEffect(() => {
+    let cancelled = false;
 
-  const cycleTheme = () => {
+    async function loadSubscriptionStatuses() {
+      const entries = await Promise.all(
+        modelCards.map(async (card) => {
+          if (!card.subscriptionProviderId) return [card.id, null] as const;
+          try {
+            return [
+              card.id,
+              await getConnectionStatus(card.subscriptionProviderId, {
+                allowNetwork: card.subscriptionProviderId !== "claude-sub",
+              }),
+            ] as const;
+          } catch {
+            return [card.id, null] as const;
+          }
+        }),
+      );
+      if (!cancelled) setSubscriptionStatuses(Object.fromEntries(entries));
+    }
+
+    void loadSubscriptionStatuses();
+    return () => {
+      cancelled = true;
+    };
+  }, [subRefreshNonce, modelCards]);
+
+  const totalSubscriptionSpend = modelCards.reduce(
+    (sum, card) => sum + parseUsd(widgetConfig.subscriptionPricesUsd[card.id]),
+    0,
+  );
+  const totalApiSpend = PROVIDER_ORDER.reduce(
+    (sum, id) => sum + (demoMode ? snapshots[id].usage.monthlySpendUsd : snapshots[id].mode === "live" ? snapshots[id].usage.monthlySpendUsd : 0),
+    0,
+  );
+  const totalMonthlySpend = totalSubscriptionSpend + totalApiSpend;
+  const totalApiTokens = PROVIDER_ORDER.reduce(
+    (sum, id) => sum + (snapshots[id].mode === "live" ? snapshots[id].usage.tokensUsed : 0),
+    0,
+  );
+  const hasLiveApiData = PROVIDER_ORDER.some((id) => snapshots[id].mode === "live");
+
+  const failedCount = PROVIDER_ORDER.filter((id) => snapshots[id].mode === "failed").length;
+
+  function cycleTheme() {
+    Haptics.selectionAsync();
     const order: ThemeMode[] = ["light", "dark", "system"];
     const next = order[(order.indexOf(themeMode) + 1) % order.length];
     void setThemeMode(next);
-  };
+  }
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="never"
+    <ScreenScrollView
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
-          tintColor={theme.text}
+          tintColor={theme.foreground}
           onRefresh={() => {
             Haptics.selectionAsync();
             void refreshAll();
+            setSubRefreshNonce((n) => n + 1);
           }}
         />
       }
-      style={{ flex: 1, backgroundColor: theme.background }}
     >
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 40 }}>
-        {/* Title + theme toggle */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={{ color: theme.text, fontSize: 28, fontWeight: "800" }}>SignalStack</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Pressable onPress={cycleTheme} style={{ padding: 8, borderRadius: 8, backgroundColor: theme.subtlePanel }}>
-              <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
-                {themeMode === "light" ? "Light" : themeMode === "dark" ? "Dark" : "Auto"}
-              </Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+        <View>
+          <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
+            LOCAL NODE // SIGNALSTACK
+          </Text>
+          <Text size="3xl" family="sans" weight="extrabold">
+            SignalStack
+          </Text>
+          <Text size="sm" family="mono" color="muted">
+            AI subscription telemetry // live overview
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Pressable onPress={cycleTheme} style={{ padding: 8, borderRadius: 999, backgroundColor: theme.muted }}>
+            <Image
+              source={themeMode === "light" ? "sf:sun.max.fill" : themeMode === "dark" ? "sf:moon.fill" : "sf:circle.lefthalf.filled"}
+              style={{ width: 16, height: 16, tintColor: theme.foreground }}
+            />
+          </Pressable>
+          <Link href="/settings" asChild>
+            <Pressable style={{ padding: 8, borderRadius: 999, backgroundColor: theme.muted }}>
+              <Image source="sf:gearshape.fill" style={{ width: 16, height: 16, tintColor: theme.foreground }} />
             </Pressable>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
-              <Text style={{ color: theme.muted, fontSize: 13, fontWeight: "600" }}>{statusLabel}</Text>
-            </View>
-          </View>
-        </View>
-        <Text style={{ color: theme.muted, fontSize: 14, marginTop: 4 }}>AI subscription telemetry</Text>
-
-        {/* Summary stats */}
-        <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
-          <View style={{ flex: 1, borderRadius: 16, padding: 16, backgroundColor: theme.subtlePanel }}>
-            <Text style={{ color: theme.muted, fontSize: 12, fontWeight: "600" }}>Monthly spend</Text>
-            <Text style={{ color: theme.text, fontSize: 22, fontWeight: "800", marginTop: 4, fontVariant: ["tabular-nums"] }}>
-              ${totalMonthlySpend.toFixed(2)}
-            </Text>
-          </View>
-          <View style={{ flex: 1, borderRadius: 16, padding: 16, backgroundColor: theme.subtlePanel }}>
-            <Text style={{ color: theme.muted, fontSize: 12, fontWeight: "600" }}>Tracked tokens</Text>
-            <Text style={{ color: theme.text, fontSize: 22, fontWeight: "800", marginTop: 4, fontVariant: ["tabular-nums"] }}>
-              {compactNumber(totalTokens)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Failure banner */}
-        {failedCount > 0 ? (
-          <View style={{ marginTop: 20, gap: 4, borderRadius: 14, padding: 14, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" }}>
-            <Text style={{ color: "#B91C1C", fontSize: 12, fontWeight: "700" }}>
-              {failedCount} refresh issue{failedCount === 1 ? "" : "s"}
-            </Text>
-            <Text style={{ color: "#991B1B", fontSize: 13, lineHeight: 18 }}>
-              {PROVIDER_ORDER.filter((id) => snapshots[id].mode === "failed")
-                .map((id) => snapshots[id].lastError ?? "Unknown error")
-                .join(" · ")}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Providers */}
-        <View style={{ marginTop: 28 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <Text style={{ color: theme.text, fontSize: 20, fontWeight: "800" }}>Providers</Text>
-            <Link href="/settings" asChild>
-              <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: theme.subtlePanel }}>
-                <Image source="sf:slider.horizontal.3" style={{ width: 14, height: 14, tintColor: theme.text }} />
-                <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>Connections</Text>
-              </Pressable>
-            </Link>
-          </View>
-
-          {PROVIDER_ORDER.map((id) => (
-            <ProviderCard key={id} providerId={id} />
-          ))}
+          </Link>
         </View>
       </View>
-    </ScrollView>
+
+      <Card padding={4} style={{ marginBottom: 16 }}>
+        <View style={{ gap: 14 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.2 }}>
+              SYSTEM SUMMARY
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: demoMode ? theme.warning : theme.accent }} />
+              <Text size="xs" family="mono" color="muted">
+                {demoMode ? "DEMO" : "LIVE"}
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", gap: 16, alignItems: "flex-end" }}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text size="xs" family="mono" weight="medium" color="muted" style={{ letterSpacing: 1 }}>
+                MONTHLY SPEND
+              </Text>
+              <Text
+                size="3xl"
+                family="sans"
+                weight="extrabold"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+                style={{ fontSize: 44, lineHeight: 50, letterSpacing: -1.5 }}
+              >
+                ${totalMonthlySpend.toFixed(2)}
+              </Text>
+              {demoMode ? (
+                <Text size="xs" family="mono" weight="bold" color="warning">
+                  DEMO
+                </Text>
+              ) : null}
+            </View>
+            {hasLiveApiData ? (
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text size="xs" family="mono" weight="medium" color="muted" style={{ letterSpacing: 1 }}>
+                  TOKENS
+                </Text>
+                <Text size="xl" family="sans" weight="extrabold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>
+                  {compactNumber(totalApiTokens)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 0.8 }}>
+            {modelCards.length} MODELS TRACKED // REFRESH {refreshing ? "ACTIVE" : "IDLE"}
+          </Text>
+        </View>
+      </Card>
+
+      {failedCount > 0 ? (
+        <Card background="muted" style={{ marginBottom: 16 }}>
+          <Text weight="semibold" family="mono" color="destructive" style={{ marginBottom: 4, letterSpacing: 0.8 }}>
+            {failedCount} refresh issue{failedCount === 1 ? "" : "s"}
+          </Text>
+          <Text size="sm" family="mono" color="muted">
+            {PROVIDER_ORDER.filter((id) => snapshots[id].mode === "failed")
+              .map((id) => snapshots[id].lastError ?? "Unknown error")
+              .join(" · ")}
+          </Text>
+        </Card>
+      ) : null}
+
+      {/* Models */}
+      <View style={{ marginBottom: 8 }}>
+        <Text size="xs" family="mono" weight="bold" color="muted" style={{ marginBottom: 14, letterSpacing: 1.2 }}>
+          MODEL GRID
+        </Text>
+        {modelCards.map((item) => (
+          <AIModelCard key={item.id} item={item} refreshNonce={subRefreshNonce} />
+        ))}
+      </View>
+    </ScreenScrollView>
   );
 }
+
 
 function compactNumber(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`;
   return value.toString();
+}
+
+function parseUsd(value: string | undefined) {
+  const parsed = Number(value ?? "");
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }

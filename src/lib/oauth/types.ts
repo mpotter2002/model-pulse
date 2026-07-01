@@ -1,0 +1,69 @@
+export type SubscriptionProviderId =
+  | "kimi-sub"
+  | "minimax-sub"
+  | "zai-sub"
+  | "claude-sub"
+  | "codex-sub"
+  | "gemini-sub"
+  | "elevenlabs-sub"
+  | "poe-sub"
+  | "codebuff-sub"
+  | "copilot-sub"
+  | "chutes-sub"
+  | "factory-sub"
+
+export type SubscriptionAuthKind = "device-flow" | "api-token";
+
+/** Configuration for refreshing expired api-token access tokens. */
+export interface TokenRefreshConfig {
+  tokenUrl: string;
+  clientId?: string;
+  clientSecret?: string;
+  scopes?: string[];
+}
+
+export interface UsageLimitRow {
+  label: string;
+  used: number | null;
+  limit: number | null;
+  percentUsed: number | null;
+  resetHint: string | null;
+}
+
+export interface SubscriptionUsage {
+  summary: UsageLimitRow | null;
+  limits: UsageLimitRow[];
+  planLabel: string | null;
+  fetchState?: "live" | "rate_limited";
+  cooldownUntil?: number | null;
+  /** Raw diagnostic detail (e.g. last HTTP status / retry-after / server message). */
+  debugDetail?: string | null;
+}
+
+export interface StoredTokens {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: number | null;
+  idToken?: string | null;
+  accountId?: string | null;
+  resourceUrl?: string | null;
+  scope?: string | null;
+  clientId?: string | null;
+  clientSecret?: string | null;
+}
+
+export interface DeviceAuthorization {
+  deviceCode: string;
+  userCode: string;
+  verificationUri: string;
+  verificationUriComplete: string | null;
+  expiresIn: number | null;
+  interval: number;
+}
+
+export type DevicePollResult =
+  | { kind: "pending" }
+  | { kind: "slow-down" }
+  | { kind: "success"; tokens: StoredTokens }
+  | { kind: "denied"; message?: string }
+  | { kind: "expired" };
