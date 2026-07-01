@@ -103,7 +103,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     };
   }, [hydrated, storedState]);
 
-  async function refreshAllInternal(nextState: StoredState) {
+  async function refreshAllInternal(nextState: StoredState, force = false) {
     setRefreshing(true);
     try {
       const entries = await Promise.all(
@@ -138,9 +138,14 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       // min-fetch interval + cooldown is enforced inside the manager, so this
       // is a no-op network-wise until a provider is actually due. Without this,
       // subscription usage only ever refreshed on the manual button.
+      // On an explicit user refresh, force a real network fetch (bypassing the
+      // per-provider min-fetch interval and any self-imposed cooldown) so
+      // Claude's throttled usage endpoint actually updates. Automatic warms
+      // (mount, app-active) stay non-forced so background focus can't reignite
+      // Anthropic's penalty.
       await Promise.all(
         SUBSCRIPTION_PROVIDER_ORDER.map((id) =>
-          getConnectionStatus(id, { allowNetwork: true }).catch(() => undefined),
+          getConnectionStatus(id, { allowNetwork: true, force }).catch(() => undefined),
         ),
       );
     } finally {
@@ -203,7 +208,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       await commitStoredState((current) => ({ ...current, widgetConfig: config }));
     },
     refreshAll: async () => {
-      await refreshAllInternal(storedState);
+      await refreshAllInternal(storedState, true);
     },
     refreshProvider: async (providerId) => {
       setRefreshing(true);

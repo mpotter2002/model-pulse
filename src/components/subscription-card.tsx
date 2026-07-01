@@ -60,8 +60,19 @@ export function SubscriptionPanel({
     [providerId],
   );
 
+  // Distinguish the initial passive load from a user-initiated refresh (a
+  // bumped `refreshNonce`). On mount we honor `passiveClaudeRefresh`
+  // (cache-only for Claude, to avoid tripping Anthropic's throttled usage
+  // endpoint). When the parent's Refresh button bumps the nonce, treat it as
+  // an explicit user action and force a real network fetch.
+  const didMountRef = useRef(false);
   useEffect(() => {
-    void refresh(!passiveClaudeRefresh);
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      void refresh(!passiveClaudeRefresh);
+      return;
+    }
+    void refresh(true, true);
   }, [passiveClaudeRefresh, refresh, refreshNonce]);
 
   useEffect(() => {

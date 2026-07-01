@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
@@ -22,16 +22,22 @@ import type { ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domai
 export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; refreshNonce: number }) {
   const { providerConfigs, snapshots } = useAppStore();
   const [subscriptionStatus, setSubscriptionStatus] = useState<ConnectionStatus | null>(null);
+  const didMountRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    // Mount = passive (cache-only for Claude); a bumped `refreshNonce` is a
+    // user-initiated refresh, so force a real network fetch for everyone.
+    const userInitiated = didMountRef.current;
+    didMountRef.current = true;
     async function loadStatus() {
       if (!item.subscriptionProviderId) {
         setSubscriptionStatus(null);
         return;
       }
       const next = await getConnectionStatus(item.subscriptionProviderId, {
-        allowNetwork: item.subscriptionProviderId !== "claude-sub",
+        allowNetwork: userInitiated || item.subscriptionProviderId !== "claude-sub",
+        force: userInitiated,
       }).catch((error) => ({
         kind: "error" as const,
         message: error instanceof Error ? error.message : "Could not load subscription status.",

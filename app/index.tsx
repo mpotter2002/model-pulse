@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, RefreshControl, View } from "react-native";
 
 import { AIModelCard } from "@/components/ai-model-card";
@@ -30,6 +30,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const [subRefreshNonce, setSubRefreshNonce] = useState(0);
   const [subscriptionStatuses, setSubscriptionStatuses] = useState<Partial<Record<ModelCardId, ConnectionStatus | null>>>({});
+  const subStatusesDidMountRef = useRef(false);
 
   const modelCards = makeModelCards()
     .filter((item) => !hiddenModelCardIds.includes(item.id))
@@ -37,6 +38,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    const userInitiated = subStatusesDidMountRef.current;
+    subStatusesDidMountRef.current = true;
 
     async function loadSubscriptionStatuses() {
       const entries = await Promise.all(
@@ -46,7 +49,12 @@ export default function HomeScreen() {
             return [
               card.id,
               await getConnectionStatus(card.subscriptionProviderId, {
-                allowNetwork: card.subscriptionProviderId !== "claude-sub",
+                // On mount, load passively (cache-only for Claude to avoid
+                // tripping Anthropic's throttled usage endpoint). A bumped
+                // `subRefreshNonce` is a user pull-to-refresh, so force a real
+                // network fetch for every provider including Claude.
+                allowNetwork: userInitiated || card.subscriptionProviderId !== "claude-sub",
+                force: userInitiated,
               }),
             ] as const;
           } catch {
