@@ -142,10 +142,6 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
               {modelsShown}
             </Text>
-            <Spacer />
-            <Text modifiers={[foregroundStyle(primary.accent || accent), font({ size: 16, weight: "bold" })]}>
-              •
-            </Text>
           </HStack>
         ) : (
           <HStack spacing={8} alignment="top">
