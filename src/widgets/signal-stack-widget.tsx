@@ -1,9 +1,8 @@
 "use widget";
 
-import { Capsule, HStack, Spacer, Text, VStack } from "@expo/ui/swift-ui";
+import { Capsule, HStack, RoundedRectangle, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
 import type { RateLimitStyle } from "@/types/domain";
 import {
-  background as viewBackground,
   containerBackground,
   font,
   foregroundStyle,
@@ -11,7 +10,6 @@ import {
   lineLimit,
   monospacedDigit,
   padding,
-  shapes,
   truncationMode,
 } from "@expo/ui/swift-ui/modifiers";
 import { createWidget } from "expo-widgets";
@@ -157,79 +155,71 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
         {/* Summary bar (large only) */}
         {isLarge ? (
-          <VStack
-            alignment="leading"
-            spacing={1}
-            modifiers={[
-              frame({ maxWidth: 10000, alignment: "leading" }),
-              padding({ horizontal: 10, vertical: 7 }),
-              viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 14, roundedCornerStyle: "continuous" })),
-            ]}
-          >
-            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 10, weight: "bold", design: "monospaced" }), lineLimit(1)]}>
-              {`${props.metricLabel.toUpperCase()} · ${modelsLabel}`}
-            </Text>
-            <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 25, weight: "heavy" }), lineLimit(1)]}>
-              {summaryValue}
-            </Text>
-          </VStack>
+          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 60, alignment: "leading" })]}>
+            <RoundedRectangle
+              cornerRadius={14}
+              modifiers={[foregroundStyle(panel)]}
+            />
+            <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 10, vertical: 7 })]}>
+              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 10, weight: "bold", design: "monospaced" }), lineLimit(1)]}>
+                {`${props.metricLabel.toUpperCase()} · ${modelsLabel}`}
+              </Text>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 25, weight: "heavy" }), lineLimit(1)]}>
+                {summaryValue}
+              </Text>
+            </VStack>
+          </ZStack>
         ) : null}
 
         {/* Tiles row */}
         <HStack spacing={8}>
-          <VStack
-            alignment="leading"
-            spacing={2}
-            modifiers={[
-              frame({ maxWidth: 10000, alignment: "leading" }),
-              padding({ horizontal: 10, vertical: 8 }),
-              viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 16, roundedCornerStyle: "continuous" })),
-            ]}
-          >
-            <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
-              {primaryTileLabel}
-            </Text>
-            <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
-              {primaryTileValue}
-            </Text>
-          </VStack>
-
-          {props.hasLiveApiData ? (
-            <VStack
-              alignment="leading"
-              spacing={2}
-              modifiers={[
-                frame({ maxWidth: 10000, alignment: "leading" }),
-                padding({ horizontal: 10, vertical: 8 }),
-                viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 16, roundedCornerStyle: "continuous" })),
-              ]}
-            >
+          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: isSmall ? 52 : 64, alignment: "leading" })]}>
+            <RoundedRectangle
+              cornerRadius={16}
+              modifiers={[foregroundStyle(panel)]}
+            />
+            <VStack alignment="leading" spacing={2} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
               <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
-                TOKENS
+                {primaryTileLabel}
               </Text>
               <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
-                {props.totalTokens}
+                {primaryTileValue}
               </Text>
             </VStack>
+          </ZStack>
+
+          {props.hasLiveApiData ? (
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: isSmall ? 52 : 64, alignment: "leading" })]}>
+              <RoundedRectangle
+                cornerRadius={16}
+                modifiers={[foregroundStyle(panel)]}
+              />
+              <VStack alignment="leading" spacing={2} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
+                <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
+                  TOKENS
+                </Text>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
+                  {props.totalTokens}
+                </Text>
+              </VStack>
+            </ZStack>
           ) : null}
 
           {isSmall && props.hasLiveApiData ? null : (
-            <VStack
-              alignment="leading"
-              spacing={2}
-              modifiers={[
-                frame({ maxWidth: 10000, alignment: "leading" }),
-                padding({ horizontal: 10, vertical: 8 }),
-                viewBackground(panel, shapes.roundedRectangle({ cornerRadius: 16, roundedCornerStyle: "continuous" })),
-              ]}
-            >
-              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
-                MODELS
-              </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
-                {`${cards.length}`}
-              </Text>
-            </VStack>
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: isSmall ? 52 : 64, alignment: "leading" })]}>
+              <RoundedRectangle
+                cornerRadius={16}
+                modifiers={[foregroundStyle(panel)]}
+              />
+              <VStack alignment="leading" spacing={2} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
+                <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
+                  MODELS
+                </Text>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
+                  {`${cards.length}`}
+                </Text>
+              </VStack>
+            </ZStack>
           )}
         </HStack>
 
