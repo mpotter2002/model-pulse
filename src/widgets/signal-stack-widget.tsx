@@ -63,7 +63,6 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const panel = "#1C1D20";
     const text = "#F1F1F1";
     const muted = "#8E939A";
-    const accent = "#3B82F6";
     const track = "#2A2B2E";
     const segments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
@@ -153,12 +152,6 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 {modelsShown}
               </Text>
             </VStack>
-            <Spacer />
-            {isLarge ? null : (
-              <Text modifiers={[foregroundStyle(primary.accent || accent), font({ size: 16, weight: "bold" })]}>
-                •
-              </Text>
-            )}
           </HStack>
         )}
 
