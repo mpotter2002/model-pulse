@@ -41,10 +41,12 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
       const snap = snapshots[card.apiProviderId];
       if (isLiveSnapshot(snap)) spend += snap.usage.monthlySpendUsd;
     }
-    const subStatus = card.subscriptionProviderId ? subscriptionStatusById[card.id] : null;
-    if (subStatus?.kind === "connected") {
-      spend += parseUsd(config.subscriptionPricesUsd[card.id]);
-    }
+    // Match the in-app widget preview: subscription spend is the user's
+    // configured monthly price for each visible subscription card. Do not gate
+    // this on OAuth status; otherwise the home-screen widget can show a
+    // different spend total from the preview whenever provider status is stale,
+    // cache-only, throttled, or temporarily disconnected.
+    if (card.subscriptionProviderId) spend += parseUsd(config.subscriptionPricesUsd[card.id]);
     return sum + spend;
   }, 0);
   const totalTokens = visibleCards.reduce((sum, card) => {
