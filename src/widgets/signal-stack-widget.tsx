@@ -51,6 +51,12 @@ type SignalStackWidgetConfiguration = {
   focus: "overview" | ModelCardId;
 };
 
+// Static arrays so the widget transform can resolve the layout at build time.
+const dots22 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+const dash14 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+const dots12 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const dash10 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
 export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStackWidgetConfiguration>(
   "SignalStackWidget",
   (props, environment) => {
@@ -62,6 +68,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const muted = "#8E939A";
     const track = "#2A2B2E";
     const segments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const style = props.rateLimitStyle;
 
     const family = environment.widgetFamily;
     const isSmall = family === "systemSmall";
@@ -129,7 +136,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           spacing={4}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ all: 8 }),
+            padding({ top: 12, bottom: 8, horizontal: 8 }),
             containerBackground(background, "widget"),
           ]}
         >
@@ -159,11 +166,46 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             </ZStack>
           </HStack>
 
-          {/* 5 compact limit rows or fallback metric rows */}
+          {/* 7 compact limit rows or fallback metric rows */}
           <VStack alignment="leading" spacing={3}>
             {hasLimits
-              ? flatLimitRows.slice(0, 5).map((row) => {
-                  const smallFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * 76));
+              ? flatLimitRows.slice(0, 7).map((row) => {
+                  const ratio = Math.max(0, Math.min(1, row.ratio));
+                  const barFill = Math.max(2, Math.round(ratio * 76));
+                  const activeDots = Math.round(ratio * 12);
+                  const activeDash = Math.round(ratio * 10);
+                  const bar =
+                    style === "dots" ? (
+                      <HStack spacing={3}>
+                        {dots12.map((segment) => (
+                          <Capsule
+                            key={`${row.id}-dot-${segment}`}
+                            modifiers={[
+                              frame({ width: 4, height: 4 }),
+                              foregroundStyle(segment < activeDots ? row.accent : track),
+                            ]}
+                          />
+                        ))}
+                      </HStack>
+                    ) : style === "dash" ? (
+                      <HStack spacing={3}>
+                        {dash10.map((segment) => (
+                          <RoundedRectangle
+                            key={`${row.id}-dash-${segment}`}
+                            cornerRadius={1}
+                            modifiers={[
+                              frame({ width: 5, height: 4 }),
+                              foregroundStyle(segment < activeDash ? row.accent : track),
+                            ]}
+                          />
+                        ))}
+                      </HStack>
+                    ) : style === "none" ? null : (
+                      <ZStack alignment="leading" modifiers={[frame({ width: 76, height: 6, alignment: "leading" })]}>
+                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 76, height: 6 })]} />
+                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(row.accent), frame({ width: barFill, height: 6 })]} />
+                      </ZStack>
+                    );
                   return (
                     <HStack key={row.id} spacing={5} alignment="center">
                       <Text modifiers={[foregroundStyle(row.accent), font({ size: 8 })]}>•</Text>
@@ -178,14 +220,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                       >
                         {row.label}
                       </Text>
-                      <ZStack alignment="leading" modifiers={[frame({ width: 76, height: 6, alignment: "leading" })]}>
-                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 76, height: 6 })]} />
-                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(row.accent), frame({ width: smallFill, height: 6 })]} />
-                      </ZStack>
+                      {bar}
                     </HStack>
                   );
                 })
-              : cards.slice(0, 5).map((card) => (
+              : cards.slice(0, 7).map((card) => (
                   <HStack key={card.id} spacing={6} alignment="center">
                     <Text modifiers={[foregroundStyle(card.accent), font({ size: 10 })]}>•</Text>
                     <Text
@@ -297,7 +336,42 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         {isLarge && hasLimits ? (
           <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
             {flatLimitRows.slice(0, 8).map((row) => {
-              const largeFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * 220));
+              const ratio = Math.max(0, Math.min(1, row.ratio));
+              const barFill = Math.max(2, Math.round(ratio * 220));
+              const activeDots = Math.round(ratio * 22);
+              const activeDash = Math.round(ratio * 14);
+              const bar =
+                style === "dots" ? (
+                  <HStack spacing={4}>
+                    {dots22.map((segment) => (
+                      <Capsule
+                        key={`${row.id}-dot-${segment}`}
+                        modifiers={[
+                          frame({ width: 6, height: 6 }),
+                          foregroundStyle(segment < activeDots ? row.accent : track),
+                        ]}
+                      />
+                    ))}
+                  </HStack>
+                ) : style === "dash" ? (
+                  <HStack spacing={3}>
+                    {dash14.map((segment) => (
+                      <RoundedRectangle
+                        key={`${row.id}-dash-${segment}`}
+                        cornerRadius={1}
+                        modifiers={[
+                          frame({ width: 13, height: 6 }),
+                          foregroundStyle(segment < activeDash ? row.accent : track),
+                        ]}
+                      />
+                    ))}
+                  </HStack>
+                ) : style === "none" ? null : (
+                  <ZStack alignment="leading" modifiers={[frame({ width: 220, height: 8, alignment: "leading" })]}>
+                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(track), frame({ width: 220, height: 8 })]} />
+                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(row.accent), frame({ width: barFill, height: 8 })]} />
+                  </ZStack>
+                );
               return (
                 <HStack key={row.id} spacing={7} alignment="center">
                   <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
@@ -312,10 +386,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   >
                     {row.label}
                   </Text>
-                  <ZStack alignment="leading" modifiers={[frame({ width: 220, height: 8, alignment: "leading" })]}>
-                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(track), frame({ width: 220, height: 8 })]} />
-                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(row.accent), frame({ width: largeFill, height: 8 })]} />
-                  </ZStack>
+                  {bar}
                 </HStack>
               );
             })}
