@@ -55,15 +55,13 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
   "SignalStackWidget",
   (props, environment) => {
     'widget';
-    // Palette mirrors WIDGET_COLORS in app/widget-settings.tsx so the native
-    // widget matches the in-app preview exactly.
+    // Palette mirrors WIDGET_COLORS in app/widget-settings.tsx.
     const background = "#000000";
     const panel = "#1C1D20";
     const text = "#F1F1F1";
     const muted = "#8E939A";
     const track = "#2A2B2E";
     const segments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    const largeSegments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
     const family = environment.widgetFamily;
     const isSmall = family === "systemSmall";
@@ -97,10 +95,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
     const modelsLabel = cards.length === 1 ? "1 MODEL SHOWN" : `${cards.length} MODELS SHOWN`;
     const modelsShown = cards.length === 1 ? "1 model shown" : `${cards.length} models shown`;
-    const rowLimit = isLarge ? 8 : isMedium ? 8 : 3;
-    const labelWidth = isSmall ? 54 : isMedium ? 78 : 92;
-    const leftLimitRows = flatLimitRows.slice(0, Math.ceil(Math.min(rowLimit, flatLimitRows.length) / 2));
-    const rightLimitRows = flatLimitRows.slice(Math.ceil(Math.min(rowLimit, flatLimitRows.length) / 2), rowLimit);
+    const mediumRows = flatLimitRows.slice(0, 8);
+    const mediumHalf = Math.ceil(mediumRows.length / 2);
+    const leftLimitRows = mediumRows.slice(0, mediumHalf);
+    const rightLimitRows = mediumRows.slice(mediumHalf);
 
     if (!primary) {
       return (
@@ -108,7 +106,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           alignment="leading"
           spacing={6}
           modifiers={[
-            frame({ maxWidth: 10000, alignment: "topLeading" }),
+            frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
             padding({ all: 14 }),
             containerBackground(background, "widget"),
           ]}
@@ -128,75 +126,80 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       return (
         <VStack
           alignment="leading"
-          spacing={6}
+          spacing={4}
           modifiers={[
-            frame({ maxWidth: 10000, alignment: "topLeading" }),
-            padding({ all: 10 }),
+            frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
+            padding({ all: 8 }),
             containerBackground(background, "widget"),
           ]}
         >
-          <HStack spacing={7}>
-            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 44, alignment: "leading" })]}>
-              <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
-              <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 8, vertical: 6 })]}>
+          {/* Compact tiles: SPEND + MODELS */}
+          <HStack spacing={6}>
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
+              <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
+              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 5 })]}>
                 <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 9, design: "monospaced" }), lineLimit(1)]}>
                   {primaryTileLabel}
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 17, weight: "heavy" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, weight: "heavy" }), lineLimit(1)]}>
                   {primaryTileValue}
                 </Text>
               </VStack>
             </ZStack>
-            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 44, alignment: "leading" })]}>
-              <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
-              <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 8, vertical: 6 })]}>
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
+              <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
+              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 5 })]}>
                 <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 9, design: "monospaced" }), lineLimit(1)]}>
                   MODELS
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 17, weight: "heavy" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, weight: "heavy" }), lineLimit(1)]}>
                   {`${cards.length}`}
                 </Text>
               </VStack>
             </ZStack>
           </HStack>
 
-          <VStack alignment="leading" spacing={5}>
+          {/* 5 compact limit rows or fallback metric rows */}
+          <VStack alignment="leading" spacing={3}>
             {hasLimits
-              ? flatLimitRows.slice(0, 3).map((row, i) => (
-                  <HStack key={`${row.id}-small-${i}`} spacing={6} alignment="center">
-                    <Text modifiers={[foregroundStyle(row.accent), font({ size: 9 })]}>•</Text>
+              ? flatLimitRows.slice(0, 5).map((row) => {
+                  const smallFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * 76));
+                  return (
+                    <HStack key={row.id} spacing={5} alignment="center">
+                      <Text modifiers={[foregroundStyle(row.accent), font({ size: 8 })]}>•</Text>
+                      <Text
+                        modifiers={[
+                          foregroundStyle(text),
+                          font({ size: 10, weight: "bold" }),
+                          frame({ width: 52, alignment: "leading" }),
+                          lineLimit(1),
+                          truncationMode("tail"),
+                        ]}
+                      >
+                        {row.label}
+                      </Text>
+                      <ZStack alignment="leading" modifiers={[frame({ width: 76, height: 6, alignment: "leading" })]}>
+                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 76, height: 6 })]} />
+                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(row.accent), frame({ width: smallFill, height: 6 })]} />
+                      </ZStack>
+                    </HStack>
+                  );
+                })
+              : cards.slice(0, 5).map((card) => (
+                  <HStack key={card.id} spacing={6} alignment="center">
+                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 10 })]}>•</Text>
                     <Text
                       modifiers={[
                         foregroundStyle(text),
                         font({ size: 11, weight: "bold" }),
-                        frame({ width: 56, alignment: "leading" }),
                         lineLimit(1),
                         truncationMode("tail"),
                       ]}
                     >
-                      {row.label}
-                    </Text>
-                    <HStack spacing={3}>
-                      {segments.map((segment) => (
-                        <Capsule
-                          key={`${row.id}-small-segment-${segment}`}
-                          modifiers={[
-                            frame({ width: 3, height: 9 }),
-                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
-                          ]}
-                        />
-                      ))}
-                    </HStack>
-                  </HStack>
-                ))
-              : cards.slice(0, 3).map((card) => (
-                  <HStack key={`${card.id}-small-card`} spacing={6} alignment="center">
-                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 9 })]}>•</Text>
-                    <Text modifiers={[foregroundStyle(text), font({ size: 11, weight: "bold" }), lineLimit(1), truncationMode("tail")]}>
                       {card.label}
                     </Text>
                     <Spacer />
-                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, weight: "bold" }), lineLimit(1)]}>
+                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, weight: "bold" })]}>
                       {card.metric}
                     </Text>
                   </HStack>
@@ -211,7 +214,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         alignment="leading"
         spacing={8}
         modifiers={[
-          frame({ maxWidth: 10000, alignment: "topLeading" }),
+          frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
           padding({ all: 14 }),
           containerBackground(background, "widget"),
         ]}
@@ -226,10 +229,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : (
           <HStack spacing={8} alignment="top">
             <VStack alignment="leading" spacing={1}>
-              <Text modifiers={[foregroundStyle(text), font({ size: isSmall ? 13 : 15, weight: "bold" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), font({ size: 15, weight: "bold" }), lineLimit(1)]}>
                 SignalStack
               </Text>
-              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
                 {modelsShown}
               </Text>
             </VStack>
@@ -239,10 +242,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         {/* Summary bar (large only) */}
         {isLarge ? (
           <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 60, alignment: "leading" })]}>
-            <RoundedRectangle
-              cornerRadius={14}
-              modifiers={[foregroundStyle(panel)]}
-            />
+            <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
             <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 10, vertical: 7 })]}>
               <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 10, weight: "bold", design: "monospaced" }), lineLimit(1)]}>
                 {`${summaryLabel} · ${modelsLabel}`}
@@ -256,92 +256,75 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
         {/* Tiles row */}
         <HStack spacing={8}>
-          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: isSmall ? 52 : 64, alignment: "leading" })]}>
-            <RoundedRectangle
-              cornerRadius={16}
-              modifiers={[foregroundStyle(panel)]}
-            />
-            <VStack alignment="leading" spacing={2} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
+          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
+            <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
+            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
+              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
                 {primaryTileLabel}
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, weight: "heavy" }), lineLimit(1)]}>
                 {primaryTileValue}
               </Text>
             </VStack>
           </ZStack>
-
           {props.hasLiveApiData ? (
-            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: isSmall ? 52 : 64, alignment: "leading" })]}>
-              <RoundedRectangle
-                cornerRadius={16}
-                modifiers={[foregroundStyle(panel)]}
-              />
-              <VStack alignment="leading" spacing={2} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-                <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
+              <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
+              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
+                <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
                   TOKENS
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, weight: "heavy" }), lineLimit(1)]}>
                   {props.totalTokens}
                 </Text>
               </VStack>
             </ZStack>
           ) : null}
-
-          {isSmall && props.hasLiveApiData ? null : (
-            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: isSmall ? 52 : 64, alignment: "leading" })]}>
-              <RoundedRectangle
-                cornerRadius={16}
-                modifiers={[foregroundStyle(panel)]}
-              />
-              <VStack alignment="leading" spacing={2} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-                <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: isSmall ? 10 : 12, design: "monospaced" }), lineLimit(1)]}>
-                  MODELS
-                </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: isSmall ? 18 : 22, weight: "heavy" }), lineLimit(1)]}>
-                  {`${cards.length}`}
-                </Text>
-              </VStack>
-            </ZStack>
-          )}
+          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
+            <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
+            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
+              <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
+                MODELS
+              </Text>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, weight: "heavy" }), lineLimit(1)]}>
+                {`${cards.length}`}
+              </Text>
+            </VStack>
+          </ZStack>
         </HStack>
 
-        {/* Limit bars, or per-model metric rows */}
+        {/* Limit rows */}
         {isLarge && hasLimits ? (
           <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-            {flatLimitRows.slice(0, 8).map((row, i) => (
-                <HStack key={`${row.id}-large-${i}`} spacing={7} alignment="center">
+            {flatLimitRows.slice(0, 8).map((row) => {
+              const largeFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * 220));
+              return (
+                <HStack key={row.id} spacing={7} alignment="center">
                   <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
                   <Text
                     modifiers={[
                       foregroundStyle(text),
                       font({ size: 12, weight: "bold" }),
-                      frame({ width: 116, alignment: "leading" }),
+                      frame({ width: 92, alignment: "leading" }),
                       lineLimit(1),
                       truncationMode("tail"),
                     ]}
                   >
                     {row.label}
                   </Text>
-                  <HStack spacing={3}>
-                    {largeSegments.map((segment) => (
-                      <Capsule
-                        key={`${row.id}-large-segment-${segment}`}
-                        modifiers={[
-                          frame({ width: 5, height: 10 }),
-                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 18) ? row.accent : track),
-                        ]}
-                      />
-                    ))}
-                  </HStack>
+                  <ZStack alignment="leading" modifiers={[frame({ width: 220, height: 8, alignment: "leading" })]}>
+                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(track), frame({ width: 220, height: 8 })]} />
+                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(row.accent), frame({ width: largeFill, height: 8 })]} />
+                  </ZStack>
                 </HStack>
-              ))}
+              );
+            })}
           </VStack>
         ) : isMedium && hasLimits ? (
           <HStack spacing={12} alignment="top">
             <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-              {leftLimitRows.map((row, i) => (
-                <HStack key={`${row.id}-left-${i}`} spacing={6} alignment="center">
+              {leftLimitRows.map((row) => (
+                <HStack key={row.id} spacing={6} alignment="center">
                   <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
                   <Text
                     modifiers={[
@@ -357,7 +340,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   <HStack spacing={3}>
                     {segments.map((segment) => (
                       <Capsule
-                        key={`${row.id}-left-segment-${segment}`}
+                        key={`${row.id}-seg-${segment}`}
                         modifiers={[
                           frame({ width: 3, height: 10 }),
                           foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
@@ -369,8 +352,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               ))}
             </VStack>
             <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-              {rightLimitRows.map((row, i) => (
-                <HStack key={`${row.id}-right-${i}`} spacing={6} alignment="center">
+              {rightLimitRows.map((row) => (
+                <HStack key={row.id} spacing={6} alignment="center">
                   <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
                   <Text
                     modifiers={[
@@ -386,7 +369,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   <HStack spacing={3}>
                     {segments.map((segment) => (
                       <Capsule
-                        key={`${row.id}-right-segment-${segment}`}
+                        key={`${row.id}-seg-${segment}`}
                         modifiers={[
                           frame({ width: 3, height: 10 }),
                           foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
@@ -399,54 +382,52 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             </VStack>
           </HStack>
         ) : (
-        <VStack alignment="leading" spacing={isLarge ? 7 : 5}>
-          {hasLimits
-            ? flatLimitRows.slice(0, rowLimit).map((row, i) => (
-                <HStack key={`${row.id}-${i}`} spacing={7} alignment="center">
-                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
-                  <Text
-                    modifiers={[
-                      foregroundStyle(text),
-                      font({ size: isSmall ? 11 : 12, weight: "bold" }),
-                      frame({ width: labelWidth, alignment: "leading" }),
-                      lineLimit(1),
-                      truncationMode("tail"),
-                    ]}
-                  >
-                    {row.label}
-                  </Text>
-                  <HStack spacing={3}>
-                    {segments.map((segment) => (
-                      <Capsule
-                        key={`${row.id}-segment-${segment}`}
+          <VStack alignment="leading" spacing={5}>
+            {hasLimits
+              ? flatLimitRows.slice(0, isLarge ? 8 : 3).map((row) => {
+                  const fallbackWidth = isLarge ? 220 : 120;
+                  const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
+                  return (
+                    <HStack key={row.id} spacing={7} alignment="center">
+                      <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                      <Text
                         modifiers={[
-                          frame({ width: isSmall ? 3 : 4, height: isSmall ? 8 : 10 }),
-                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                          foregroundStyle(text),
+                          font({ size: 12, weight: "bold" }),
+                          frame({ width: isLarge ? 92 : 78, alignment: "leading" }),
+                          lineLimit(1),
+                          truncationMode("tail"),
                         ]}
-                      />
-                    ))}
+                      >
+                        {row.label}
+                      </Text>
+                      <ZStack alignment="leading" modifiers={[frame({ width: fallbackWidth, height: 8, alignment: "leading" })]}>
+                        <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(track), frame({ width: fallbackWidth, height: 8 })]} />
+                        <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(row.accent), frame({ width: fallbackFill, height: 8 })]} />
+                      </ZStack>
+                    </HStack>
+                  );
+                })
+              : cards.slice(0, isLarge ? 7 : 3).map((card) => (
+                  <HStack key={card.id} spacing={7} alignment="center">
+                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 10 })]}>•</Text>
+                    <Text
+                      modifiers={[
+                        foregroundStyle(text),
+                        font({ size: 12, weight: "bold" }),
+                        lineLimit(1),
+                        truncationMode("tail"),
+                      ]}
+                    >
+                      {card.label}
+                    </Text>
+                    <Spacer />
+                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, weight: "bold" })]}>
+                      {card.metric}
+                    </Text>
                   </HStack>
-                </HStack>
-              ))
-            : cards.slice(0, rowLimit).map((card) => (
-                <HStack key={card.id} spacing={7} alignment="center">
-                  <Text modifiers={[foregroundStyle(card.accent), font({ size: 10 })]}>•</Text>
-                  <Text modifiers={[foregroundStyle(text), font({ size: 12, weight: "bold" }), lineLimit(1), truncationMode("tail")]}>
-                    {card.label}
-                  </Text>
-                  <Spacer />
-                  <Text
-                    modifiers={[
-                      foregroundStyle(muted),
-                      monospacedDigit(),
-                      font({ size: 12, weight: "bold" }),
-                    ]}
-                  >
-                    {card.metric}
-                  </Text>
-                </HStack>
-              ))}
-        </VStack>
+                ))}
+          </VStack>
         )}
 
         <Spacer />
