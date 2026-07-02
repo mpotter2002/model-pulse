@@ -52,7 +52,9 @@ type SignalStackWidgetConfiguration = {
 };
 
 // Static arrays so the widget transform can resolve the layout at build time.
-const segments12 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+// Keep segment count low for WidgetKit memory/view limits; 8 segments is enough
+// to show progress visually without the node count that crashes non-bar styles.
+const segments8 = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStackWidgetConfiguration>(
   "SignalStackWidget",
@@ -64,14 +66,25 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const text = "#F1F1F1";
     const muted = "#8E939A";
     const track = "#2A2B2E";
-    const style = props.rateLimitStyle;
+    // Defensive defaults so the widget still renders when WidgetKit runs the
+    // placeholder path with no props (`entry.props == nil`). Without these,
+    // reading `props.cards[0]` or `props.cards.flatMap(...)` throws during
+    // every widget reload, which is what makes the widget flash black.
+    const style: RateLimitStyle = (props.rateLimitStyle ?? "bar") as RateLimitStyle;
+    const cardsInput: WidgetCard[] = Array.isArray(props.cards) ? props.cards : [];
+    const totalSpend = props.totalSpend ?? "$0";
+    const totalTokens = props.totalTokens ?? "";
+    const totalBalance = props.totalBalance ?? "$0.00";
+    const hasLiveApiData = props.hasLiveApiData === true;
+    const metricLabel = props.metricLabel ?? "Spend";
+    const updatedAt = props.updatedAt ?? "now";
 
     const family = environment.widgetFamily;
     const isSmall = family === "systemSmall";
     const isMedium = family === "systemMedium";
     const isLarge = family === "systemLarge";
 
-    const cards = props.cards;
+    const cards = cardsInput;
     const primary = cards[0] ?? null;
 
     // Flatten every card's limit windows into a single list (matching the
@@ -87,12 +100,12 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       (max, row) => Math.max(max, 1 - Math.max(0, Math.min(1, row.ratio))),
       0,
     );
-    const showBalance = props.metricLabel === "Balance" && props.hasLiveApiData;
+    const showBalance = metricLabel === "Balance" && hasLiveApiData;
     const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
-    const primaryTileValue = showBalance ? props.totalBalance : props.totalSpend;
-    const summaryLabel = props.metricLabel === "Limits" && hasLimits ? "LIMITS" : primaryTileLabel;
+    const primaryTileValue = showBalance ? totalBalance : totalSpend;
+    const summaryLabel = metricLabel === "Limits" && hasLimits ? "LIMITS" : primaryTileLabel;
     const summaryValue =
-      props.metricLabel === "Limits" && hasLimits
+      metricLabel === "Limits" && hasLimits
         ? `${Math.round(worstUsed * 100)}%`
         : primaryTileValue;
 
@@ -168,16 +181,17 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               ? flatLimitRows.slice(0, 7).map((row) => {
                   const ratio = Math.max(0, Math.min(1, row.ratio));
                   const barFill = Math.max(2, Math.round(ratio * 76));
-                  const activeSegments = Math.round(ratio * 12);
+                  const activeSegments = Math.round(ratio * segments8.length);
+                  const safeActiveSegments = Math.max(0, Math.min(segments8.length, activeSegments));
                   const bar =
                     style === "dots" || style === "dash" ? (
                       <HStack spacing={3}>
-                        {segments12.map((segment) => (
+                        {segments8.map((segment) => (
                           <Capsule
                             key={`${row.id}-segment-${segment}`}
                             modifiers={[
-                              frame({ width: 3, height: 8 }),
-                              foregroundStyle(segment < activeSegments ? row.accent : track),
+                              frame({ width: 3, height: 7 }),
+                              foregroundStyle(segment < safeActiveSegments ? row.accent : track),
                             ]}
                           />
                         ))}
@@ -288,7 +302,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               </Text>
             </VStack>
           </ZStack>
-          {props.hasLiveApiData ? (
+          {hasLiveApiData ? (
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
               <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
@@ -296,7 +310,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   TOKENS
                 </Text>
                 <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, weight: "heavy" }), lineLimit(1)]}>
-                  {props.totalTokens}
+                  {totalTokens}
                 </Text>
               </VStack>
             </ZStack>
@@ -320,16 +334,17 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             {flatLimitRows.slice(0, 8).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
-              const activeSegments = Math.round(ratio * 12);
+              const activeSegments = Math.round(ratio * segments8.length);
+                  const safeActiveSegments = Math.max(0, Math.min(segments8.length, activeSegments));
               const bar =
                 style === "dots" || style === "dash" ? (
                   <HStack spacing={5}>
-                    {segments12.map((segment) => (
+                    {segments8.map((segment) => (
                       <Capsule
                         key={`${row.id}-segment-${segment}`}
                         modifiers={[
                           frame({ width: 13, height: 8 }),
-                          foregroundStyle(segment < activeSegments ? row.accent : track),
+                          foregroundStyle(segment < safeActiveSegments ? row.accent : track),
                         ]}
                       />
                     ))}
@@ -378,12 +393,12 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   </Text>
                   {style === "dots" || style === "dash" ? (
                     <HStack spacing={3}>
-                      {segments12.map((segment) => (
+                      {segments8.map((segment) => (
                         <Capsule
                           key={`${row.id}-segment-${segment}`}
                           modifiers={[
                             frame({ width: 3, height: 10 }),
-                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                            foregroundStyle(segment < Math.max(0, Math.min(segments8.length, Math.round(Math.max(0, Math.min(1, row.ratio)) * segments8.length))) ? row.accent : track),
                           ]}
                         />
                       ))}
@@ -420,12 +435,12 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   </Text>
                   {style === "dots" || style === "dash" ? (
                     <HStack spacing={3}>
-                      {segments12.map((segment) => (
+                      {segments8.map((segment) => (
                         <Capsule
                           key={`${row.id}-segment-${segment}`}
                           modifiers={[
                             frame({ width: 3, height: 10 }),
-                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                            foregroundStyle(segment < Math.max(0, Math.min(segments8.length, Math.round(Math.max(0, Math.min(1, row.ratio)) * segments8.length))) ? row.accent : track),
                           ]}
                         />
                       ))}
@@ -499,7 +514,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
         {/* Footer */}
         <Text modifiers={[foregroundStyle(muted), font({ size: 11, design: "monospaced" }), lineLimit(1)]}>
-          Updated {props.updatedAt}
+          Updated {updatedAt}
         </Text>
       </VStack>
     );
