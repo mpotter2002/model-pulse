@@ -1,6 +1,6 @@
 "use widget";
 
-import { Capsule, HStack, RoundedRectangle, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
+import { HStack, RoundedRectangle, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
 import type { RateLimitStyle } from "@/types/domain";
 import {
   containerBackground,
@@ -149,6 +149,17 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             containerBackground(background, "widget"),
           ]}
         >
+          {/* Debug style indicator */}
+          <HStack alignment="center" spacing={4}>
+            <Text modifiers={[foregroundStyle(text), font({ size: 12, weight: "bold" }), lineLimit(1)]}>
+              SignalStack
+            </Text>
+            <Spacer />
+            <Text modifiers={[foregroundStyle("#FF0000"), font({ size: 9 }), lineLimit(1)]}>
+              {style}
+            </Text>
+          </HStack>
+
           {/* Compact tiles: SPEND + MODELS */}
           <HStack spacing={6}>
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
@@ -187,7 +198,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                     style === "dots" || style === "dash" ? (
                       <HStack spacing={3}>
                         {segments8.map((segment) => (
-                          <Capsule
+                          <RoundedRectangle
+                            cornerRadius={3}
                             key={`${row.id}-segment-${segment}`}
                             modifiers={[
                               frame({ width: 3, height: 7 }),
@@ -260,6 +272,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <Text modifiers={[foregroundStyle(muted), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
               {modelsShown}
             </Text>
+            <Spacer />
+            <Text modifiers={[foregroundStyle("#FF0000"), font({ size: 9 }), lineLimit(1)]}>
+              {style}
+            </Text>
           </HStack>
         ) : (
           <HStack spacing={8} alignment="top">
@@ -271,6 +287,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 {modelsShown}
               </Text>
             </VStack>
+            <Spacer />
+            <Text modifiers={[foregroundStyle("#FF0000"), font({ size: 9 }), lineLimit(1)]}>
+              {style}
+            </Text>
           </HStack>
         )}
 
@@ -340,7 +360,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 style === "dots" || style === "dash" ? (
                   <HStack spacing={5}>
                     {segments8.map((segment) => (
-                      <Capsule
+                      <RoundedRectangle
+                        cornerRadius={4}
                         key={`${row.id}-segment-${segment}`}
                         modifiers={[
                           frame({ width: 13, height: 8 }),
@@ -394,7 +415,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   {style === "dots" || style === "dash" ? (
                     <HStack spacing={3}>
                       {segments8.map((segment) => (
-                        <Capsule
+                        <RoundedRectangle
+                          cornerRadius={5}
                           key={`${row.id}-segment-${segment}`}
                           modifiers={[
                             frame({ width: 3, height: 10 }),
@@ -436,7 +458,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   {style === "dots" || style === "dash" ? (
                     <HStack spacing={3}>
                       {segments8.map((segment) => (
-                        <Capsule
+                        <RoundedRectangle
+                          cornerRadius={5}
                           key={`${row.id}-segment-${segment}`}
                           modifiers={[
                             frame({ width: 3, height: 10 }),
