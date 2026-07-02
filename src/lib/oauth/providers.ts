@@ -233,15 +233,28 @@ async function fetchClaudeUsage(
     });
 
   const json = await callOnce(tokens.accessToken).catch(async (error) => {
-    // 401 -> refresh the OAuth token once and retry, exactly like the CLI.
-    if (error instanceof HttpError && error.status === 401 && ctx?.refreshTokens) {
+    // Anthropic's `/usage` endpoint sits behind an edge throttle that returns a
+    // 429 *before* auth is validated. That means an expired/invalid access
+    // token (or one whose scope no longer matches) surfaces as a 429, NOT a
+    // 401 — so we can't rely on 401 alone to know when to refresh. On BOTH a
+    // 401 and a 429 we try a one-time token refresh, and only retry the request
+    // when the refresh actually produced a *different* access token. A repeat
+    // 429 after a successful refresh is treated as a genuine rate limit.
+    const shouldTryRefresh =
+      error instanceof HttpError &&
+      (error.status === 401 || error.status === 429) &&
+      Boolean(ctx?.refreshTokens);
+    if (shouldTryRefresh) {
       try {
-        const refreshed = await ctx.refreshTokens();
-        if (refreshed?.accessToken) {
+        const refreshed = await ctx!.refreshTokens!();
+        if (refreshed?.accessToken && refreshed.accessToken !== tokens.accessToken) {
+          console.log(
+            `[SignalStack] Claude ${(error as HttpError).status} -> token refreshed, retrying usage fetch`,
+          );
           return await callOnce(refreshed.accessToken);
         }
       } catch (refreshError) {
-        console.warn(`[SignalStack] Claude token refresh on 401 failed`, refreshError);
+        console.warn(`[SignalStack] Claude token refresh on ${(error as HttpError).status} failed`, refreshError);
       }
     }
     if (error instanceof HttpError && error.status !== 429) {
