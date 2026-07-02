@@ -53,7 +53,6 @@ type SignalStackWidgetConfiguration = {
 
 // Static arrays so the widget transform can resolve the layout at build time.
 const segments12 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-const segments18 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
 export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStackWidgetConfiguration>(
   "SignalStackWidget",
@@ -333,27 +332,27 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             {flatLimitRows.slice(0, 8).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
-              const activeSegments = Math.round(ratio * 18);
+              const activeSegments = Math.round(ratio * 12);
               const bar =
                 style === "dots" ? (
-                  <HStack spacing={6}>
-                    {segments18.map((segment) => (
+                  <HStack spacing={10}>
+                    {segments12.map((segment) => (
                       <Capsule
                         key={`${row.id}-dot-${segment}`}
                         modifiers={[
-                          frame({ width: 6, height: 6 }),
+                          frame({ width: 8, height: 8 }),
                           foregroundStyle(segment < activeSegments ? row.accent : track),
                         ]}
                       />
                     ))}
                   </HStack>
                 ) : style === "dash" ? (
-                  <HStack spacing={3}>
-                    {segments18.map((segment) => (
+                  <HStack spacing={5}>
+                    {segments12.map((segment) => (
                       <Capsule
                         key={`${row.id}-dash-${segment}`}
                         modifiers={[
-                          frame({ width: 9, height: 8 }),
+                          frame({ width: 13, height: 8 }),
                           foregroundStyle(segment < activeSegments ? row.accent : track),
                         ]}
                       />
