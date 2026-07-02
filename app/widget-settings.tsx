@@ -53,6 +53,12 @@ const WIDGET_COLORS = {
   divider: "rgba(255,255,255,0.08)",
 } as const;
 
+const BAR_WIDTHS: Record<WidgetSize, number> = {
+  small: 76,
+  medium: 72,
+  large: 220,
+};
+
 export default function WidgetSettingsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
@@ -495,7 +501,7 @@ function WidgetPreview({
               return (
                 <View key={col} style={{ flex: 1, gap: 5 }}>
                   {colRows.map((row, i) => (
-                    <PreviewLimitRowView key={`${row.label}-${i}`} row={row} labelWidth={64} rateLimitStyle={rateLimitStyle} />
+                    <PreviewLimitRowView key={`${row.label}-${i}`} row={row} labelWidth={64} rateLimitStyle={rateLimitStyle} barWidth={BAR_WIDTHS.medium} />
                   ))}
                 </View>
               );
@@ -515,6 +521,7 @@ function WidgetPreview({
                   row={row}
                   labelWidth={size === "large" ? 92 : 52}
                   rateLimitStyle={rateLimitStyle}
+                  barWidth={size === "large" ? BAR_WIDTHS.large : BAR_WIDTHS.small}
                 />
               ))
             : cards.slice(0, size === "small" ? 3 : size === "medium" ? 3 : 7).map((card) => (
@@ -578,10 +585,12 @@ function PreviewLimitRowView({
   row,
   labelWidth,
   rateLimitStyle,
+  barWidth,
 }: {
   row: { label: string; ratio: number; accent: string };
   labelWidth: number;
   rateLimitStyle: RateLimitStyle;
+  barWidth: number;
 }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -589,12 +598,13 @@ function PreviewLimitRowView({
       <Text size="xs" weight="bold" numberOfLines={1} style={{ width: labelWidth, color: WIDGET_COLORS.text }}>
         {row.label}
       </Text>
-      <View style={{ flex: 1 }}>
+      <View style={{ width: barWidth }}>
         <RateLimitLine
           value={row.ratio}
           color={row.accent}
           inactiveColor={WIDGET_COLORS.track}
           lineStyle={rateLimitStyle}
+          barWidth={barWidth}
         />
       </View>
     </View>

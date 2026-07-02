@@ -55,12 +55,14 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
   "SignalStackWidget",
   (props, environment) => {
     'widget';
-    // Palette mirrors WIDGET_COLORS in app/widget-settings.tsx.
-    const background = "#000000";
-    const panel = "#1C1D20";
-    const text = "#F1F1F1";
-    const muted = "#8E939A";
-    const track = "#2A2B2E";
+    // Palette follows the phone's light/dark mode. Defaults to dark when the
+    // environment doesn't report a color scheme (e.g. placeholder previews).
+    const isDark = environment.colorScheme === "dark" || environment.colorScheme == null;
+    const background = isDark ? "#000000" : "#FFFFFF";
+    const panel = isDark ? "#1C1D20" : "#F2F2F7";
+    const text = isDark ? "#F1F1F1" : "#101112";
+    const muted = isDark ? "#8E939A" : "#6B7077";
+    const track = isDark ? "#2A2B2E" : "#E5E5EA";
 
     // Defensive defaults so the widget still renders when WidgetKit runs the
     // placeholder path with no props. Cast through unknown to avoid transform
@@ -154,11 +156,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       );
     };
 
-    // MediumDotBar (9 dot segments, fills 72pt).
+    // MediumDotBar (8 dot segments, fills 71pt).
     const MediumDotBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
-      const active = Math.max(0, Math.min(9, Math.round(Math.max(0, Math.min(1, ratio)) * 9)));
+      const active = Math.max(0, Math.min(8, Math.round(Math.max(0, Math.min(1, ratio)) * 8)));
       return (
-        <HStack spacing={0}>
+        <HStack spacing={1}>
           <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 0 ? accent : track)]} />
           <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 1 ? accent : track)]} />
           <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 2 ? accent : track)]} />
@@ -167,68 +169,68 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 5 ? accent : track)]} />
           <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 6 ? accent : track)]} />
           <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 7 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 8 ? accent : track)]} />
         </HStack>
       );
     };
 
-    // MediumDashBar (4 dash segments, fills 72pt).
+    // MediumDashBar (5 dash segments, fills 72pt).
     const MediumDashBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
-      const active = Math.max(0, Math.min(4, Math.round(Math.max(0, Math.min(1, ratio)) * 4)));
+      const active = Math.max(0, Math.min(5, Math.round(Math.max(0, Math.min(1, ratio)) * 5)));
       return (
-        <HStack spacing={0}>
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 18, height: 4 }), foregroundStyle(active > 0 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 18, height: 4 }), foregroundStyle(active > 1 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 18, height: 4 }), foregroundStyle(active > 2 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 18, height: 4 }), foregroundStyle(active > 3 ? accent : track)]} />
+        <HStack spacing={3}>
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 4 ? accent : track)]} />
         </HStack>
       );
     };
 
-    // LargeDotBar (20 dot segments, fills 220pt).
+    // LargeDotBar (20 dot segments, fills 219pt).
     const LargeDotBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
       const active = Math.max(0, Math.min(20, Math.round(Math.max(0, Math.min(1, ratio)) * 20)));
       return (
-        <HStack spacing={0}>
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 0 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 1 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 2 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 3 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 4 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 5 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 6 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 7 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 8 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 9 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 10 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 11 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 12 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 13 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 14 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 15 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 16 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 17 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 18 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 11, height: 11 }), foregroundStyle(active > 19 ? accent : track)]} />
+        <HStack spacing={1}>
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 5 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 6 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 7 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 8 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 9 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 10 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 11 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 12 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 13 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 14 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 15 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 16 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 17 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 18 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 19 ? accent : track)]} />
         </HStack>
       );
     };
 
-    // LargeDashBar (10 dash segments, fills 220pt).
+    // LargeDashBar (10 dash segments, fills 219pt).
     const LargeDashBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
       const active = Math.max(0, Math.min(10, Math.round(Math.max(0, Math.min(1, ratio)) * 10)));
       return (
-        <HStack spacing={0}>
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 0 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 1 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 2 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 3 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 4 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 5 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 6 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 7 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 8 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 22, height: 6 }), foregroundStyle(active > 9 ? accent : track)]} />
+        <HStack spacing={1}>
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 5 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 6 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 7 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 8 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 9 ? accent : track)]} />
         </HStack>
       );
     };
@@ -266,10 +268,6 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             containerBackground(background, "widget"),
           ]}
         >
-          <Text modifiers={[foregroundStyle(text), font({ size: 12, weight: "bold" }), lineLimit(1)]}>
-            SignalStack
-          </Text>
-
           {/* Compact tiles: SPEND + MODELS */}
           <HStack spacing={6}>
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
