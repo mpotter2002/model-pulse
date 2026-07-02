@@ -51,11 +51,6 @@ type SignalStackWidgetConfiguration = {
   focus: "overview" | ModelCardId;
 };
 
-// Static arrays so the widget transform can resolve the layout at build time.
-// Keep segment count low for WidgetKit memory/view limits; 8 segments is enough
-// to show progress visually without the node count that crashes non-bar styles.
-const segments8 = [0, 1, 2, 3, 4, 5, 6, 7];
-
 export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStackWidgetConfiguration>(
   "SignalStackWidget",
   (props, environment) => {
@@ -66,18 +61,19 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const text = "#F1F1F1";
     const muted = "#8E939A";
     const track = "#2A2B2E";
+
     // Defensive defaults so the widget still renders when WidgetKit runs the
-    // placeholder path with no props (`entry.props == nil`). Without these,
-    // reading `props.cards[0]` or `props.cards.flatMap(...)` throws during
-    // every widget reload, which is what makes the widget flash black.
-    const style: RateLimitStyle = (props.rateLimitStyle ?? "bar") as RateLimitStyle;
-    const cardsInput: WidgetCard[] = Array.isArray(props.cards) ? props.cards : [];
-    const totalSpend = props.totalSpend ?? "$0";
-    const totalTokens = props.totalTokens ?? "";
-    const totalBalance = props.totalBalance ?? "$0.00";
-    const hasLiveApiData = props.hasLiveApiData === true;
-    const metricLabel = props.metricLabel ?? "Spend";
-    const updatedAt = props.updatedAt ?? "now";
+    // placeholder path with no props. Cast through unknown to avoid transform
+    // issues with optional chaining / undefined props.
+    const rawProps = (props as unknown as Partial<SignalStackWidgetProps>) ?? {};
+    const style: RateLimitStyle = ((rawProps.rateLimitStyle as RateLimitStyle) ?? "bar") as RateLimitStyle;
+    const cardsInput: WidgetCard[] = Array.isArray(rawProps.cards) ? (rawProps.cards as WidgetCard[]) : [];
+    const totalSpend = rawProps.totalSpend ?? "$0";
+    const totalTokens = rawProps.totalTokens ?? "";
+    const totalBalance = rawProps.totalBalance ?? "$0.00";
+    const hasLiveApiData = rawProps.hasLiveApiData === true;
+    const metricLabel = rawProps.metricLabel ?? "Spend";
+    const updatedAt = rawProps.updatedAt ?? "now";
 
     const family = environment.widgetFamily;
     const isSmall = family === "systemSmall";
@@ -87,15 +83,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const cards = cardsInput;
     const primary = cards[0] ?? null;
 
-    // Flatten every card's limit windows into a single list (matching the
-    // preview's flatLimitRows), up to 3 windows per card.
     const flatLimitRows: WidgetLimitRow[] = cards.flatMap((card) =>
       (card.limitRows ?? []).slice(0, 3),
     );
     const hasLimits = flatLimitRows.length > 0;
 
-    // Summary value: limits mode shows the worst usage as a percent; otherwise
-    // the total spend / balance headline number.
     const worstUsed = flatLimitRows.reduce(
       (max, row) => Math.max(max, 1 - Math.max(0, Math.min(1, row.ratio))),
       0,
@@ -115,6 +107,67 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const mediumHalf = Math.ceil(mediumRows.length / 2);
     const leftLimitRows = mediumRows.slice(0, mediumHalf);
     const rightLimitRows = mediumRows.slice(mediumHalf);
+
+    // Precompute style flags so the JSX tree can be static/fixed. The widget
+    // transform is much safer with boolean variables than with `||` inside
+    // JSX conditionals.
+    const isBar = style === "bar";
+    const isSegmented = style === "dots" || style === "dash";
+    const isNone = style === "none";
+
+    // Helper for empty placeholder to avoid returning `null` from JSX branches,
+    // which the SwiftUI evaluator can treat as a crash.
+    const EmptyLine = () => (
+      <RoundedRectangle cornerRadius={0} modifiers={[frame({ width: 0, height: 0 }), foregroundStyle(track)]} />
+    );
+
+    // Small widget explicit segmented bar (6 segments). Explicit static tree
+    // avoids the dynamic `.map()` that crashes the layout evaluator.
+    const SmallSegmentBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
+      const active = Math.max(0, Math.min(6, Math.round(Math.max(0, Math.min(1, ratio)) * 6)));
+      return (
+        <HStack spacing={3}>
+          <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 3, height: 7 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 3, height: 7 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 3, height: 7 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 3, height: 7 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 3, height: 7 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 3, height: 7 }), foregroundStyle(active > 5 ? accent : track)]} />
+        </HStack>
+      );
+    };
+
+    // Medium widget explicit segmented bar (6 segments).
+    const MediumSegmentBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
+      const active = Math.max(0, Math.min(6, Math.round(Math.max(0, Math.min(1, ratio)) * 6)));
+      return (
+        <HStack spacing={3}>
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 3, height: 10 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 3, height: 10 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 3, height: 10 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 3, height: 10 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 3, height: 10 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 3, height: 10 }), foregroundStyle(active > 5 ? accent : track)]} />
+        </HStack>
+      );
+    };
+
+    // Large widget explicit segmented bar (8 segments).
+    const LargeSegmentBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
+      const active = Math.max(0, Math.min(8, Math.round(Math.max(0, Math.min(1, ratio)) * 8)));
+      return (
+        <HStack spacing={5}>
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 5 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 6 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 13, height: 8 }), foregroundStyle(active > 7 ? accent : track)]} />
+        </HStack>
+      );
+    };
 
     if (!primary) {
       return (
@@ -192,28 +245,16 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               ? flatLimitRows.slice(0, 7).map((row) => {
                   const ratio = Math.max(0, Math.min(1, row.ratio));
                   const barFill = Math.max(2, Math.round(ratio * 76));
-                  const activeSegments = Math.round(ratio * segments8.length);
-                  const safeActiveSegments = Math.max(0, Math.min(segments8.length, activeSegments));
-                  const bar =
-                    style === "dots" || style === "dash" ? (
-                      <HStack spacing={3}>
-                        {segments8.map((segment) => (
-                          <RoundedRectangle
-                            cornerRadius={3}
-                            key={`${row.id}-segment-${segment}`}
-                            modifiers={[
-                              frame({ width: 3, height: 7 }),
-                              foregroundStyle(segment < safeActiveSegments ? row.accent : track),
-                            ]}
-                          />
-                        ))}
-                      </HStack>
-                    ) : style === "none" ? null : (
-                      <ZStack alignment="leading" modifiers={[frame({ width: 76, height: 6, alignment: "leading" })]}>
-                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 76, height: 6 })]} />
-                        <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(row.accent), frame({ width: barFill, height: 6 })]} />
-                      </ZStack>
-                    );
+                  const bar = isSegmented ? (
+                    <SmallSegmentBar ratio={ratio} accent={row.accent} />
+                  ) : isNone ? (
+                    <EmptyLine />
+                  ) : (
+                    <ZStack alignment="leading" modifiers={[frame({ width: 76, height: 6, alignment: "leading" })]}>
+                      <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 76, height: 6 })]} />
+                      <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(row.accent), frame({ width: barFill, height: 6 })]} />
+                    </ZStack>
+                  );
                   return (
                     <HStack key={row.id} spacing={5} alignment="center">
                       <Text modifiers={[foregroundStyle(row.accent), font({ size: 8 })]}>•</Text>
@@ -246,7 +287,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                       {card.label}
                     </Text>
                     <Spacer />
-                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, weight: "bold" })]}>
+                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, weight: "heavy" })]}>
                       {card.metric}
                     </Text>
                   </HStack>
@@ -354,28 +395,16 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             {flatLimitRows.slice(0, 8).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
-              const activeSegments = Math.round(ratio * segments8.length);
-                  const safeActiveSegments = Math.max(0, Math.min(segments8.length, activeSegments));
-              const bar =
-                style === "dots" || style === "dash" ? (
-                  <HStack spacing={5}>
-                    {segments8.map((segment) => (
-                      <RoundedRectangle
-                        cornerRadius={4}
-                        key={`${row.id}-segment-${segment}`}
-                        modifiers={[
-                          frame({ width: 13, height: 8 }),
-                          foregroundStyle(segment < safeActiveSegments ? row.accent : track),
-                        ]}
-                      />
-                    ))}
-                  </HStack>
-                ) : style === "none" ? null : (
-                  <ZStack alignment="leading" modifiers={[frame({ width: 220, height: 8, alignment: "leading" })]}>
-                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(track), frame({ width: 220, height: 8 })]} />
-                    <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(row.accent), frame({ width: barFill, height: 8 })]} />
-                  </ZStack>
-                );
+              const bar = isSegmented ? (
+                <LargeSegmentBar ratio={ratio} accent={row.accent} />
+              ) : isNone ? (
+                <EmptyLine />
+              ) : (
+                <ZStack alignment="leading" modifiers={[frame({ width: 220, height: 8, alignment: "leading" })]}>
+                  <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(track), frame({ width: 220, height: 8 })]} />
+                  <RoundedRectangle cornerRadius={4} modifiers={[foregroundStyle(row.accent), frame({ width: barFill, height: 8 })]} />
+                </ZStack>
+              );
               return (
                 <HStack key={row.id} spacing={7} alignment="center">
                   <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
@@ -412,20 +441,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   >
                     {row.label}
                   </Text>
-                  {style === "dots" || style === "dash" ? (
-                    <HStack spacing={3}>
-                      {segments8.map((segment) => (
-                        <RoundedRectangle
-                          cornerRadius={5}
-                          key={`${row.id}-segment-${segment}`}
-                          modifiers={[
-                            frame({ width: 3, height: 10 }),
-                            foregroundStyle(segment < Math.max(0, Math.min(segments8.length, Math.round(Math.max(0, Math.min(1, row.ratio)) * segments8.length))) ? row.accent : track),
-                          ]}
-                        />
-                      ))}
-                    </HStack>
-                  ) : style === "none" ? null : (
+                  {isSegmented ? (
+                    <MediumSegmentBar ratio={Math.max(0, Math.min(1, row.ratio))} accent={row.accent} />
+                  ) : isNone ? (
+                    <EmptyLine />
+                  ) : (
                     <ZStack alignment="leading" modifiers={[frame({ width: 72, height: 6, alignment: "leading" })]}>
                       <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 72, height: 6 })]} />
                       <RoundedRectangle
@@ -455,20 +475,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   >
                     {row.label}
                   </Text>
-                  {style === "dots" || style === "dash" ? (
-                    <HStack spacing={3}>
-                      {segments8.map((segment) => (
-                        <RoundedRectangle
-                          cornerRadius={5}
-                          key={`${row.id}-segment-${segment}`}
-                          modifiers={[
-                            frame({ width: 3, height: 10 }),
-                            foregroundStyle(segment < Math.max(0, Math.min(segments8.length, Math.round(Math.max(0, Math.min(1, row.ratio)) * segments8.length))) ? row.accent : track),
-                          ]}
-                        />
-                      ))}
-                    </HStack>
-                  ) : style === "none" ? null : (
+                  {isSegmented ? (
+                    <MediumSegmentBar ratio={Math.max(0, Math.min(1, row.ratio))} accent={row.accent} />
+                  ) : isNone ? (
+                    <EmptyLine />
+                  ) : (
                     <ZStack alignment="leading" modifiers={[frame({ width: 72, height: 6, alignment: "leading" })]}>
                       <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 72, height: 6 })]} />
                       <RoundedRectangle
