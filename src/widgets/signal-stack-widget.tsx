@@ -170,23 +170,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   const barFill = Math.max(2, Math.round(ratio * 76));
                   const activeSegments = Math.round(ratio * 12);
                   const bar =
-                    style === "dots" ? (
+                    style === "dots" || style === "dash" ? (
                       <HStack spacing={3}>
                         {segments12.map((segment) => (
                           <Capsule
-                            key={`${row.id}-dot-${segment}`}
-                            modifiers={[
-                              frame({ width: 4, height: 4 }),
-                              foregroundStyle(segment < activeSegments ? row.accent : track),
-                            ]}
-                          />
-                        ))}
-                      </HStack>
-                    ) : style === "dash" ? (
-                      <HStack spacing={3}>
-                        {segments12.map((segment) => (
-                          <Capsule
-                            key={`${row.id}-dash-${segment}`}
+                            key={`${row.id}-segment-${segment}`}
                             modifiers={[
                               frame({ width: 3, height: 8 }),
                               foregroundStyle(segment < activeSegments ? row.accent : track),
@@ -334,23 +322,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               const barFill = Math.max(2, Math.round(ratio * 220));
               const activeSegments = Math.round(ratio * 12);
               const bar =
-                style === "dots" ? (
-                  <HStack spacing={10}>
-                    {segments12.map((segment) => (
-                      <Capsule
-                        key={`${row.id}-dot-${segment}`}
-                        modifiers={[
-                          frame({ width: 8, height: 8 }),
-                          foregroundStyle(segment < activeSegments ? row.accent : track),
-                        ]}
-                      />
-                    ))}
-                  </HStack>
-                ) : style === "dash" ? (
+                style === "dots" || style === "dash" ? (
                   <HStack spacing={5}>
                     {segments12.map((segment) => (
                       <Capsule
-                        key={`${row.id}-dash-${segment}`}
+                        key={`${row.id}-segment-${segment}`}
                         modifiers={[
                           frame({ width: 13, height: 8 }),
                           foregroundStyle(segment < activeSegments ? row.accent : track),
@@ -400,23 +376,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   >
                     {row.label}
                   </Text>
-                  {style === "dots" ? (
+                  {style === "dots" || style === "dash" ? (
                     <HStack spacing={3}>
                       {segments12.map((segment) => (
                         <Capsule
-                          key={`${row.id}-dot-${segment}`}
-                          modifiers={[
-                            frame({ width: 4, height: 4 }),
-                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
-                          ]}
-                        />
-                      ))}
-                    </HStack>
-                  ) : style === "dash" ? (
-                    <HStack spacing={3}>
-                      {segments12.map((segment) => (
-                        <Capsule
-                          key={`${row.id}-dash-${segment}`}
+                          key={`${row.id}-segment-${segment}`}
                           modifiers={[
                             frame({ width: 3, height: 10 }),
                             foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
@@ -454,23 +418,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   >
                     {row.label}
                   </Text>
-                  {style === "dots" ? (
+                  {style === "dots" || style === "dash" ? (
                     <HStack spacing={3}>
                       {segments12.map((segment) => (
                         <Capsule
-                          key={`${row.id}-dot-${segment}`}
-                          modifiers={[
-                            frame({ width: 4, height: 4 }),
-                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
-                          ]}
-                        />
-                      ))}
-                    </HStack>
-                  ) : style === "dash" ? (
-                    <HStack spacing={3}>
-                      {segments12.map((segment) => (
-                        <Capsule
-                          key={`${row.id}-dash-${segment}`}
+                          key={`${row.id}-segment-${segment}`}
                           modifiers={[
                             frame({ width: 3, height: 10 }),
                             foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
