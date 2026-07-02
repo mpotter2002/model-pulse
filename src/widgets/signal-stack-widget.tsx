@@ -130,7 +130,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       return (
         <VStack
           alignment="leading"
-          spacing={4}
+          spacing={8}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
             padding({ top: 12, bottom: 8, horizontal: 8 }),
