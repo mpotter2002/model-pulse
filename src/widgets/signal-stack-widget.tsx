@@ -121,6 +121,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       <RoundedRectangle cornerRadius={0} modifiers={[frame({ width: 0, height: 0 }), foregroundStyle(track)]} />
     );
 
+    const Gap = ({ width }: { width: number }) => (
+      <RoundedRectangle cornerRadius={0} modifiers={[frame({ width, height: 1 }), foregroundStyle(background)]} />
+    );
+
     // SmallDotBar (11 dot segments, fills 76pt).
     const SmallDotBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
       const active = Math.max(0, Math.min(11, Math.round(Math.max(0, Math.min(1, ratio)) * 11)));
@@ -156,85 +160,121 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       );
     };
 
-    // MediumDotBar (8 dot segments, fills 71pt).
+    // MediumDotBar (8 dot segments, 7x7 with gap 2, fills 70pt, not touching).
     const MediumDotBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
       const active = Math.max(0, Math.min(8, Math.round(Math.max(0, Math.min(1, ratio)) * 8)));
       return (
-        <HStack spacing={1}>
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 0 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 1 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 2 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 3 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 4 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 5 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 6 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={4} modifiers={[frame({ width: 8, height: 8 }), foregroundStyle(active > 7 ? accent : track)]} />
+        <HStack spacing={0}>
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 5 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 6 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={3.5} modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(active > 7 ? accent : track)]} />
         </HStack>
       );
     };
 
-    // MediumDashBar (5 dash segments, fills 72pt).
+    // MediumDashBar (5 dash segments, 11x4 with gap 4, fills 71pt, not touching).
     const MediumDashBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
       const active = Math.max(0, Math.min(5, Math.round(Math.max(0, Math.min(1, ratio)) * 5)));
       return (
-        <HStack spacing={3}>
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 0 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 1 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 2 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 3 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 12, height: 4 }), foregroundStyle(active > 4 ? accent : track)]} />
+        <HStack spacing={0}>
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <Gap width={4} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <Gap width={4} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <Gap width={4} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <Gap width={4} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 4 ? accent : track)]} />
         </HStack>
       );
     };
 
-    // LargeDotBar (20 dot segments, fills 219pt).
+    // LargeDotBar (20 dot segments, 9x9 with gap 2, fills 218pt, not touching).
     const LargeDotBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
       const active = Math.max(0, Math.min(20, Math.round(Math.max(0, Math.min(1, ratio)) * 20)));
       return (
-        <HStack spacing={1}>
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 0 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 1 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 2 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 3 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 4 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 5 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 6 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 7 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 8 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 9 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 10 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 11 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 12 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 13 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 14 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 15 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 16 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 17 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 18 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={5} modifiers={[frame({ width: 10, height: 10 }), foregroundStyle(active > 19 ? accent : track)]} />
+        <HStack spacing={0}>
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 5 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 6 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 7 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 8 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 9 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 10 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 11 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 12 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 13 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 14 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 15 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 16 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 17 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 18 ? accent : track)]} />
+          <Gap width={2} />
+          <RoundedRectangle cornerRadius={4.5} modifiers={[frame({ width: 9, height: 9 }), foregroundStyle(active > 19 ? accent : track)]} />
         </HStack>
       );
     };
 
-    // LargeDashBar (10 dash segments, fills 219pt).
+    // LargeDashBar (9 dash segments, 20x6 with gap 5, fills 220pt, not touching).
     const LargeDashBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
-      const active = Math.max(0, Math.min(10, Math.round(Math.max(0, Math.min(1, ratio)) * 10)));
+      const active = Math.max(0, Math.min(9, Math.round(Math.max(0, Math.min(1, ratio)) * 9)));
       return (
-        <HStack spacing={1}>
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 0 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 1 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 2 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 3 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 4 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 5 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 6 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 7 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 8 ? accent : track)]} />
-          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 21, height: 6 }), foregroundStyle(active > 9 ? accent : track)]} />
+        <HStack spacing={0}>
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 0 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 1 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 2 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 3 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 4 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 5 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 6 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 7 ? accent : track)]} />
+          <Gap width={5} />
+          <RoundedRectangle cornerRadius={2} modifiers={[frame({ width: 20, height: 6 }), foregroundStyle(active > 8 ? accent : track)]} />
         </HStack>
       );
     };
-
     if (!primary) {
       return (
         <VStack
@@ -246,10 +286,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             containerBackground(background, "widget"),
           ]}
         >
-          <Text modifiers={[foregroundStyle(text), font({ size: 15, weight: "bold" })]}>
+          <Text modifiers={[foregroundStyle(text), font({ size: 15, family: "SpaceGrotesk-Bold" })]}>
             SignalStack
           </Text>
-          <Text modifiers={[foregroundStyle(muted), font({ size: 11, design: "monospaced" })]}>
+          <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" })]}>
             Open SignalStack to sync data
           </Text>
           <Spacer />
@@ -273,10 +313,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
               <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 5 })]}>
-                <Text modifiers={[foregroundStyle(muted), font({ size: 9, design: "monospaced" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(muted), font({ size: 9, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                   {primaryTileLabel}
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, weight: "heavy" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                   {primaryTileValue}
                 </Text>
               </VStack>
@@ -284,10 +324,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
               <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 5 })]}>
-                <Text modifiers={[foregroundStyle(muted), font({ size: 9, design: "monospaced" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(muted), font({ size: 9, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                   MODELS
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, weight: "heavy" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                   {`${cards.length}`}
                 </Text>
               </VStack>
@@ -314,11 +354,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   );
                   return (
                     <HStack key={row.id} spacing={5} alignment="center">
-                      <Text modifiers={[foregroundStyle(row.accent), font({ size: 8 })]}>•</Text>
+                      <Text modifiers={[foregroundStyle(row.accent), font({ size: 8, family: "SpaceGrotesk-Regular" })]}>•</Text>
                       <Text
                         modifiers={[
                           foregroundStyle(text),
-                          font({ size: 10, weight: "bold" }),
+                          font({ size: 10, family: "SpaceGrotesk-Bold" }),
                           frame({ width: 52, alignment: "leading" }),
                           lineLimit(1),
                           truncationMode("tail"),
@@ -332,11 +372,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 })
               : cards.slice(0, 7).map((card) => (
                   <HStack key={card.id} spacing={6} alignment="center">
-                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 10 })]}>•</Text>
+                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 10, family: "SpaceGrotesk-Regular" })]}>•</Text>
                     <Text
                       modifiers={[
                         foregroundStyle(text),
-                        font({ size: 11, weight: "bold" }),
+                        font({ size: 11, family: "SpaceGrotesk-Bold" }),
                         lineLimit(1),
                         truncationMode("tail"),
                       ]}
@@ -344,7 +384,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                       {card.label}
                     </Text>
                     <Spacer />
-                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, weight: "heavy" })]}>
+                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, family: "SpaceGrotesk-Bold" })]}>
                       {card.metric}
                     </Text>
                   </HStack>
@@ -367,17 +407,17 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         {/* Header */}
         {isMedium ? (
           <HStack spacing={8} alignment="center">
-            <Text modifiers={[foregroundStyle(muted), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
+            <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
               {modelsShown}
             </Text>
           </HStack>
         ) : (
           <HStack spacing={8} alignment="top">
             <VStack alignment="leading" spacing={1}>
-              <Text modifiers={[foregroundStyle(text), font({ size: 15, weight: "bold" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), font({ size: 15, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 SignalStack
               </Text>
-              <Text modifiers={[foregroundStyle(muted), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                 {modelsShown}
               </Text>
             </VStack>
@@ -389,10 +429,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 60, alignment: "leading" })]}>
             <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
             <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 10, vertical: 7 })]}>
-              <Text modifiers={[foregroundStyle(muted), font({ size: 10, weight: "bold", design: "monospaced" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Bold" }), lineLimit(1)]}>
                 {`${summaryLabel} · ${modelsLabel}`}
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 25, weight: "heavy" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 25, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 {summaryValue}
               </Text>
             </VStack>
@@ -404,10 +444,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
             <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
             <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-              <Text modifiers={[foregroundStyle(muted), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                 {primaryTileLabel}
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, weight: "heavy" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 {primaryTileValue}
               </Text>
             </VStack>
@@ -416,10 +456,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
               <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-                <Text modifiers={[foregroundStyle(muted), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                   TOKENS
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, weight: "heavy" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                   {totalTokens}
                 </Text>
               </VStack>
@@ -428,10 +468,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
             <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
             <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-              <Text modifiers={[foregroundStyle(muted), font({ size: 12, design: "monospaced" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                 MODELS
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, weight: "heavy" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 {`${cards.length}`}
               </Text>
             </VStack>
@@ -458,11 +498,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               );
               return (
                 <HStack key={row.id} spacing={7} alignment="center">
-                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10, family: "SpaceGrotesk-Regular" })]}>•</Text>
                   <Text
                     modifiers={[
                       foregroundStyle(text),
-                      font({ size: 12, weight: "bold" }),
+                      font({ size: 12, family: "SpaceGrotesk-Bold" }),
                       frame({ width: 92, alignment: "leading" }),
                       lineLimit(1),
                       truncationMode("tail"),
@@ -480,11 +520,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
               {leftLimitRows.map((row) => (
                 <HStack key={row.id} spacing={6} alignment="center">
-                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10, family: "SpaceGrotesk-Regular" })]}>•</Text>
                   <Text
                     modifiers={[
                       foregroundStyle(text),
-                      font({ size: 12, weight: "bold" }),
+                      font({ size: 12, family: "SpaceGrotesk-Bold" }),
                       frame({ width: 66, alignment: "leading" }),
                       lineLimit(1),
                       truncationMode("tail"),
@@ -516,11 +556,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
               {rightLimitRows.map((row) => (
                 <HStack key={row.id} spacing={6} alignment="center">
-                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10, family: "SpaceGrotesk-Regular" })]}>•</Text>
                   <Text
                     modifiers={[
                       foregroundStyle(text),
-                      font({ size: 12, weight: "bold" }),
+                      font({ size: 12, family: "SpaceGrotesk-Bold" }),
                       frame({ width: 66, alignment: "leading" }),
                       lineLimit(1),
                       truncationMode("tail"),
@@ -558,11 +598,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
                   return (
                     <HStack key={row.id} spacing={7} alignment="center">
-                      <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                      <Text modifiers={[foregroundStyle(row.accent), font({ size: 10, family: "SpaceGrotesk-Regular" })]}>•</Text>
                       <Text
                         modifiers={[
                           foregroundStyle(text),
-                          font({ size: 12, weight: "bold" }),
+                          font({ size: 12, family: "SpaceGrotesk-Bold" }),
                           frame({ width: isLarge ? 92 : 78, alignment: "leading" }),
                           lineLimit(1),
                           truncationMode("tail"),
@@ -579,11 +619,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 })
               : cards.slice(0, isLarge ? 7 : 3).map((card) => (
                   <HStack key={card.id} spacing={7} alignment="center">
-                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 10 })]}>•</Text>
+                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 10, family: "SpaceGrotesk-Regular" })]}>•</Text>
                     <Text
                       modifiers={[
                         foregroundStyle(text),
-                        font({ size: 12, weight: "bold" }),
+                        font({ size: 12, family: "SpaceGrotesk-Bold" }),
                         lineLimit(1),
                         truncationMode("tail"),
                       ]}
@@ -591,7 +631,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                       {card.label}
                     </Text>
                     <Spacer />
-                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, weight: "bold" })]}>
+                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 12, family: "SpaceGrotesk-Bold" })]}>
                       {card.metric}
                     </Text>
                   </HStack>
@@ -602,7 +642,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         <Spacer />
 
         {/* Footer */}
-        <Text modifiers={[foregroundStyle(muted), font({ size: 11, design: "monospaced" }), lineLimit(1)]}>
+        <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" }), lineLimit(1)]}>
           Updated {updatedAt}
         </Text>
       </VStack>

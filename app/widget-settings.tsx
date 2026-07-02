@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "@/components/ui/card";
 import { ScreenScrollView } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
-import { useTheme } from "@/components/ui/theme";
+import { useTheme, tokens } from "@/components/ui/theme";
 import { makeModelCards } from "@/lib/model-cards";
 import { useAppStore } from "@/store/app-store";
 import type { ModelCardId, ProviderSnapshot, RateLimitStyle, WidgetMetricMode } from "@/types/domain";
@@ -39,19 +39,22 @@ const WIDGET_SIZES: Array<{ label: string; size: WidgetSize; ratioW: number; rat
   { label: "Large", size: "large", ratioW: 364, ratioH: 382, scale: 0.95 },
 ];
 
-const WIDGET_COLORS = {
-  background: "#000000",
-  // All chrome containers share one light-grey fill, matching the native
-  // home-screen widget (WidgetColors in SignalStackWidget.swift).
-  panel: "#1C1D20",
-  panelAlt: "#1C1D20",
-  track: "#2A2B2E",
-  border: "rgba(255,255,255,0.16)",
-  text: "#F1F1F1",
-  muted: "#8E939A",
-  accent: "#3B82F6",
-  divider: "rgba(255,255,255,0.08)",
-} as const;
+function useWidgetColors() {
+  const theme = useTheme();
+  const isDark = theme.background === tokens.dark.background;
+  return {
+    background: isDark ? "#000000" : "#FFFFFF",
+    // Chrome fill matches the native home-screen widget palette.
+    panel: isDark ? "#1C1D20" : "#F2F2F7",
+    panelAlt: isDark ? "#1C1D20" : "#F2F2F7",
+    track: isDark ? "#2A2B2E" : "#E5E5EA",
+    border: isDark ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.12)",
+    text: isDark ? "#F1F1F1" : "#101112",
+    muted: isDark ? "#8E939A" : "#6B7077",
+    accent: theme.accent,
+    divider: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+  };
+}
 
 const BAR_WIDTHS: Record<WidgetSize, number> = {
   small: 76,
@@ -394,6 +397,7 @@ function WidgetPreview({
   snapshots: ReturnType<typeof useAppStore>["snapshots"];
   subLimitRows: Record<string, PreviewLimitRow[]>;
 }) {
+  const colors = useWidgetColors();
   const focused = cards.find((card) => card.id === focusedCardId) ?? cards[0];
   if (!focused) {
     return (
@@ -443,7 +447,7 @@ function WidgetPreview({
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
             <View style={{ flex: 1 }}>
               {size === "large" ? (
-                <Text size="sm" weight="bold" color="foreground" style={{ color: WIDGET_COLORS.text }}>
+                <Text size="sm" weight="bold" color="foreground" style={{ color: colors.text }}>
                   SignalStack
                 </Text>
               ) : null}
@@ -452,7 +456,7 @@ function WidgetPreview({
                 family="mono"
                 color="muted"
                 style={{
-                  color: WIDGET_COLORS.muted,
+                  color: colors.muted,
                   marginTop: size === "large" ? 2 : 0,
                 }}
               >
@@ -465,7 +469,7 @@ function WidgetPreview({
         {size === "large" ? (
           <View
             style={{
-              backgroundColor: WIDGET_COLORS.panel,
+              backgroundColor: colors.panel,
               borderRadius: 14,
               borderCurve: "continuous" as any,
               paddingHorizontal: 10,
@@ -473,22 +477,29 @@ function WidgetPreview({
               gap: 1,
             }}
           >
-            <Text size="xs" family="mono" weight="bold" style={{ color: WIDGET_COLORS.muted, letterSpacing: 0.4 }} numberOfLines={1}>
+            <Text size="xs" family="mono" weight="bold" style={{ color: colors.muted, letterSpacing: 0.4 }} numberOfLines={1}>
               {`${summaryLabel.toUpperCase()} · ${(cards.length === 1 ? "1 MODEL SHOWN" : `${cards.length} MODELS SHOWN`)}`}
             </Text>
-            <Text size="2xl" weight="extrabold" style={{ color: WIDGET_COLORS.text, fontVariant: ["tabular-nums"] }} numberOfLines={1}>
+            <Text size="2xl" weight="extrabold" style={{ color: colors.text, fontVariant: ["tabular-nums"] }} numberOfLines={1}>
               {summaryValue}
             </Text>
           </View>
         ) : null}
 
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <PreviewTile label={primaryTileLabel} value={showBalance ? `$${totalBalance.toFixed(2)}` : `$${totalSpend.toFixed(0)}`} flex={1} />
-          {hasApi ? <PreviewTile label="TOKENS" value={compactNumber(totalTokens)} flex={1} /> : null}
+          <PreviewTile
+            label={primaryTileLabel}
+            value={showBalance ? `$${totalBalance.toFixed(2)}` : `$${totalSpend.toFixed(0)}`}
+            flex={1}
+            compact={size === "small"}
+          />
           {size === "small" ? (
-            hasApi ? null : <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
+            <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} compact />
           ) : (
-            <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
+            <>
+              {hasApi ? <PreviewTile label="TOKENS" value={compactNumber(totalTokens)} flex={1} /> : null}
+              <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
+            </>
           )}
         </View>
 
@@ -501,7 +512,7 @@ function WidgetPreview({
               return (
                 <View key={col} style={{ flex: 1, gap: 5 }}>
                   {colRows.map((row, i) => (
-                    <PreviewLimitRowView key={`${row.label}-${i}`} row={row} labelWidth={64} rateLimitStyle={rateLimitStyle} barWidth={BAR_WIDTHS.medium} />
+                    <PreviewLimitRowView key={`${row.label}-${i}`} row={row} labelWidth={66} rateLimitStyle={rateLimitStyle} barWidth={BAR_WIDTHS.medium} />
                   ))}
                 </View>
               );
@@ -515,7 +526,7 @@ function WidgetPreview({
           }}
         >
           {flatLimitRows.length > 0
-            ? flatLimitRows.slice(0, size === "large" ? 8 : 4).map((row, i) => (
+            ? flatLimitRows.slice(0, size === "large" ? 8 : size === "medium" ? 4 : 7).map((row, i) => (
                 <PreviewLimitRowView
                   key={`${row.label}-${i}`}
                   row={row}
@@ -531,12 +542,12 @@ function WidgetPreview({
                     size="xs"
                     weight="bold"
                     numberOfLines={1}
-                    style={{ width: size === "large" ? 92 : 70, color: WIDGET_COLORS.text }}
+                    style={{ width: size === "large" ? 92 : 70, color: colors.text }}
                   >
                     {card.title.split(" / ")[0]}
                   </Text>
                   <Spacer />
-                  <Text size="xs" family="mono" style={{ color: WIDGET_COLORS.muted, fontVariant: ["tabular-nums"] }}>
+                  <Text size="xs" family="mono" style={{ color: colors.muted, fontVariant: ["tabular-nums"] }}>
                     {cardMetric(card, metricMode, snapshots)}
                   </Text>
                 </View>
@@ -544,11 +555,13 @@ function WidgetPreview({
         </View>
         )}
 
-        <View style={{ marginTop: "auto" }}>
-          <Text size="xs" family="mono" color="muted" style={{ color: WIDGET_COLORS.muted }}>
-            Updated {updatedAt}
-          </Text>
-        </View>
+        {size !== "small" ? (
+          <View style={{ marginTop: "auto" }}>
+            <Text size="xs" family="mono" color="muted" style={{ color: colors.muted }}>
+              Updated {updatedAt}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </WidgetFrame>
   );
@@ -563,6 +576,7 @@ function WidgetFrame({
   minHeight: number;
   children: React.ReactNode;
 }) {
+  const colors = useWidgetColors();
   return (
     <View
       style={{
@@ -571,9 +585,9 @@ function WidgetFrame({
         borderRadius: 22,
         borderCurve: "continuous" as any,
         padding: 14,
-        backgroundColor: WIDGET_COLORS.background,
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: WIDGET_COLORS.border,
+        borderColor: colors.border,
       }}
     >
       {children}
@@ -592,17 +606,18 @@ function PreviewLimitRowView({
   rateLimitStyle: RateLimitStyle;
   barWidth: number;
 }) {
+  const colors = useWidgetColors();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: row.accent }} />
-      <Text size="xs" weight="bold" numberOfLines={1} style={{ width: labelWidth, color: WIDGET_COLORS.text }}>
+      <Text size="xs" weight="bold" numberOfLines={1} style={{ width: labelWidth, color: colors.text }}>
         {row.label}
       </Text>
       <View style={{ width: barWidth }}>
         <RateLimitLine
           value={row.ratio}
           color={row.accent}
-          inactiveColor={WIDGET_COLORS.track}
+          inactiveColor={colors.track}
           lineStyle={rateLimitStyle}
           barWidth={barWidth}
         />
@@ -615,13 +630,32 @@ function Spacer() {
   return <View style={{ flex: 1 }} />;
 }
 
-function PreviewTile({ label, value, flex }: { label: string; value: string; flex?: number }) {
+function PreviewTile({ label, value, flex, compact }: { label: string; value: string; flex?: number; compact?: boolean }) {
+  const colors = useWidgetColors();
   return (
-    <View style={{ flex: flex ?? 1, borderRadius: 16, backgroundColor: WIDGET_COLORS.panelAlt, paddingHorizontal: 10, paddingVertical: 8 }}>
-      <Text size="xs" family="mono" color="muted" style={{ color: WIDGET_COLORS.muted, letterSpacing: 0.3 }}>
+    <View
+      style={{
+        flex: flex ?? 1,
+        borderRadius: compact ? 12 : 16,
+        backgroundColor: colors.panelAlt,
+        paddingHorizontal: compact ? 8 : 10,
+        paddingVertical: compact ? 5 : 8,
+      }}
+    >
+      <Text
+        size="xs"
+        family="mono"
+        color="muted"
+        style={{ color: colors.muted, letterSpacing: 0.3 }}
+      >
         {label}
       </Text>
-      <Text size="lg" weight="extrabold" style={{ marginTop: 2, color: WIDGET_COLORS.text, fontVariant: ["tabular-nums"] }} numberOfLines={1}>
+      <Text
+        size={compact ? "sm" : "lg"}
+        weight="extrabold"
+        style={{ marginTop: 2, color: colors.text, fontVariant: ["tabular-nums"] }}
+        numberOfLines={1}
+      >
         {value}
       </Text>
     </View>

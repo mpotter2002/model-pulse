@@ -16,8 +16,8 @@ export interface RateLimitLineProps extends ViewProps {
 
 const DOT_CONFIGS: Record<number, { count: number; size: number; gap: number }> = {
   76: { count: 11, size: 6, gap: 1 },
-  72: { count: 8, size: 8, gap: 1 },
-  220: { count: 20, size: 10, gap: 1 },
+  72: { count: 8, size: 7, gap: 2 },
+  220: { count: 20, size: 9, gap: 2 },
 };
 
 const DASH_CONFIGS: Record<
@@ -25,8 +25,8 @@ const DASH_CONFIGS: Record<
   { count: number; width: number; height: number; gap: number; radius: number }
 > = {
   76: { count: 6, width: 11, height: 4, gap: 2, radius: 1 },
-  72: { count: 5, width: 12, height: 4, gap: 3, radius: 1 },
-  220: { count: 10, width: 21, height: 6, gap: 1, radius: 2 },
+  72: { count: 5, width: 11, height: 4, gap: 4, radius: 1 },
+  220: { count: 9, width: 20, height: 6, gap: 5, radius: 2 },
 };
 
 export function RateLimitLine({
