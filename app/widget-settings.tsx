@@ -57,9 +57,9 @@ function useWidgetColors() {
 }
 
 const BAR_WIDTHS: Record<WidgetSize, number> = {
-  small: 76,
+  small: 84,
   medium: 72,
-  large: 208,
+  large: 200,
 };
 
 export default function WidgetSettingsScreen() {
@@ -443,28 +443,23 @@ function WidgetPreview({
   return (
     <WidgetFrame width={width} minHeight={minHeight}>
       <View style={{ gap: 10 }}>
-        {size === "small" ? null : (
+        {size === "large" ? (
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
             <View style={{ flex: 1 }}>
-              {size === "large" ? (
-                <Text size="sm" weight="bold" color="foreground" style={{ color: colors.text }}>
-                  SignalStack
-                </Text>
-              ) : null}
+              <Text size="sm" weight="bold" color="foreground" style={{ color: colors.text }}>
+                SignalStack
+              </Text>
               <Text
                 size="xs"
                 family="mono"
                 color="muted"
-                style={{
-                  color: colors.muted,
-                  marginTop: size === "large" ? 2 : 0,
-                }}
+                style={{ color: colors.muted, marginTop: 2 }}
               >
                 {cards.length === 1 ? "1 model shown" : `${cards.length} models shown`}
               </Text>
             </View>
           </View>
-        )}
+        ) : null}
 
         {size === "large" ? (
           <View
@@ -530,7 +525,7 @@ function WidgetPreview({
                 <PreviewLimitRowView
                   key={`${row.label}-${i}`}
                   row={row}
-                  labelWidth={size === "large" ? 92 : 52}
+                  labelWidth={size === "large" ? 92 : 44}
                   rateLimitStyle={rateLimitStyle}
                   barWidth={size === "large" ? BAR_WIDTHS.large : BAR_WIDTHS.small}
                 />

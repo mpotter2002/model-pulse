@@ -125,9 +125,9 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       <RoundedRectangle cornerRadius={0} modifiers={[frame({ width, height: 1 }), foregroundStyle(background)]} />
     );
 
-    // SmallDotBar (11 dot segments, fills 76pt).
+    // SmallDotBar (12 dot segments, fills 84pt).
     const SmallDotBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
-      const active = Math.max(0, Math.min(11, Math.round(Math.max(0, Math.min(1, ratio)) * 11)));
+      const active = Math.max(0, Math.min(12, Math.round(Math.max(0, Math.min(1, ratio)) * 12)));
       return (
         <HStack spacing={1}>
           <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 6, height: 6 }), foregroundStyle(active > 0 ? accent : track)]} />
@@ -141,21 +141,23 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 6, height: 6 }), foregroundStyle(active > 8 ? accent : track)]} />
           <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 6, height: 6 }), foregroundStyle(active > 9 ? accent : track)]} />
           <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 6, height: 6 }), foregroundStyle(active > 10 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={3} modifiers={[frame({ width: 6, height: 6 }), foregroundStyle(active > 11 ? accent : track)]} />
         </HStack>
       );
     };
 
-    // SmallDashBar (6 dash segments, fills 76pt).
+    // SmallDashBar (7 dash segments, fills 84pt).
     const SmallDashBar = ({ ratio, accent }: { ratio: number; accent: string }) => {
-      const active = Math.max(0, Math.min(6, Math.round(Math.max(0, Math.min(1, ratio)) * 6)));
+      const active = Math.max(0, Math.min(7, Math.round(Math.max(0, Math.min(1, ratio)) * 7)));
       return (
-        <HStack spacing={2}>
+        <HStack spacing={1}>
           <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 0 ? accent : track)]} />
           <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 1 ? accent : track)]} />
           <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 2 ? accent : track)]} />
           <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 3 ? accent : track)]} />
           <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 4 ? accent : track)]} />
           <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 5 ? accent : track)]} />
+          <RoundedRectangle cornerRadius={1} modifiers={[frame({ width: 11, height: 4 }), foregroundStyle(active > 6 ? accent : track)]} />
         </HStack>
       );
     };
@@ -304,7 +306,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           spacing={6}
         modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ top: 16, bottom: 12, horizontal: 12 }),
+            padding({ top: 16, bottom: 14, horizontal: 14 }),
             containerBackground(background, "widget"),
           ]}
         >
@@ -334,12 +336,12 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             </ZStack>
           </HStack>
 
-          {/* 5 compact limit rows or fallback metric rows */}
+          {/* 6 compact limit rows or fallback metric rows */}
           <VStack alignment="leading" spacing={4}>
             {hasLimits
-              ? flatLimitRows.slice(0, 5).map((row) => {
+              ? flatLimitRows.slice(0, 6).map((row) => {
                   const ratio = Math.max(0, Math.min(1, row.ratio));
-                  const barFill = Math.max(2, Math.round(ratio * 76));
+                  const barFill = Math.max(2, Math.round(ratio * 84));
                   const bar = style === "dots" ? (
                     <SmallDotBar ratio={ratio} accent={row.accent} />
                   ) : style === "dash" ? (
@@ -347,8 +349,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   ) : isNone ? (
                     <EmptyLine />
                   ) : (
-                    <ZStack alignment="leading" modifiers={[frame({ width: 76, height: 6, alignment: "leading" })]}>
-                      <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 76, height: 6 })]} />
+                    <ZStack alignment="leading" modifiers={[frame({ width: 84, height: 6, alignment: "leading" })]}>
+                      <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 84, height: 6 })]} />
                       <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(row.accent), frame({ width: barFill, height: 6 })]} />
                     </ZStack>
                   );
@@ -359,7 +361,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                         modifiers={[
                           foregroundStyle(text),
                           font({ size: 10, family: "SpaceGrotesk-Bold" }),
-                          frame({ width: 52, alignment: "leading" }),
+                          frame({ width: 44, alignment: "leading" }),
                           lineLimit(1),
                           truncationMode("tail"),
                         ]}
@@ -404,14 +406,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             containerBackground(background, "widget"),
           ]}
         >
-        {/* Header */}
-        {isMedium ? (
-          <HStack spacing={6} alignment="center">
-            <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
-              {modelsShown}
-            </Text>
-          </HStack>
-        ) : (
+        {/* Header (large only) */}
+        {isLarge ? (
           <HStack spacing={6} alignment="top">
             <VStack alignment="leading" spacing={1}>
               <Text modifiers={[foregroundStyle(text), font({ size: 14, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
@@ -422,7 +418,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               </Text>
             </VStack>
           </HStack>
-        )}
+        ) : null}
 
         {/* Summary bar (large only) */}
         {isLarge ? (
@@ -481,7 +477,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         {/* Limit rows */}
         {isLarge && hasLimits ? (
           <VStack alignment="leading" spacing={4} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-            {flatLimitRows.slice(0, 7).map((row) => {
+            {flatLimitRows.slice(0, 9).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
               const bar = style === "dots" ? (
@@ -593,7 +589,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : (
           <VStack alignment="leading" spacing={5}>
             {hasLimits
-              ? flatLimitRows.slice(0, isLarge ? 7 : 3).map((row) => {
+              ? flatLimitRows.slice(0, isLarge ? 9 : 3).map((row) => {
                   const fallbackWidth = isLarge ? 220 : 120;
                   const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
                   return (
