@@ -133,7 +133,7 @@ export function RateLimitLine({
 
   return (
     <View
-      style={[{ height: 6, borderRadius: radius.full, backgroundColor: theme.muted, overflow: "hidden" }, style]}
+      style={[{ height: 6, borderRadius: radius.full, backgroundColor: inactiveColor, overflow: "hidden", width: "100%" }, style]}
       {...props}
     >
       <View

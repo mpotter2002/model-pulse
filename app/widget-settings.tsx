@@ -59,7 +59,7 @@ function useWidgetColors() {
 const BAR_WIDTHS: Record<WidgetSize, number> = {
   small: 76,
   medium: 72,
-  large: 220,
+  large: 208,
 };
 
 export default function WidgetSettingsScreen() {

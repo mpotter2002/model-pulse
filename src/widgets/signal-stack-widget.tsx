@@ -279,7 +279,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       return (
         <VStack
           alignment="leading"
-          spacing={6}
+          spacing={8}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
             padding({ all: 14 }),
@@ -301,10 +301,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       return (
         <VStack
           alignment="leading"
-          spacing={8}
-          modifiers={[
+          spacing={6}
+        modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ top: 12, bottom: 8, horizontal: 8 }),
+            padding({ top: 16, bottom: 12, horizontal: 12 }),
             containerBackground(background, "widget"),
           ]}
         >
@@ -312,32 +312,32 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           <HStack spacing={6}>
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
-              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 5 })]}>
+              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 4 })]}>
                 <Text modifiers={[foregroundStyle(muted), font({ size: 9, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                   {primaryTileLabel}
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 14, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                   {primaryTileValue}
                 </Text>
               </VStack>
             </ZStack>
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
-              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 5 })]}>
+              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 4 })]}>
                 <Text modifiers={[foregroundStyle(muted), font({ size: 9, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                   MODELS
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 15, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 14, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                   {`${cards.length}`}
                 </Text>
               </VStack>
             </ZStack>
           </HStack>
 
-          {/* 7 compact limit rows or fallback metric rows */}
-          <VStack alignment="leading" spacing={3}>
+          {/* 5 compact limit rows or fallback metric rows */}
+          <VStack alignment="leading" spacing={4}>
             {hasLimits
-              ? flatLimitRows.slice(0, 7).map((row) => {
+              ? flatLimitRows.slice(0, 5).map((row) => {
                   const ratio = Math.max(0, Math.min(1, row.ratio));
                   const barFill = Math.max(2, Math.round(ratio * 76));
                   const bar = style === "dots" ? (
@@ -397,24 +397,24 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     return (
       <VStack
         alignment="leading"
-        spacing={8}
-        modifiers={[
-          frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-          padding({ all: 14 }),
-          containerBackground(background, "widget"),
-        ]}
-      >
+        spacing={6}
+          modifiers={[
+            frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
+            padding({ top: 16, bottom: 14, horizontal: 14 }),
+            containerBackground(background, "widget"),
+          ]}
+        >
         {/* Header */}
         {isMedium ? (
-          <HStack spacing={8} alignment="center">
+          <HStack spacing={6} alignment="center">
             <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
               {modelsShown}
             </Text>
           </HStack>
         ) : (
-          <HStack spacing={8} alignment="top">
+          <HStack spacing={6} alignment="top">
             <VStack alignment="leading" spacing={1}>
-              <Text modifiers={[foregroundStyle(text), font({ size: 15, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), font({ size: 14, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 SignalStack
               </Text>
               <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
@@ -426,13 +426,13 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
         {/* Summary bar (large only) */}
         {isLarge ? (
-          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 60, alignment: "leading" })]}>
+          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 52, alignment: "leading" })]}>
             <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
-            <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 10, vertical: 7 })]}>
+            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>
               <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Bold" }), lineLimit(1)]}>
                 {`${summaryLabel} · ${modelsLabel}`}
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 25, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 {summaryValue}
               </Text>
             </VStack>
@@ -440,38 +440,38 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : null}
 
         {/* Tiles row */}
-        <HStack spacing={8}>
-          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
+        <HStack spacing={6}>
+          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 56, alignment: "leading" })]}>
             <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
-            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-              <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
+            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>
+              <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                 {primaryTileLabel}
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 18, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 {primaryTileValue}
               </Text>
             </VStack>
           </ZStack>
           {hasLiveApiData ? (
-            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 56, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
-              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-                <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
+              <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>
+                <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                   TOKENS
                 </Text>
-                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 18, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                   {totalTokens}
                 </Text>
               </VStack>
             </ZStack>
           ) : null}
-          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 64, alignment: "leading" })]}>
+          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 56, alignment: "leading" })]}>
             <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
-            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 8 })]}>
-              <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
+            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>
+              <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                 MODELS
               </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
+              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 18, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
                 {`${cards.length}`}
               </Text>
             </VStack>
@@ -480,8 +480,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
         {/* Limit rows */}
         {isLarge && hasLimits ? (
-          <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-            {flatLimitRows.slice(0, 8).map((row) => {
+          <VStack alignment="leading" spacing={4} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
+            {flatLimitRows.slice(0, 7).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
               const bar = style === "dots" ? (
@@ -524,7 +524,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   <Text
                     modifiers={[
                       foregroundStyle(text),
-                      font({ size: 12, family: "SpaceGrotesk-Bold" }),
+                      font({ size: 11, family: "SpaceGrotesk-Bold" }),
                       frame({ width: 66, alignment: "leading" }),
                       lineLimit(1),
                       truncationMode("tail"),
@@ -560,7 +560,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   <Text
                     modifiers={[
                       foregroundStyle(text),
-                      font({ size: 12, family: "SpaceGrotesk-Bold" }),
+                      font({ size: 11, family: "SpaceGrotesk-Bold" }),
                       frame({ width: 66, alignment: "leading" }),
                       lineLimit(1),
                       truncationMode("tail"),
@@ -593,7 +593,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : (
           <VStack alignment="leading" spacing={5}>
             {hasLimits
-              ? flatLimitRows.slice(0, isLarge ? 8 : 3).map((row) => {
+              ? flatLimitRows.slice(0, isLarge ? 7 : 3).map((row) => {
                   const fallbackWidth = isLarge ? 220 : 120;
                   const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
                   return (
@@ -602,7 +602,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                       <Text
                         modifiers={[
                           foregroundStyle(text),
-                          font({ size: 12, family: "SpaceGrotesk-Bold" }),
+                          font({ size: 11, family: "SpaceGrotesk-Bold" }),
                           frame({ width: isLarge ? 92 : 78, alignment: "leading" }),
                           lineLimit(1),
                           truncationMode("tail"),
@@ -642,7 +642,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         <Spacer />
 
         {/* Footer */}
-        <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" }), lineLimit(1)]}>
+        <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Regular" }), lineLimit(1)]}>
           Updated {updatedAt}
         </Text>
       </VStack>

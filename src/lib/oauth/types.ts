@@ -20,6 +20,12 @@ export interface TokenRefreshConfig {
   clientId?: string;
   clientSecret?: string;
   scopes?: string[];
+  /**
+   * Request encoding for the refresh_token grant. OAuth 2 servers default to
+   * "form" (application/x-www-form-urlencoded). Anthropic's token endpoint
+   * expects a JSON body, so Claude uses "json".
+   */
+  bodyFormat?: "form" | "json";
 }
 
 export interface UsageLimitRow {

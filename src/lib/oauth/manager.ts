@@ -397,13 +397,20 @@ async function refreshApiToken(
     params.scope = config.scopes.join(" ");
   }
 
+  // Anthropic's OAuth token endpoint expects a JSON body; most other providers
+  // (OAuth 2 standard) expect form-encoding. Default to form.
+  const useJson = config.bodyFormat === "json";
   const response = await fetch(config.tokenUrl, {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": useJson
+        ? "application/json"
+        : "application/x-www-form-urlencoded",
       Accept: "application/json",
     },
-    body: new URLSearchParams(params).toString(),
+    body: useJson
+      ? JSON.stringify(params)
+      : new URLSearchParams(params).toString(),
   });
 
   let data: Record<string, unknown> = {};

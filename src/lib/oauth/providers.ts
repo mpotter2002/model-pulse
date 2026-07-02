@@ -980,8 +980,15 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     ],
     helperCommand: "security find-generic-password -w -s \"Claude Code-credentials\" -a \"$(whoami)\"",
     tokenRefresh: {
-      tokenUrl: "https://api.anthropic.com/v1/oauth/token",
-      clientId: "https://claude.ai/oauth/claude-code-client-metadata",
+      // Claude Code's public OAuth client_id. The previous value here was the
+      // client *metadata document URL*, which Anthropic's token endpoint
+      // rejects — so refreshes silently failed and the stale access token
+      // eventually surfaced as the edge-throttled 429 ("Anthropic-side rate
+      // limiting"). With the real client_id the refresh_token grant succeeds
+      // and SignalStack can keep the access token alive without re-pasting.
+      tokenUrl: "https://console.anthropic.com/v1/oauth/token",
+      clientId: "9d1c250a-e61b-44d9-88ed-5944d1962f5e",
+      bodyFormat: "json",
     },
     fetchUsage: fetchClaudeUsage,
     // Anthropic's usage endpoint extends its own cooldown on every
