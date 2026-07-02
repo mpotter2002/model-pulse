@@ -399,6 +399,7 @@ function WidgetPreview({
 
   const totalSpend = totalSpendFor(cards, subscriptionPricesUsd, snapshots);
   const totalTokens = totalTokensFor(cards, snapshots);
+  const totalBalance = totalBalanceFor(cards, snapshots);
   const hasApi = hasLiveApiData(cards, snapshots);
   const updatedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
@@ -418,12 +419,16 @@ function WidgetPreview({
 
   // Summary bar mirrors the native widget: limits mode shows the highest
   // usage across all windows as a percent; otherwise total spend.
-  const summaryLabel = metricMode === "subscription" ? "Limits" : metricMode === "api" ? "Balance" : "Spend";
+  const showBalance = metricMode === "api" && hasApi;
+  const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
+  const summaryLabel = metricMode === "subscription" ? "Limits" : showBalance ? "Balance" : "Spend";
   const worstUsed = flatLimitRows.reduce((max, row) => Math.max(max, 1 - row.ratio), 0);
   const summaryValue =
     metricMode === "subscription" && flatLimitRows.length > 0
       ? `${Math.round(worstUsed * 100)}%`
-      : `$${totalSpend.toFixed(0)}`;
+      : showBalance
+        ? `$${totalBalance.toFixed(2)}`
+        : `$${totalSpend.toFixed(0)}`;
 
   return (
     <WidgetFrame width={width} minHeight={minHeight}>
@@ -463,7 +468,7 @@ function WidgetPreview({
         ) : null}
 
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <PreviewTile label={metricMode === "api" ? "BALANCE" : "SPEND"} value={`$${totalSpend.toFixed(0)}`} flex={1} />
+          <PreviewTile label={primaryTileLabel} value={showBalance ? `$${totalBalance.toFixed(2)}` : `$${totalSpend.toFixed(0)}`} flex={1} />
           {hasApi ? <PreviewTile label="TOKENS" value={compactNumber(totalTokens)} flex={1} /> : null}
           {size === "small" ? (
             hasApi ? null : <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
@@ -641,6 +646,15 @@ function totalTokensFor(cards: ReturnType<typeof makeModelCards>, snapshots: Ret
       if (isLiveSnapshot(snap)) tokens += snap.usage.tokensUsed;
     }
     return sum + tokens;
+  }, 0);
+}
+
+function totalBalanceFor(cards: ReturnType<typeof makeModelCards>, snapshots: ReturnType<typeof useAppStore>["snapshots"]) {
+  return cards.reduce((sum, card) => {
+    if (!card.apiProviderId) return sum;
+    const snap = snapshots[card.apiProviderId];
+    if (!isLiveSnapshot(snap)) return sum;
+    return sum + parseUsd(snap.balanceLabel ?? undefined);
   }, 0);
 }
 

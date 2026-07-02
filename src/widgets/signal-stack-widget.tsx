@@ -63,6 +63,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const muted = "#8E939A";
     const track = "#2A2B2E";
     const segments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const largeSegments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
     const family = environment.widgetFamily;
     const isSmall = family === "systemSmall";
@@ -85,17 +86,17 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       (max, row) => Math.max(max, 1 - Math.max(0, Math.min(1, row.ratio))),
       0,
     );
+    const showBalance = props.metricLabel === "Balance" && props.hasLiveApiData;
+    const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
+    const primaryTileValue = showBalance ? props.totalBalance : props.totalSpend;
+    const summaryLabel = props.metricLabel === "Limits" && hasLimits ? "LIMITS" : primaryTileLabel;
     const summaryValue =
       props.metricLabel === "Limits" && hasLimits
         ? `${Math.round(worstUsed * 100)}%`
-        : props.metricLabel === "Balance"
-          ? props.totalBalance
-          : props.totalSpend;
+        : primaryTileValue;
 
     const modelsLabel = cards.length === 1 ? "1 MODEL SHOWN" : `${cards.length} MODELS SHOWN`;
     const modelsShown = cards.length === 1 ? "1 model shown" : `${cards.length} models shown`;
-    const primaryTileLabel = props.metricLabel === "Balance" ? "BALANCE" : "SPEND";
-    const primaryTileValue = props.metricLabel === "Balance" ? props.totalBalance : props.totalSpend;
     const rowLimit = isLarge ? 8 : isMedium ? 8 : 3;
     const labelWidth = isSmall ? 54 : isMedium ? 78 : 92;
     const leftLimitRows = flatLimitRows.slice(0, Math.ceil(Math.min(rowLimit, flatLimitRows.length) / 2));
@@ -123,13 +124,95 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
       );
     }
 
+    if (isSmall) {
+      return (
+        <VStack
+          alignment="leading"
+          spacing={6}
+          modifiers={[
+            frame({ maxWidth: 10000, alignment: "topLeading" }),
+            padding({ all: 10 }),
+            containerBackground(background, "widget"),
+          ]}
+        >
+          <HStack spacing={7}>
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 44, alignment: "leading" })]}>
+              <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
+              <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 8, vertical: 6 })]}>
+                <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 9, design: "monospaced" }), lineLimit(1)]}>
+                  {primaryTileLabel}
+                </Text>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 17, weight: "heavy" }), lineLimit(1)]}>
+                  {primaryTileValue}
+                </Text>
+              </VStack>
+            </ZStack>
+            <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 44, alignment: "leading" })]}>
+              <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
+              <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 8, vertical: 6 })]}>
+                <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 9, design: "monospaced" }), lineLimit(1)]}>
+                  MODELS
+                </Text>
+                <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 17, weight: "heavy" }), lineLimit(1)]}>
+                  {`${cards.length}`}
+                </Text>
+              </VStack>
+            </ZStack>
+          </HStack>
+
+          <VStack alignment="leading" spacing={5}>
+            {hasLimits
+              ? flatLimitRows.slice(0, 3).map((row, i) => (
+                  <HStack key={`${row.id}-small-${i}`} spacing={6} alignment="center">
+                    <Text modifiers={[foregroundStyle(row.accent), font({ size: 9 })]}>•</Text>
+                    <Text
+                      modifiers={[
+                        foregroundStyle(text),
+                        font({ size: 11, weight: "bold" }),
+                        frame({ width: 56, alignment: "leading" }),
+                        lineLimit(1),
+                        truncationMode("tail"),
+                      ]}
+                    >
+                      {row.label}
+                    </Text>
+                    <HStack spacing={3}>
+                      {segments.map((segment) => (
+                        <Capsule
+                          key={`${row.id}-small-segment-${segment}`}
+                          modifiers={[
+                            frame({ width: 3, height: 9 }),
+                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                          ]}
+                        />
+                      ))}
+                    </HStack>
+                  </HStack>
+                ))
+              : cards.slice(0, 3).map((card) => (
+                  <HStack key={`${card.id}-small-card`} spacing={6} alignment="center">
+                    <Text modifiers={[foregroundStyle(card.accent), font({ size: 9 })]}>•</Text>
+                    <Text modifiers={[foregroundStyle(text), font({ size: 11, weight: "bold" }), lineLimit(1), truncationMode("tail")]}>
+                      {card.label}
+                    </Text>
+                    <Spacer />
+                    <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 11, weight: "bold" }), lineLimit(1)]}>
+                      {card.metric}
+                    </Text>
+                  </HStack>
+                ))}
+          </VStack>
+        </VStack>
+      );
+    }
+
     return (
       <VStack
         alignment="leading"
-        spacing={isSmall ? 6 : 8}
+        spacing={8}
         modifiers={[
           frame({ maxWidth: 10000, alignment: "topLeading" }),
-          padding({ all: isSmall ? 12 : 14 }),
+          padding({ all: 14 }),
           containerBackground(background, "widget"),
         ]}
       >
@@ -162,7 +245,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             />
             <VStack alignment="leading" spacing={1} modifiers={[padding({ horizontal: 10, vertical: 7 })]}>
               <Text modifiers={[foregroundStyle(muted), monospacedDigit(), font({ size: 10, weight: "bold", design: "monospaced" }), lineLimit(1)]}>
-                {`${props.metricLabel.toUpperCase()} · ${modelsLabel}`}
+                {`${summaryLabel} · ${modelsLabel}`}
               </Text>
               <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 25, weight: "heavy" }), lineLimit(1)]}>
                 {summaryValue}
@@ -224,7 +307,37 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         </HStack>
 
         {/* Limit bars, or per-model metric rows */}
-        {isMedium && hasLimits ? (
+        {isLarge && hasLimits ? (
+          <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
+            {flatLimitRows.slice(0, 8).map((row, i) => (
+                <HStack key={`${row.id}-large-${i}`} spacing={7} alignment="center">
+                  <Text modifiers={[foregroundStyle(row.accent), font({ size: 10 })]}>•</Text>
+                  <Text
+                    modifiers={[
+                      foregroundStyle(text),
+                      font({ size: 12, weight: "bold" }),
+                      frame({ width: 116, alignment: "leading" }),
+                      lineLimit(1),
+                      truncationMode("tail"),
+                    ]}
+                  >
+                    {row.label}
+                  </Text>
+                  <HStack spacing={3}>
+                    {largeSegments.map((segment) => (
+                      <Capsule
+                        key={`${row.id}-large-segment-${segment}`}
+                        modifiers={[
+                          frame({ width: 5, height: 10 }),
+                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 18) ? row.accent : track),
+                        ]}
+                      />
+                    ))}
+                  </HStack>
+                </HStack>
+              ))}
+          </VStack>
+        ) : isMedium && hasLimits ? (
           <HStack spacing={12} alignment="top">
             <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
               {leftLimitRows.map((row, i) => (
