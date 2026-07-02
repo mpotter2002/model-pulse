@@ -67,7 +67,6 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const text = "#F1F1F1";
     const muted = "#8E939A";
     const track = "#2A2B2E";
-    const segments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     const style = props.rateLimitStyle;
 
     const family = environment.widgetFamily;
@@ -408,17 +407,43 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   >
                     {row.label}
                   </Text>
-                  <HStack spacing={3}>
-                    {segments.map((segment) => (
-                      <Capsule
-                        key={`${row.id}-seg-${segment}`}
+                  {style === "dots" ? (
+                    <HStack spacing={3}>
+                      {dots12.map((segment) => (
+                        <Capsule
+                          key={`${row.id}-dot-${segment}`}
+                          modifiers={[
+                            frame({ width: 4, height: 4 }),
+                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                          ]}
+                        />
+                      ))}
+                    </HStack>
+                  ) : style === "dash" ? (
+                    <HStack spacing={3}>
+                      {dash10.map((segment) => (
+                        <RoundedRectangle
+                          key={`${row.id}-dash-${segment}`}
+                          cornerRadius={1}
+                          modifiers={[
+                            frame({ width: 5, height: 4 }),
+                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 10) ? row.accent : track),
+                          ]}
+                        />
+                      ))}
+                    </HStack>
+                  ) : style === "none" ? null : (
+                    <ZStack alignment="leading" modifiers={[frame({ width: 72, height: 6, alignment: "leading" })]}>
+                      <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 72, height: 6 })]} />
+                      <RoundedRectangle
+                        cornerRadius={3}
                         modifiers={[
-                          frame({ width: 3, height: 10 }),
-                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                          foregroundStyle(row.accent),
+                          frame({ width: Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * 72)), height: 6 }),
                         ]}
                       />
-                    ))}
-                  </HStack>
+                    </ZStack>
+                  )}
                 </HStack>
               ))}
             </VStack>
@@ -437,17 +462,43 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   >
                     {row.label}
                   </Text>
-                  <HStack spacing={3}>
-                    {segments.map((segment) => (
-                      <Capsule
-                        key={`${row.id}-seg-${segment}`}
+                  {style === "dots" ? (
+                    <HStack spacing={3}>
+                      {dots12.map((segment) => (
+                        <Capsule
+                          key={`${row.id}-dot-${segment}`}
+                          modifiers={[
+                            frame({ width: 4, height: 4 }),
+                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                          ]}
+                        />
+                      ))}
+                    </HStack>
+                  ) : style === "dash" ? (
+                    <HStack spacing={3}>
+                      {dash10.map((segment) => (
+                        <RoundedRectangle
+                          key={`${row.id}-dash-${segment}`}
+                          cornerRadius={1}
+                          modifiers={[
+                            frame({ width: 5, height: 4 }),
+                            foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 10) ? row.accent : track),
+                          ]}
+                        />
+                      ))}
+                    </HStack>
+                  ) : style === "none" ? null : (
+                    <ZStack alignment="leading" modifiers={[frame({ width: 72, height: 6, alignment: "leading" })]}>
+                      <RoundedRectangle cornerRadius={3} modifiers={[foregroundStyle(track), frame({ width: 72, height: 6 })]} />
+                      <RoundedRectangle
+                        cornerRadius={3}
                         modifiers={[
-                          frame({ width: 3, height: 10 }),
-                          foregroundStyle(segment < Math.round(Math.max(0, Math.min(1, row.ratio)) * 12) ? row.accent : track),
+                          foregroundStyle(row.accent),
+                          frame({ width: Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * 72)), height: 6 }),
                         ]}
                       />
-                    ))}
-                  </HStack>
+                    </ZStack>
+                  )}
                 </HStack>
               ))}
             </VStack>

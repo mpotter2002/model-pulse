@@ -84,7 +84,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     void import("@/widgets/widget-sync").then(({ syncSignalStackWidget }) => {
       void syncSignalStackWidget(snapshots, storedState.widgetConfig, storedState.rateLimitStyle);
     });
-  }, [hydrated, snapshots, storedState.widgetConfig]);
+  }, [hydrated, snapshots, storedState.widgetConfig, storedState.rateLimitStyle]);
 
   useEffect(() => {
     if (!hydrated) return;
