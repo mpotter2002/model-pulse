@@ -433,19 +433,28 @@ function WidgetPreview({
   return (
     <WidgetFrame width={width} minHeight={minHeight}>
       <View style={{ gap: 10 }}>
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-          <View style={{ flex: 1 }}>
-            <Text size="sm" weight="bold" color="foreground" style={{ color: WIDGET_COLORS.text }}>
-              SignalStack
-            </Text>
-            <Text size="xs" family="mono" color="muted" style={{ color: WIDGET_COLORS.muted }}>
-              {cards.length === 1 ? "1 model shown" : `${cards.length} models shown`}
-            </Text>
+        {size === "small" ? null : (
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              {size === "large" ? (
+                <Text size="sm" weight="bold" color="foreground" style={{ color: WIDGET_COLORS.text }}>
+                  SignalStack
+                </Text>
+              ) : null}
+              <Text
+                size="xs"
+                family="mono"
+                color="muted"
+                style={{
+                  color: WIDGET_COLORS.muted,
+                  marginTop: size === "large" ? 2 : 0,
+                }}
+              >
+                {cards.length === 1 ? "1 model shown" : `${cards.length} models shown`}
+              </Text>
+            </View>
           </View>
-          {size === "large" ? null : (
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: focused.accent, marginTop: 3 }} />
-          )}
-        </View>
+        )}
 
         {size === "large" ? (
           <View
