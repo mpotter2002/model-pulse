@@ -413,10 +413,9 @@ function WidgetPreview({
   const hasApi = hasLiveApiData(cards, snapshots);
   const updatedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-  // Flatten every model's limit windows into a single list (matching the
-  // native largeLimitRows: up to 3 windows per card), so the large preview
-  // renders one bar per window like the home-screen widget.
-  const flatLimitRows: Array<{ label: string; ratio: number; accent: string }> =
+  // Give every visible provider its normal rows first, then use leftover space
+  // for providers with extra windows like Gemini/Factory.
+  const baseLimitRows: Array<{ label: string; ratio: number; accent: string }> =
     metricMode === "subscription"
       ? cards.flatMap((card) =>
           (subLimitRows[card.id] ?? []).slice(0, 3).map((row) => ({
@@ -426,6 +425,17 @@ function WidgetPreview({
           })),
         )
       : [];
+  const bonusLimitRows: Array<{ label: string; ratio: number; accent: string }> =
+    metricMode === "subscription"
+      ? cards.flatMap((card) =>
+          (subLimitRows[card.id] ?? []).slice(3, 5).map((row) => ({
+            label: row.label,
+            ratio: row.ratio,
+            accent: card.accent,
+          })),
+        )
+      : [];
+  const flatLimitRows = baseLimitRows.concat(bonusLimitRows);
 
   const showBalance = metricMode === "api" && hasApi;
   const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";

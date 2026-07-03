@@ -85,9 +85,13 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const cards = cardsInput;
     const primary = cards[0] ?? null;
 
-    const flatLimitRows: WidgetLimitRow[] = cards.flatMap((card) =>
+    const baseLimitRows: WidgetLimitRow[] = cards.flatMap((card) =>
       (card.limitRows ?? []).slice(0, 3),
     );
+    const bonusLimitRows: WidgetLimitRow[] = cards.flatMap((card) =>
+      (card.limitRows ?? []).slice(3, 5),
+    );
+    const flatLimitRows: WidgetLimitRow[] = baseLimitRows.concat(bonusLimitRows);
     const hasLimits = flatLimitRows.length > 0;
 
     const showBalance = metricLabel === "Balance" && hasLiveApiData;
