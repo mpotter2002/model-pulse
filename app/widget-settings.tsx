@@ -432,10 +432,10 @@ function WidgetPreview({
   const showBalance = metricMode === "api" && hasApi;
   const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
   const summaryLabel = metricMode === "subscription" ? "Limits" : showBalance ? "Balance" : "Spend";
-  const worstUsed = flatLimitRows.reduce((max, row) => Math.max(max, 1 - row.ratio), 0);
+  const averageUsed = flatLimitRows.length > 0 ? flatLimitRows.reduce((sum, row) => sum + (1 - row.ratio), 0) / flatLimitRows.length : 0;
   const summaryValue =
     metricMode === "subscription" && flatLimitRows.length > 0
-      ? `${Math.round(worstUsed * 100)}%`
+      ? `${Math.round(averageUsed * 100)}%`
       : showBalance
         ? `$${totalBalance.toFixed(2)}`
         : `$${totalSpend.toFixed(0)}`;

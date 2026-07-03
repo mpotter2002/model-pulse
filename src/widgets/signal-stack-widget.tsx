@@ -90,17 +90,19 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     );
     const hasLimits = flatLimitRows.length > 0;
 
-    const worstUsed = flatLimitRows.reduce(
-      (max, row) => Math.max(max, 1 - Math.max(0, Math.min(1, row.ratio))),
-      0,
-    );
+    const averageUsed = flatLimitRows.length > 0
+      ? flatLimitRows.reduce(
+          (sum, row) => sum + (1 - Math.max(0, Math.min(1, row.ratio))),
+          0,
+        ) / flatLimitRows.length
+      : 0;
     const showBalance = metricLabel === "Balance" && hasLiveApiData;
     const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
     const primaryTileValue = showBalance ? totalBalance : totalSpend;
     const summaryLabel = metricLabel === "Limits" && hasLimits ? "LIMITS" : primaryTileLabel;
     const summaryValue =
       metricLabel === "Limits" && hasLimits
-        ? `${Math.round(worstUsed * 100)}%`
+        ? `${Math.round(averageUsed * 100)}%`
         : primaryTileValue;
 
     const modelsLabel = cards.length === 1 ? "1 MODEL SHOWN" : `${cards.length} MODELS SHOWN`;
