@@ -393,7 +393,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         spacing={6}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ top: 30, bottom: 10, horizontal: 14 }),
+            padding({ top: isLarge ? 30 : 26, bottom: isLarge ? 10 : 8, horizontal: 14 }),
             containerBackground(background, "widget"),
           ]}
         >
@@ -453,7 +453,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         {/* Limit rows */}
         {isLarge && hasLimits ? (
           <VStack alignment="leading" spacing={4} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-            {flatLimitRows.slice(0, 14).map((row) => {
+            {flatLimitRows.slice(0, 16).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
               const bar = style === "dots" ? (
@@ -565,7 +565,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : (
           <VStack alignment="leading" spacing={5}>
             {hasLimits
-              ? flatLimitRows.slice(0, isLarge ? 14 : 3).map((row) => {
+              ? flatLimitRows.slice(0, isLarge ? 16 : 3).map((row) => {
                   const fallbackWidth = isLarge ? 220 : 120;
                   const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
                   return (
@@ -612,7 +612,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         )}
 
         {/* Footer */}
-        <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Regular" }), lineLimit(1)]}>
+        <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Regular" }), lineLimit(1), frame({ maxWidth: 10000, alignment: "trailing" })]}>
           Updated {updatedAt}
         </Text>
       </VStack>
