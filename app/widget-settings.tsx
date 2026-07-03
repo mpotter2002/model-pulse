@@ -57,7 +57,7 @@ function useWidgetColors() {
 }
 
 const BAR_WIDTHS: Record<WidgetSize, number> = {
-  small: 84,
+  small: 130,
   medium: 72,
   large: 200,
 };

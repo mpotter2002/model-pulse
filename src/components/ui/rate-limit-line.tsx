@@ -20,6 +20,7 @@ const DOT_CONFIGS: Record<number, { count: number; size: number; gap: number }> 
   72: { count: 8, size: 7, gap: 2 },
   200: { count: 20, size: 8, gap: 2 },
   220: { count: 20, size: 9, gap: 2 },
+  130: { count: 16, size: 7, gap: 1 },
 };
 
 const DASH_CONFIGS: Record<
@@ -31,6 +32,7 @@ const DASH_CONFIGS: Record<
   72: { count: 5, width: 11, height: 4, gap: 4, radius: 1 },
   200: { count: 10, width: 18, height: 6, gap: 2, radius: 2 },
   220: { count: 9, width: 20, height: 6, gap: 5, radius: 2 },
+  130: { count: 9, width: 11, height: 4, gap: 4, radius: 1 },
 };
 
 export function RateLimitLine({
