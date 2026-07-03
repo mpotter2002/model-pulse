@@ -413,29 +413,17 @@ function WidgetPreview({
   const hasApi = hasLiveApiData(cards, snapshots);
   const updatedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-  // Give every visible provider its normal rows first, then use leftover space
-  // for providers with extra windows like Gemini/Factory.
-  const baseLimitRows: Array<{ label: string; ratio: number; accent: string }> =
+  // Round-robin by limit index: every provider's first limit, then every
+  // provider's second, then extras to fill the large widget when available.
+  const flatLimitRows: Array<{ label: string; ratio: number; accent: string }> =
     metricMode === "subscription"
-      ? cards.flatMap((card) =>
-          (subLimitRows[card.id] ?? []).slice(0, 3).map((row) => ({
-            label: row.label,
-            ratio: row.ratio,
-            accent: card.accent,
-          })),
+      ? [0, 1, 2, 3, 4].flatMap((limitIndex) =>
+          cards.flatMap((card) => {
+            const row = subLimitRows[card.id]?.[limitIndex];
+            return row ? [{ label: row.label, ratio: row.ratio, accent: card.accent }] : [];
+          }),
         )
       : [];
-  const bonusLimitRows: Array<{ label: string; ratio: number; accent: string }> =
-    metricMode === "subscription"
-      ? cards.flatMap((card) =>
-          (subLimitRows[card.id] ?? []).slice(3, 5).map((row) => ({
-            label: row.label,
-            ratio: row.ratio,
-            accent: card.accent,
-          })),
-        )
-      : [];
-  const flatLimitRows = baseLimitRows.concat(bonusLimitRows);
 
   const showBalance = metricMode === "api" && hasApi;
   const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
