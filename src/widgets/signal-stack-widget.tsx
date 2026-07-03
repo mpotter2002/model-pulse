@@ -404,7 +404,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         spacing={6}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ top: 22, bottom: 22, horizontal: 14 }),
+            padding({ top: 32, bottom: 12, horizontal: 14 }),
             containerBackground(background, "widget"),
           ]}
         >
@@ -638,8 +638,6 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                 ))}
           </VStack>
         )}
-
-        <Spacer />
 
         {/* Footer */}
         <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Regular" }), lineLimit(1)]}>
