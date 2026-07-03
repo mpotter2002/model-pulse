@@ -260,7 +260,7 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
           disabled={refreshing}
           style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: theme.muted }}
         >
-          <Image source="sf:arrow.clockwise" style={{ width: 12, height: 12, tintColor: useTheme().foreground }} />
+          <Image source="sf:arrow.clockwise" style={{ width: 12, height: 12, tintColor: theme.foreground }} />
           <Text size="xs" family="mono" weight="semibold">
             {refreshing ? "Refreshing..." : "Refresh"}
           </Text>

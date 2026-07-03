@@ -1216,18 +1216,6 @@ function codexAccountId(token: string | null | undefined): string | null {
   );
 }
 
-function factoryUserId(token: string | null | undefined): string | null {
-  const payload = decodeJwtPayload(token);
-  if (!payload) return null;
-  return (
-    readString(payload, "sub") ??
-    readString(payload, "user_id") ??
-    readString(payload, "userId") ??
-    readString(asRecord(payload.user), "id") ??
-    readString(asRecord(payload.user), "userId")
-  );
-}
-
 export function decodeJwtPayload(token: string | null | undefined): Record<string, unknown> | null {
   if (!token) return null;
   const parts = token.split(".");

@@ -1,4 +1,4 @@
-import React, { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Platform, useColorScheme } from "react-native";
 
 import { tokens, type ThemeTokens } from "@/design-system/tokens";
@@ -62,11 +62,13 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     loadStoredState()
       .then((next) => {
         storedStateRef.current = next;
-        startTransition(() => {
-          setStoredState(next);
-        });
+        // Commit the loaded state and the hydrated flag in the same render so
+        // effects gated on `hydrated` (widget sync, refresh) never observe the
+        // default state (e.g. rateLimitStyle "bar") after a cold launch.
+        setStoredState(next);
+        setHydrated(true);
       })
-      .finally(() => setHydrated(true));
+      .catch(() => setHydrated(true));
   }, []);
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
 
   useEffect(() => {
     if (!hydrated) return;
-    void refreshAllInternal(storedState);
+    void refreshAllInternal(storedStateRef.current);
   }, [hydrated, storedState.demoMode]);
 
   useEffect(() => {
@@ -89,19 +91,19 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   useEffect(() => {
     if (!hydrated) return;
     const interval = setInterval(() => {
-      if (AppState.currentState === "active") void refreshAllInternal(storedState);
+      if (AppState.currentState === "active") void refreshAllInternal(storedStateRef.current);
     }, AUTO_REFRESH_MS);
     const subscription = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
       if (Date.now() - lastRefreshAtRef.current >= AUTO_REFRESH_MS) {
-        void refreshAllInternal(storedState);
+        void refreshAllInternal(storedStateRef.current);
       }
     });
     return () => {
       clearInterval(interval);
       subscription.remove();
     };
-  }, [hydrated, storedState]);
+  }, [hydrated]);
 
   async function refreshAllInternal(nextState: StoredState, force = false) {
     setRefreshing(true);

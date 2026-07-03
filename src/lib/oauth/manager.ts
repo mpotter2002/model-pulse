@@ -42,6 +42,11 @@ export interface ConnectionStatusOptions {
 const REFRESH_BUFFER_MS = 60_000;
 const SUBSCRIPTION_CACHE_MS = 60_000;
 const ERROR_CACHE_MS = 15_000;
+// A forced (user-initiated) fetch that lands within this window of ANY prior
+// result is served from cache. Guards against double-hits when a single
+// pull-to-refresh triggers both the store-level warm and per-card refreshes —
+// critical for Anthropic, which extends its 429 penalty on every request.
+const FORCE_DEDUPE_MS = 30_000;
 
 /**
  * True when a stored token is already past its expiry and has no refresh token,
@@ -548,6 +553,9 @@ export async function getConnectionStatus(
   const force = options.force ?? false;
   const cached = connectionStatusCache.get(providerId);
   if (!force && cached && cached.expiresAt > Date.now() && shouldUseCachedStatus(cached.status, allowNetwork)) {
+    return cached.status;
+  }
+  if (force && cached && Date.now() - cached.fetchedAt < FORCE_DEDUPE_MS) {
     return cached.status;
   }
 

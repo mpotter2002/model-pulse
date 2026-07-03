@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, RefreshControl, View } from "react-native";
 
 import { AIModelCard } from "@/components/ai-model-card";
@@ -10,10 +10,9 @@ import { ScreenScrollView } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { useTheme } from "@/components/ui/theme";
 import { makeModelCards } from "@/lib/model-cards";
-import { getConnectionStatus, type ConnectionStatus } from "@/lib/oauth/manager";
 import { PROVIDER_ORDER } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
-import type { ModelCardId, ThemeMode } from "@/types/domain";
+import type { ThemeMode } from "@/types/domain";
 
 export default function HomeScreen() {
   const {
@@ -29,47 +28,10 @@ export default function HomeScreen() {
   } = useAppStore();
   const theme = useTheme();
   const [subRefreshNonce, setSubRefreshNonce] = useState(0);
-  const [subscriptionStatuses, setSubscriptionStatuses] = useState<Partial<Record<ModelCardId, ConnectionStatus | null>>>({});
-  const subStatusesDidMountRef = useRef(false);
 
   const modelCards = makeModelCards()
     .filter((item) => !hiddenModelCardIds.includes(item.id))
     .sort((a, b) => modelCardOrder.indexOf(a.id) - modelCardOrder.indexOf(b.id));
-
-  useEffect(() => {
-    let cancelled = false;
-    const userInitiated = subStatusesDidMountRef.current;
-    subStatusesDidMountRef.current = true;
-
-    async function loadSubscriptionStatuses() {
-      const entries = await Promise.all(
-        modelCards.map(async (card) => {
-          if (!card.subscriptionProviderId) return [card.id, null] as const;
-          try {
-            return [
-              card.id,
-              await getConnectionStatus(card.subscriptionProviderId, {
-                // On mount, load passively (cache-only for Claude to avoid
-                // tripping Anthropic's throttled usage endpoint). A bumped
-                // `subRefreshNonce` is a user pull-to-refresh, so force a real
-                // network fetch for every provider including Claude.
-                allowNetwork: userInitiated || card.subscriptionProviderId !== "claude-sub",
-                force: userInitiated,
-              }),
-            ] as const;
-          } catch {
-            return [card.id, null] as const;
-          }
-        }),
-      );
-      if (!cancelled) setSubscriptionStatuses(Object.fromEntries(entries));
-    }
-
-    void loadSubscriptionStatuses();
-    return () => {
-      cancelled = true;
-    };
-  }, [subRefreshNonce, modelCards]);
 
   const totalSubscriptionSpend = modelCards.reduce(
     (sum, card) => sum + parseUsd(widgetConfig.subscriptionPricesUsd[card.id]),

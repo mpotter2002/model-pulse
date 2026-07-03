@@ -1,7 +1,6 @@
 import { makeModelCards } from "@/lib/model-cards";
 import { getConnectionStatus } from "@/lib/oauth/manager";
 import type { SubscriptionUsage } from "@/lib/oauth/types";
-import { PROVIDERS, PROVIDER_ORDER } from "@/lib/providers";
 import type { ModelCardId, ProviderId, ProviderSnapshot, RateLimitStyle, WidgetConfig } from "@/types/domain";
 import { signalStackWidget } from "@/widgets/signal-stack-widget";
 
