@@ -393,12 +393,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         spacing={6}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ top: 26, bottom: 12, horizontal: 14 }),
+            padding({ top: 30, bottom: 10, horizontal: 14 }),
             containerBackground(background, "widget"),
           ]}
         >
-        <Spacer />
-
         {/* Header (large only) */}
         {isLarge ? (
           <HStack spacing={6} alignment="top">
@@ -426,7 +424,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               </Text>
             </VStack>
           </ZStack>
-          {hasLiveApiData ? (
+          {hasLiveApiData && !isLarge ? (
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 56, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
               <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>
@@ -455,7 +453,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         {/* Limit rows */}
         {isLarge && hasLimits ? (
           <VStack alignment="leading" spacing={4} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-            {flatLimitRows.slice(0, 9).map((row) => {
+            {flatLimitRows.slice(0, 14).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
               const bar = style === "dots" ? (
@@ -567,7 +565,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : (
           <VStack alignment="leading" spacing={5}>
             {hasLimits
-              ? flatLimitRows.slice(0, isLarge ? 12 : 3).map((row) => {
+              ? flatLimitRows.slice(0, isLarge ? 14 : 3).map((row) => {
                   const fallbackWidth = isLarge ? 220 : 120;
                   const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
                   return (
