@@ -453,7 +453,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         {/* Limit rows */}
         {isLarge && hasLimits ? (
           <VStack alignment="leading" spacing={2} modifiers={[frame({ maxWidth: 10000, alignment: "leading" })]}>
-            {flatLimitRows.slice(0, 21).map((row) => {
+            {flatLimitRows.slice(0, 14).map((row) => {
               const ratio = Math.max(0, Math.min(1, row.ratio));
               const barFill = Math.max(2, Math.round(ratio * 220));
               const bar = style === "dots" ? (
@@ -565,7 +565,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : (
           <VStack alignment="leading" spacing={5}>
             {hasLimits
-              ? flatLimitRows.slice(0, isLarge ? 21 : 3).map((row) => {
+              ? flatLimitRows.slice(0, isLarge ? 14 : 3).map((row) => {
                   const fallbackWidth = isLarge ? 220 : 120;
                   const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
                   return (
