@@ -452,6 +452,11 @@ async function refreshApiToken(
  * upstream CLI's refreshOAuth-on-401 behavior. Returns the new tokens, or null
  * when there is no refresh token / the refresh fails.
  */
+// Records the error message from the most recent forceRefreshTokens() call per
+// provider, so callers (e.g. the Claude usage fetch) can surface *why* a
+// refresh produced no new token instead of a generic message.
+const lastRefreshErrorMap = new Map<SubscriptionProviderId, string | null>();
+
 async function forceRefreshTokens(
   providerId: SubscriptionProviderId,
   tokens: StoredTokens,
@@ -462,6 +467,7 @@ async function forceRefreshTokens(
     if (def.deviceFlow) {
       const refreshed = await refreshTokens(def.deviceFlow, tokens.refreshToken);
       await saveTokens(providerId, refreshed);
+      lastRefreshErrorMap.delete(providerId);
       return refreshed;
     }
     if (def.tokenRefresh) {
@@ -476,10 +482,16 @@ async function forceRefreshTokens(
         clientSecret: refreshed.clientSecret ?? tokens.clientSecret ?? null,
       };
       await saveTokens(providerId, merged);
+      lastRefreshErrorMap.delete(providerId);
       return merged;
     }
   } catch (error) {
+    lastRefreshErrorMap.set(
+      providerId,
+      error instanceof Error ? error.message : String(error),
+    );
     console.warn(`[SignalStack] forced token refresh failed for ${providerId}`, error);
+    return null;
   }
   return null;
 }
@@ -627,6 +639,7 @@ async function loadConnectionStatus(
     const usage = await SUBSCRIPTION_PROVIDERS[providerId].fetchUsage(tokens, {
       // Let the provider refresh + retry on a 401, mirroring the upstream CLI.
       refreshTokens: () => forceRefreshTokens(providerId, tokens),
+      lastRefreshError: () => lastRefreshErrorMap.get(providerId) ?? null,
     });
     if (usage.fetchState === "live") {
       lastGoodUsage.set(providerId, { usage, fetchedAt: Date.now() });

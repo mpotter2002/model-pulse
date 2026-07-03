@@ -16,6 +16,13 @@ import type {
 export interface UsageFetchContext {
   /** Force-refresh the provider's tokens and return the new set, or null. */
   refreshTokens?: () => Promise<StoredTokens | null>;
+  /**
+   * Returns the error message from the most recent refreshTokens() call, if it
+   * failed. refreshTokens() swallows errors and returns null, so this lets a
+   * provider surface *why* the refresh produced no new token (e.g.
+   * invalid_client, HTTP 404) instead of a generic "no new token".
+   */
+  lastRefreshError?: () => string | null;
 }
 
 export interface SubscriptionProviderDef {
@@ -261,8 +268,14 @@ async function fetchClaudeUsage(
           return await callOnce(refreshed.accessToken);
         }
         refreshOutcome = "unchanged";
+        // refreshTokens() swallows its own error and returns the same (or no)
+        // token. Pull the real reason so the on-device debug line can say
+        // whether the refresh was *rejected* (bad endpoint/client_id/grant)
+        // vs. the refresh token genuinely being dead.
+        refreshErrorMessage = ctx?.lastRefreshError?.() ?? null;
         console.warn(
-          `[SignalStack] Claude ${(error as HttpError).status} -> refresh returned no new token (refresh token may be dead)`,
+          `[SignalStack] Claude ${(error as HttpError).status} -> refresh returned no new token`,
+          refreshErrorMessage ?? "(no refresh error captured)",
         );
       } catch (refreshError) {
         refreshOutcome = "error";
@@ -303,7 +316,9 @@ async function fetchClaudeUsage(
       refreshOutcome === "error"
         ? ` · refresh failed: ${refreshErrorMessage ?? "unknown"}`
         : refreshOutcome === "unchanged"
-          ? " · refresh returned no new token (reconnect may be needed)"
+          ? refreshErrorMessage
+            ? ` · refresh rejected: ${refreshErrorMessage}`
+            : " · refresh returned no new token (reconnect may be needed)"
           : refreshOutcome === "refreshed_retried"
             ? " · refreshed but still 429 (genuinely throttled)"
             : "";
