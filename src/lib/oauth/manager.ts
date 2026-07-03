@@ -64,6 +64,7 @@ type ConnectionStatusCacheEntry = {
   status: ConnectionStatus;
   fetchedAt: number;
   expiresAt: number;
+  wasForced: boolean;
 };
 
 const connectionStatusCache = new Map<SubscriptionProviderId, ConnectionStatusCacheEntry>();
@@ -555,7 +556,10 @@ export async function getConnectionStatus(
   if (!force && cached && cached.expiresAt > Date.now() && shouldUseCachedStatus(cached.status, allowNetwork)) {
     return cached.status;
   }
-  if (force && cached && Date.now() - cached.fetchedAt < FORCE_DEDUPE_MS) {
+  // Only dedupe a forced fetch against another *forced* fetch. A passive
+  // (non-forced) cache entry — e.g. the initial mount load — must never
+  // suppress a user's explicit "Refresh usage" tap.
+  if (force && cached && cached.wasForced && Date.now() - cached.fetchedAt < FORCE_DEDUPE_MS) {
     return cached.status;
   }
 
@@ -588,7 +592,7 @@ async function loadConnectionStatus(
 ): Promise<ConnectionStatus> {
   const stored = await loadTokens(providerId);
   if (!stored) {
-    return cacheConnectionStatus(providerId, { kind: "disconnected" });
+    return cacheConnectionStatus(providerId, { kind: "disconnected" }, force);
   }
 
   await hydratePersistedUsage();
@@ -603,7 +607,7 @@ async function loadConnectionStatus(
     return cacheConnectionStatus(providerId, {
       kind: "error",
       message: `${SUBSCRIPTION_PROVIDERS[providerId].shortLabel} token expired — reconnect to refresh usage.`,
-    });
+    }, force);
   }
 
   // Honor a persisted cooldown — do NOT touch the network until it expires.
@@ -614,11 +618,12 @@ async function loadConnectionStatus(
     return cacheConnectionStatus(
       providerId,
       buildCooldownStatus(providerId, cooldownUntil),
+      force,
     );
   }
 
   if (!allowNetwork) {
-    return cacheConnectionStatus(providerId, buildCachedConnectedStatus(providerId));
+    return cacheConnectionStatus(providerId, buildCachedConnectedStatus(providerId), force);
   }
 
   // Honor the provider-defined minimum fetch interval. If we have a
@@ -639,7 +644,7 @@ async function loadConnectionStatus(
         cooldownUntil: nextEligibleAt,
       },
       updatedAt: new Date(prior.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-    });
+    }, force);
   }
 
   try {
@@ -671,7 +676,7 @@ async function loadConnectionStatus(
       kind: "connected",
       usage: mergedUsage,
       updatedAt: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-    });
+    }, force);
   } catch (error) {
     const prior = lastGoodUsage.get(providerId);
     if (prior) {
@@ -692,12 +697,12 @@ async function loadConnectionStatus(
         kind: "connected",
         usage: decorated,
         updatedAt: new Date(prior.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-      });
+      }, force);
     }
     return cacheConnectionStatus(providerId, {
       kind: "error",
       message: error instanceof Error ? error.message : "Unknown error fetching usage.",
-    });
+    }, force);
   }
 }
 
@@ -732,12 +737,14 @@ export async function isConnected(providerId: SubscriptionProviderId): Promise<b
 function cacheConnectionStatus(
   providerId: SubscriptionProviderId,
   status: ConnectionStatus,
+  wasForced = false,
 ): ConnectionStatus {
   const fetchedAt = Date.now();
   connectionStatusCache.set(providerId, {
     status,
     fetchedAt,
     expiresAt: expiryForStatus(status, fetchedAt),
+    wasForced,
   });
   return status;
 }
