@@ -90,24 +90,9 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     );
     const hasLimits = flatLimitRows.length > 0;
 
-    const weeklyRows = flatLimitRows.filter((row) =>
-      row.label.toLowerCase().includes("week"),
-    );
-    const summaryRows = weeklyRows.length > 0 ? weeklyRows : flatLimitRows;
-    const averageUsed = summaryRows.length > 0
-      ? summaryRows.reduce(
-          (sum, row) => sum + (1 - Math.max(0, Math.min(1, row.ratio))),
-          0,
-        ) / summaryRows.length
-      : 0;
     const showBalance = metricLabel === "Balance" && hasLiveApiData;
     const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
     const primaryTileValue = showBalance ? totalBalance : totalSpend;
-    const summaryLabel = metricLabel === "Limits" && hasLimits ? "LIMITS" : primaryTileLabel;
-    const summaryValue =
-      metricLabel === "Limits" && hasLimits
-        ? `${Math.round(averageUsed * 100)}%`
-        : primaryTileValue;
 
     const modelsLabel = cards.length === 1 ? "1 MODEL SHOWN" : `${cards.length} MODELS SHOWN`;
     const modelsShown = cards.length === 1 ? "1 model shown" : `${cards.length} models shown`;
@@ -428,21 +413,6 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           </HStack>
         ) : null}
 
-        {/* Summary bar (large only) */}
-        {isLarge ? (
-          <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 52, alignment: "leading" })]}>
-            <RoundedRectangle cornerRadius={14} modifiers={[foregroundStyle(panel)]} />
-            <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>
-              <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Bold" }), lineLimit(1)]}>
-                {`${summaryLabel} · ${modelsLabel}`}
-              </Text>
-              <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 22, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
-                {summaryValue}
-              </Text>
-            </VStack>
-          </ZStack>
-        ) : null}
-
         {/* Tiles row */}
         <HStack spacing={6}>
           <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 56, alignment: "leading" })]}>
@@ -597,7 +567,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         ) : (
           <VStack alignment="leading" spacing={5}>
             {hasLimits
-              ? flatLimitRows.slice(0, isLarge ? 9 : 3).map((row) => {
+              ? flatLimitRows.slice(0, isLarge ? 12 : 3).map((row) => {
                   const fallbackWidth = isLarge ? 220 : 120;
                   const fallbackFill = Math.max(2, Math.round(Math.max(0, Math.min(1, row.ratio)) * fallbackWidth));
                   return (
