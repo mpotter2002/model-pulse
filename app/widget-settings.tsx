@@ -413,15 +413,16 @@ function WidgetPreview({
   const hasApi = hasLiveApiData(cards, snapshots);
   const updatedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-  // Round-robin by limit index: every provider's first limit, then every
-  // provider's second, then extras to fill the large widget when available.
+  // Keep each provider's limit rows grouped together so the color/order matches
+  // the real Home Screen widget.
   const flatLimitRows: Array<{ label: string; ratio: number; accent: string }> =
     metricMode === "subscription"
-      ? [0, 1, 2, 3, 4].flatMap((limitIndex) =>
-          cards.flatMap((card) => {
-            const row = subLimitRows[card.id]?.[limitIndex];
-            return row ? [{ label: row.label, ratio: row.ratio, accent: card.accent }] : [];
-          }),
+      ? cards.flatMap((card) =>
+          (subLimitRows[card.id] ?? []).slice(0, 5).map((row) => ({
+            label: row.label,
+            ratio: row.ratio,
+            accent: card.accent,
+          })),
         )
       : [];
 
@@ -491,7 +492,7 @@ function WidgetPreview({
           }}
         >
           {flatLimitRows.length > 0
-            ? flatLimitRows.slice(0, size === "large" ? 20 : size === "medium" ? 4 : 7).map((row, i) => (
+            ? flatLimitRows.slice(0, size === "large" ? 21 : size === "medium" ? 4 : 7).map((row, i) => (
                 <PreviewLimitRowView
                   key={`${row.label}-${i}`}
                   row={row}
