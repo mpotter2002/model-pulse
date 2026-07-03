@@ -408,7 +408,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         spacing={6}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ top: 32, bottom: 12, horizontal: 14 }),
+            padding({ top: 26, bottom: 12, horizontal: 14 }),
             containerBackground(background, "widget"),
           ]}
         >
