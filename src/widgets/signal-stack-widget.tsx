@@ -404,10 +404,12 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
         spacing={6}
           modifiers={[
             frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-            padding({ top: 18, bottom: 18, horizontal: 14 }),
+            padding({ top: 22, bottom: 22, horizontal: 14 }),
             containerBackground(background, "widget"),
           ]}
         >
+        <Spacer />
+
         {/* Header (large only) */}
         {isLarge ? (
           <HStack spacing={6} alignment="top">
