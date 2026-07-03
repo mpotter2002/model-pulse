@@ -427,18 +427,8 @@ function WidgetPreview({
         )
       : [];
 
-  // Summary bar mirrors the native widget: limits mode shows the highest
-  // usage across all windows as a percent; otherwise total spend.
   const showBalance = metricMode === "api" && hasApi;
   const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
-  const summaryLabel = metricMode === "subscription" ? "Limits" : showBalance ? "Balance" : "Spend";
-  const averageUsed = flatLimitRows.length > 0 ? flatLimitRows.reduce((sum, row) => sum + (1 - row.ratio), 0) / flatLimitRows.length : 0;
-  const summaryValue =
-    metricMode === "subscription" && flatLimitRows.length > 0
-      ? `${Math.round(averageUsed * 100)}%`
-      : showBalance
-        ? `$${totalBalance.toFixed(2)}`
-        : `$${totalSpend.toFixed(0)}`;
 
   return (
     <WidgetFrame width={width} minHeight={minHeight} size={size}>
@@ -461,26 +451,6 @@ function WidgetPreview({
           </View>
         ) : null}
 
-        {size === "large" ? (
-          <View
-            style={{
-              backgroundColor: colors.panel,
-              borderRadius: 14,
-              borderCurve: "continuous" as any,
-              paddingHorizontal: 10,
-              paddingVertical: 7,
-              gap: 1,
-            }}
-          >
-            <Text size="xs" family="mono" weight="bold" style={{ color: colors.muted, letterSpacing: 0.4 }} numberOfLines={1}>
-              {`${summaryLabel.toUpperCase()} · ${(cards.length === 1 ? "1 MODEL SHOWN" : `${cards.length} MODELS SHOWN`)}`}
-            </Text>
-            <Text size="2xl" weight="extrabold" style={{ color: colors.text, fontVariant: ["tabular-nums"] }} numberOfLines={1}>
-              {summaryValue}
-            </Text>
-          </View>
-        ) : null}
-
         <View style={{ flexDirection: "row", gap: 8 }}>
           <PreviewTile
             label={primaryTileLabel}
@@ -490,11 +460,13 @@ function WidgetPreview({
           />
           {size === "small" ? (
             <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} compact />
-          ) : (
+          ) : size === "medium" ? (
             <>
               {hasApi ? <PreviewTile label="TOKENS" value={compactNumber(totalTokens)} flex={1} /> : null}
               <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
             </>
+          ) : (
+            <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
           )}
         </View>
 
@@ -521,7 +493,7 @@ function WidgetPreview({
           }}
         >
           {flatLimitRows.length > 0
-            ? flatLimitRows.slice(0, size === "large" ? 8 : size === "medium" ? 4 : 7).map((row, i) => (
+            ? flatLimitRows.slice(0, size === "large" ? 20 : size === "medium" ? 4 : 7).map((row, i) => (
                 <PreviewLimitRowView
                   key={`${row.label}-${i}`}
                   row={row}
@@ -577,8 +549,10 @@ function WidgetFrame({
   const padding =
     size === "small"
       ? { paddingTop: 16, paddingBottom: 14, paddingHorizontal: 14 }
-      : size === "medium" || size === "large"
+      : size === "medium"
         ? { paddingTop: 18, paddingBottom: 18, paddingHorizontal: 14 }
+      : size === "large"
+        ? { paddingTop: 14, paddingBottom: 4, paddingHorizontal: 14 }
         : { padding: 14 };
   return (
     <View
