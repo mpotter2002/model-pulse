@@ -232,6 +232,12 @@ async function fetchClaudeUsage(
       "User-Agent": CLAUDE_CODE_USER_AGENT,
     });
 
+  // Records what happened when we tried to auto-refresh, so the surfaced
+  // status can tell "genuinely throttled" apart from "refresh is broken".
+  type RefreshOutcome = "not_attempted" | "refreshed_retried" | "unchanged" | "error";
+  let refreshOutcome = "not_attempted" as RefreshOutcome;
+  let refreshErrorMessage: string | null = null;
+
   const json = await callOnce(tokens.accessToken).catch(async (error) => {
     // Anthropic's `/usage` endpoint sits behind an edge throttle that returns a
     // 429 *before* auth is validated. That means an expired/invalid access
@@ -248,12 +254,20 @@ async function fetchClaudeUsage(
       try {
         const refreshed = await ctx!.refreshTokens!();
         if (refreshed?.accessToken && refreshed.accessToken !== tokens.accessToken) {
+          refreshOutcome = "refreshed_retried";
           console.log(
             `[SignalStack] Claude ${(error as HttpError).status} -> token refreshed, retrying usage fetch`,
           );
           return await callOnce(refreshed.accessToken);
         }
+        refreshOutcome = "unchanged";
+        console.warn(
+          `[SignalStack] Claude ${(error as HttpError).status} -> refresh returned no new token (refresh token may be dead)`,
+        );
       } catch (refreshError) {
+        refreshOutcome = "error";
+        refreshErrorMessage =
+          refreshError instanceof Error ? refreshError.message : String(refreshError);
         console.warn(`[SignalStack] Claude token refresh on ${(error as HttpError).status} failed`, refreshError);
       }
     }
@@ -285,7 +299,15 @@ async function fetchClaudeUsage(
       "Known Anthropic-side throttling (shared with Claude Code on your computer)";
     const status = toInt(rec.status) ?? 429;
     const serverMessage = readString(rec, "serverMessage");
-    const debugDetail = `HTTP ${status} · retry-after: ${retryAfter ?? "none"}${serverMessage ? ` · ${serverMessage}` : ""}`;
+    const refreshNote =
+      refreshOutcome === "error"
+        ? ` · refresh failed: ${refreshErrorMessage ?? "unknown"}`
+        : refreshOutcome === "unchanged"
+          ? " · refresh returned no new token (reconnect may be needed)"
+          : refreshOutcome === "refreshed_retried"
+            ? " · refreshed but still 429 (genuinely throttled)"
+            : "";
+    const debugDetail = `HTTP ${status} · retry-after: ${retryAfter ?? "none"}${serverMessage ? ` · ${serverMessage}` : ""}${refreshNote}`;
     return {
       summary: {
         label: "Anthropic usage endpoint rate limited",

@@ -226,6 +226,11 @@ export function SubscriptionPanel({
             <Text size="xs" color="muted">
               Updated {status.updatedAt}
             </Text>
+            {status.usage.debugDetail ? (
+              <Text size="xs" color="muted" style={{ opacity: 0.7 }}>
+                {status.usage.debugDetail}
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
