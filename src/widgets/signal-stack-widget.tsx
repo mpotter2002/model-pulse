@@ -90,11 +90,15 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     );
     const hasLimits = flatLimitRows.length > 0;
 
-    const averageUsed = flatLimitRows.length > 0
-      ? flatLimitRows.reduce(
+    const weeklyRows = flatLimitRows.filter((row) =>
+      row.label.toLowerCase().includes("week"),
+    );
+    const summaryRows = weeklyRows.length > 0 ? weeklyRows : flatLimitRows;
+    const averageUsed = summaryRows.length > 0
+      ? summaryRows.reduce(
           (sum, row) => sum + (1 - Math.max(0, Math.min(1, row.ratio))),
           0,
-        ) / flatLimitRows.length
+        ) / summaryRows.length
       : 0;
     const showBalance = metricLabel === "Balance" && hasLiveApiData;
     const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
