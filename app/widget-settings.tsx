@@ -441,7 +441,7 @@ function WidgetPreview({
         : `$${totalSpend.toFixed(0)}`;
 
   return (
-    <WidgetFrame width={width} minHeight={minHeight}>
+    <WidgetFrame width={width} minHeight={minHeight} size={size}>
       <View style={{ gap: 10 }}>
         {size === "large" ? (
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
@@ -565,13 +565,21 @@ function WidgetPreview({
 function WidgetFrame({
   width,
   minHeight,
+  size,
   children,
 }: {
   width: number;
   minHeight: number;
+  size?: WidgetSize;
   children: React.ReactNode;
 }) {
   const colors = useWidgetColors();
+  const padding =
+    size === "small"
+      ? { paddingTop: 16, paddingBottom: 14, paddingHorizontal: 14 }
+      : size === "medium" || size === "large"
+        ? { paddingTop: 18, paddingBottom: 18, paddingHorizontal: 14 }
+        : { padding: 14 };
   return (
     <View
       style={{
@@ -579,10 +587,10 @@ function WidgetFrame({
         minHeight,
         borderRadius: 22,
         borderCurve: "continuous" as any,
-        padding: 14,
         backgroundColor: colors.background,
         borderWidth: 1,
         borderColor: colors.border,
+        ...padding,
       }}
     >
       {children}
