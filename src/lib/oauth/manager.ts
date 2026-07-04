@@ -81,6 +81,10 @@ const lastGoodUsage = new Map<SubscriptionProviderId, { usage: SubscriptionUsage
 const cooldownUntilMap = new Map<SubscriptionProviderId, number>();
 let persistedUsageHydrated = false;
 
+function persistableUsage(usage: SubscriptionUsage): boolean {
+  return usage.limits.length > 0 || usage.summary !== null;
+}
+
 async function hydratePersistedUsage() {
   if (persistedUsageHydrated) return;
   persistedUsageHydrated = true;
@@ -90,7 +94,7 @@ async function hydratePersistedUsage() {
         loadPersistedUsage(id),
         loadCooldownUntil(id),
       ]);
-      if (stored?.usage?.fetchState === "live") {
+      if (stored?.usage && persistableUsage(stored.usage)) {
         lastGoodUsage.set(id, { usage: stored.usage, fetchedAt: stored.fetchedAt });
       }
       if (cooldown && cooldown > Date.now()) {
@@ -705,6 +709,13 @@ async function loadConnectionStatus(
       cooldownUntilMap.set(providerId, clamped);
       usage.cooldownUntil = clamped;
       void saveCooldownUntil(providerId, clamped);
+    }
+    // Persist any usage that carries real limit rows (live OR rate_limited with
+    // data) so a cold launch can render the card/widget immediately instead of
+    // waiting for the user to force a refresh.
+    if (usage.fetchState !== "live" && persistableUsage(usage)) {
+      lastGoodUsage.set(providerId, { usage, fetchedAt: Date.now() });
+      void savePersistedUsage(providerId, usage);
     }
     const mergedUsage = mergeRateLimitedUsage(providerId, usage);
     return cacheConnectionStatus(providerId, {

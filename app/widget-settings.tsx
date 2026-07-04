@@ -492,7 +492,7 @@ function WidgetPreview({
           }}
         >
           {flatLimitRows.length > 0
-            ? flatLimitRows.slice(0, size === "large" ? 12 : size === "medium" ? 4 : 7).map((row, i) => (
+            ? flatLimitRows.slice(0, size === "large" ? 13 : size === "medium" ? 4 : 7).map((row, i) => (
                 <PreviewLimitRowView
                   key={`${row.label}-${i}`}
                   row={row}
