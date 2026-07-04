@@ -23,6 +23,46 @@ type WidgetSize = "small" | "medium" | "large";
 
 type PreviewLimitRow = { label: string; ratio: number };
 
+// Same fair distribution as the Home Screen widget (see pickLimitRowsFairly in
+// signal-stack-widget.tsx): give each provider up to `guaranteed` rows first,
+// then round-robin leftover capacity — but emit in provider order so each
+// provider's rows (and colors) stay grouped together.
+function pickPreviewLimitRowsFairly(
+  providers: Array<{ accent: string; rows: PreviewLimitRow[] }>,
+  total: number,
+  guaranteed: number,
+): Array<{ label: string; ratio: number; accent: string }> {
+  const allot = providers.map(() => 0);
+
+  let used = 0;
+  for (let p = 0; p < providers.length && used < total; p += 1) {
+    const give = Math.min(guaranteed, providers[p].rows.length, total - used);
+    allot[p] = give;
+    used += give;
+  }
+
+  let progressed = true;
+  while (used < total && progressed) {
+    progressed = false;
+    for (let p = 0; p < providers.length && used < total; p += 1) {
+      if (allot[p] < providers[p].rows.length) {
+        allot[p] += 1;
+        used += 1;
+        progressed = true;
+      }
+    }
+  }
+
+  const out: Array<{ label: string; ratio: number; accent: string }> = [];
+  for (let p = 0; p < providers.length; p += 1) {
+    for (let i = 0; i < allot[p]; i += 1) {
+      const row = providers[p].rows[i];
+      out.push({ label: row.label, ratio: row.ratio, accent: providers[p].accent });
+    }
+  }
+  return out;
+}
+
 function compactPreviewLimitLabel(providerLabel: string, rowLabel: string, includeProvider: boolean) {
   const cleaned = rowLabel
     .replace("Standard · ", "Std ")
@@ -413,16 +453,18 @@ function WidgetPreview({
   const hasApi = hasLiveApiData(cards, snapshots);
   const updatedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-  // Keep each provider's limit rows grouped together so the color/order matches
-  // the real Home Screen widget.
+  // Mirror the real Home Screen widget's fair distribution: every provider
+  // gets its first 2 windows before any provider gets a 3rd/4th, then extras
+  // are added round-robin. Keeps the in-app preview honest.
   const flatLimitRows: Array<{ label: string; ratio: number; accent: string }> =
     metricMode === "subscription"
-      ? cards.flatMap((card) =>
-          (subLimitRows[card.id] ?? []).slice(0, 3).map((row) => ({
-            label: row.label,
-            ratio: row.ratio,
+      ? pickPreviewLimitRowsFairly(
+          cards.map((card) => ({
             accent: card.accent,
+            rows: subLimitRows[card.id] ?? [],
           })),
+          13,
+          2,
         )
       : [];
 

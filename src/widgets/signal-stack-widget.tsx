@@ -23,6 +23,50 @@ type WidgetLimitRow = {
   accent: string;
 };
 
+/**
+ * Decide how many limit rows each provider gets for the large widget, keeping
+ * every provider's rows CONTIGUOUS (so the colors stay grouped) while staying
+ * fair: give each provider up to `guaranteed` rows first, then hand out any
+ * leftover capacity round-robin so no provider hogs extras before another has
+ * its guaranteed rows. Finally emit rows in provider order.
+ */
+function pickLimitRowsFairly(
+  cards: { limitRows?: WidgetLimitRow[] }[],
+  total: number,
+  guaranteed: number,
+): WidgetLimitRow[] {
+  const perProvider = cards.map((card) => card.limitRows ?? []);
+  const allot = perProvider.map(() => 0);
+
+  // Round 1: guaranteed rows per provider (capped by what each actually has).
+  let used = 0;
+  for (let p = 0; p < perProvider.length && used < total; p += 1) {
+    const give = Math.min(guaranteed, perProvider[p].length, total - used);
+    allot[p] = give;
+    used += give;
+  }
+
+  // Round 2+: distribute remaining capacity round-robin.
+  let progressed = true;
+  while (used < total && progressed) {
+    progressed = false;
+    for (let p = 0; p < perProvider.length && used < total; p += 1) {
+      if (allot[p] < perProvider[p].length) {
+        allot[p] += 1;
+        used += 1;
+        progressed = true;
+      }
+    }
+  }
+
+  // Emit in provider order so each provider's rows (and colors) stay grouped.
+  const out: WidgetLimitRow[] = [];
+  for (let p = 0; p < perProvider.length; p += 1) {
+    for (let i = 0; i < allot[p]; i += 1) out.push(perProvider[p][i]);
+  }
+  return out;
+}
+
 type WidgetCard = {
   id: ModelCardId;
   providerId?: ProviderId;
@@ -85,12 +129,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const cards = cardsInput;
     const primary = cards[0] ?? null;
 
-    // Cap each provider at its three most important windows so one provider
-    // with many windows can't squeeze the others out, then the total is capped
-    // at 12 below to fill the large widget without overflowing vertically.
-    const flatLimitRows: WidgetLimitRow[] = cards.flatMap((card) =>
-      (card.limitRows ?? []).slice(0, 3),
-    );
+    // Fill the widget fairly: give every provider its first 2 windows before
+    // any provider gets a 3rd/4th, then round-robin the remaining windows up to
+    // the total cap. This way adding a new provider always shows at least two
+    // of its limits instead of a provider with many windows hogging the rows.
+    const flatLimitRows: WidgetLimitRow[] = pickLimitRowsFairly(cards, 13, 2);
     const hasLimits = flatLimitRows.length > 0;
 
     const showBalance = metricLabel === "Balance" && hasLiveApiData;

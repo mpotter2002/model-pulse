@@ -79,29 +79,36 @@ const inFlightConnectionStatus = new Map<string, Promise<ConnectionStatus>>();
 // upstream usage endpoint is rate limited or otherwise unreachable.
 const lastGoodUsage = new Map<SubscriptionProviderId, { usage: SubscriptionUsage; fetchedAt: number }>();
 const cooldownUntilMap = new Map<SubscriptionProviderId, number>();
-let persistedUsageHydrated = false;
+let persistedUsageHydration: Promise<void> | null = null;
 
 function persistableUsage(usage: SubscriptionUsage): boolean {
   return usage.limits.length > 0 || usage.summary !== null;
 }
 
 async function hydratePersistedUsage() {
-  if (persistedUsageHydrated) return;
-  persistedUsageHydrated = true;
-  await Promise.all(
-    (Object.keys(SUBSCRIPTION_PROVIDERS) as SubscriptionProviderId[]).map(async (id) => {
-      const [stored, cooldown] = await Promise.all([
-        loadPersistedUsage(id),
-        loadCooldownUntil(id),
-      ]);
-      if (stored?.usage && persistableUsage(stored.usage)) {
-        lastGoodUsage.set(id, { usage: stored.usage, fetchedAt: stored.fetchedAt });
-      }
-      if (cooldown && cooldown > Date.now()) {
-        cooldownUntilMap.set(id, cooldown);
-      }
-    }),
-  );
+  // Memoize the hydration PROMISE (not a boolean). On a cold launch every card
+  // mounts and calls getConnectionStatus at once; a boolean guard let the first
+  // caller flip the flag and later callers skip hydration before lastGoodUsage
+  // was populated — which is exactly why Claude (whose passive load is
+  // cache-only) came up blank until a manual refresh. Sharing one in-flight
+  // promise makes every concurrent caller await the same real load.
+  if (!persistedUsageHydration) {
+    persistedUsageHydration = Promise.all(
+      (Object.keys(SUBSCRIPTION_PROVIDERS) as SubscriptionProviderId[]).map(async (id) => {
+        const [stored, cooldown] = await Promise.all([
+          loadPersistedUsage(id),
+          loadCooldownUntil(id),
+        ]);
+        if (stored?.usage && persistableUsage(stored.usage)) {
+          lastGoodUsage.set(id, { usage: stored.usage, fetchedAt: stored.fetchedAt });
+        }
+        if (cooldown && cooldown > Date.now()) {
+          cooldownUntilMap.set(id, cooldown);
+        }
+      }),
+    ).then(() => undefined);
+  }
+  await persistedUsageHydration;
 }
 
 function deviceFlowFor(providerId: SubscriptionProviderId) {
