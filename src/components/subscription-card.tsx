@@ -15,12 +15,15 @@ import { useTheme } from "@/components/ui/theme";
 import type { PendingDeviceFlow } from "@/lib/oauth/device-flow";
 import {
   beginDeviceLogin,
+  beginPkceCodeLogin,
+  completePkceCodeLogin,
   disconnect,
   getConnectionStatus,
   parseAndSaveApiToken,
   pollDeviceLogin,
   type ConnectionStatus,
 } from "@/lib/oauth/manager";
+import type { PendingPkceCodeFlow } from "@/lib/oauth/pkce-code-flow";
 import { SUBSCRIPTION_PROVIDERS } from "@/lib/oauth/providers";
 import type { SubscriptionProviderId, UsageLimitRow } from "@/lib/oauth/types";
 
@@ -48,6 +51,7 @@ export function SubscriptionPanel({
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingDeviceFlow | null>(null);
+  const [pendingPkce, setPendingPkce] = useState<PendingPkceCodeFlow | null>(null);
   const [tokenDraft, setTokenDraft] = useState("");
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const passiveClaudeRefresh = providerId === "claude-sub";
@@ -150,10 +154,44 @@ export function SubscriptionPanel({
     }
   }
 
+  async function startPkceLogin() {
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await beginPkceCodeLogin(providerId);
+      setPendingPkce(next);
+      void Linking.openURL(next.authorizeUrl);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start sign-in.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitPkceCode() {
+    if (!pendingPkce || !tokenDraft.trim()) return;
+    setBusy(true);
+    setChecking(true);
+    setError(null);
+    try {
+      await completePkceCodeLogin(providerId, pendingPkce, tokenDraft);
+      setTokenDraft("");
+      setPendingPkce(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await refresh(!passiveClaudeRefresh);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sign-in failed.");
+    } finally {
+      setBusy(false);
+      setChecking(false);
+    }
+  }
+
   async function onDisconnect() {
     setBusy(true);
     stopPolling();
     setPending(null);
+    setPendingPkce(null);
     try {
       await disconnect(providerId);
       void refresh(false);
@@ -241,6 +279,38 @@ export function SubscriptionPanel({
           <Button onPress={startDeviceLogin} disabled={busy}>
             {busy ? "Starting…" : `Connect ${def.shortLabel}`}
           </Button>
+        ) : null}
+
+        {!connected && def.authKind === "pkce-code" ? (
+          <View style={{ gap: 10 }}>
+            {def.tokenHint ? <Text size="sm" color="muted">{def.tokenHint}</Text> : null}
+            {def.setupSteps ? <SetupSteps steps={def.setupSteps} /> : null}
+            {!pendingPkce ? (
+              <Button onPress={startPkceLogin} disabled={busy}>
+                {busy ? "Opening…" : `Connect ${def.shortLabel}`}
+              </Button>
+            ) : (
+              <View style={{ gap: 10 }}>
+                <Input
+                  value={tokenDraft}
+                  onChangeText={setTokenDraft}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="Paste code from browser"
+                />
+                <Button onPress={submitPkceCode} disabled={busy || !tokenDraft.trim()}>
+                  {busy ? "Signing in…" : "Submit code"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void Linking.openURL(pendingPkce.authorizeUrl)}
+                >
+                  Reopen browser
+                </Button>
+              </View>
+            )}
+          </View>
         ) : null}
 
         {!connected && def.authKind === "api-token" ? (

@@ -1,5 +1,6 @@
 import type { DeviceFlowConfig } from "@/lib/oauth/device-flow";
 import type {
+  PkceCodeFlowConfig,
   TokenRefreshConfig,
   StoredTokens,
   SubscriptionAuthKind,
@@ -33,6 +34,8 @@ export interface SubscriptionProviderDef {
   authKind: SubscriptionAuthKind;
   /** Present for device-flow providers. */
   deviceFlow?: DeviceFlowConfig;
+  /** Present for pkce-code providers (browser sign-in, paste code back). */
+  pkceCodeFlow?: PkceCodeFlowConfig;
   /** For api-token providers: where the user gets their token. */
   tokenHint?: string;
   /** Friendly setup steps for desktop-first token sources. */
@@ -1007,15 +1010,26 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     label: "Claude (subscription)",
     shortLabel: "Claude",
     accent: "#F2B278",
-    authKind: "api-token",
+    authKind: "pkce-code",
     tokenHint:
-      "Paste the FULL JSON from your Claude Code Keychain credential (run the command below on your Mac). It must come from 'claude auth login' — do NOT use 'claude setup-token', which lacks the user:profile scope the usage endpoint requires. The full JSON includes a refresh token so SignalStack keeps it alive automatically.",
+      "Sign in with your Claude account in the browser, then paste the code it shows you. SignalStack gets its own token — it will NOT log out or conflict with Claude Code on your Mac.",
     setupSteps: [
-      "On your Mac, make sure Claude Code is logged in: run 'claude auth login' (NOT 'claude setup-token').",
-      "Run the command below in Terminal and copy its entire JSON output.",
-      "Paste the full JSON here. SignalStack extracts the access + refresh tokens and auto-refreshes; if it ever says the token expired, just re-run the command and paste again.",
+      "Tap Connect Claude — your browser opens claude.ai.",
+      "Sign in and approve access.",
+      "Copy the code the page shows and paste it back here.",
     ],
-    helperCommand: "security find-generic-password -w -s \"Claude Code-credentials\" -a \"$(whoami)\"",
+    // Anthropic's public OAuth client (the one Claude Code uses). The
+    // authorization-code + PKCE flow gives SignalStack an independent
+    // refresh-token chain, so refreshing here never invalidates the Claude
+    // Code CLI's credential (Anthropic rotates refresh tokens on every use —
+    // sharing one credential between two clients breaks both).
+    pkceCodeFlow: {
+      authorizeUrl: "https://claude.ai/oauth/authorize",
+      tokenUrl: "https://console.anthropic.com/v1/oauth/token",
+      clientId: "9d1c250a-e61b-44d9-88ed-5944d1962f5e",
+      redirectUri: "https://console.anthropic.com/oauth/code/callback",
+      scopes: ["org:create_api_key", "user:profile", "user:inference"],
+    },
     tokenRefresh: {
       // Claude Code's public OAuth client_id. The previous value here was the
       // client *metadata document URL*, which Anthropic's token endpoint

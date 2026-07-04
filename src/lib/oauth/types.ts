@@ -12,7 +12,20 @@ export type SubscriptionProviderId =
   | "chutes-sub"
   | "factory-sub"
 
-export type SubscriptionAuthKind = "device-flow" | "api-token";
+export type SubscriptionAuthKind = "device-flow" | "api-token" | "pkce-code";
+
+/**
+ * Configuration for a browser-based authorization-code + PKCE login where the
+ * provider displays a code for the user to copy/paste back into the app
+ * (e.g. Anthropic's claude.ai OAuth flow, the same one Claude Code uses).
+ */
+export interface PkceCodeFlowConfig {
+  authorizeUrl: string;
+  tokenUrl: string;
+  clientId: string;
+  redirectUri: string;
+  scopes: string[];
+}
 
 /** Configuration for refreshing expired api-token access tokens. */
 export interface TokenRefreshConfig {

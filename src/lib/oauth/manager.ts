@@ -4,6 +4,11 @@ import {
   startDeviceFlow,
   type PendingDeviceFlow,
 } from "@/lib/oauth/device-flow";
+import {
+  exchangePkceCode,
+  startPkceCodeFlow,
+  type PendingPkceCodeFlow,
+} from "@/lib/oauth/pkce-code-flow";
 import { SUBSCRIPTION_PROVIDERS, decodeJwtPayload } from "@/lib/oauth/providers";
 import { clearTokens, loadTokens, saveTokens } from "@/lib/oauth/token-store";
 import {
@@ -118,6 +123,36 @@ export async function pollDeviceLogin(
     await saveTokens(providerId, result.tokens);
   }
   return result;
+}
+
+function pkceCodeFlowFor(providerId: SubscriptionProviderId) {
+  const def = SUBSCRIPTION_PROVIDERS[providerId];
+  if (!def.pkceCodeFlow) {
+    throw new Error(`${def.label} does not use browser sign-in.`);
+  }
+  return def.pkceCodeFlow;
+}
+
+/** Build the browser authorize URL for a pkce-code provider. */
+export async function beginPkceCodeLogin(
+  providerId: SubscriptionProviderId,
+): Promise<PendingPkceCodeFlow> {
+  return startPkceCodeFlow(pkceCodeFlowFor(providerId));
+}
+
+/** Exchange the code the user pasted from the browser for tokens. */
+export async function completePkceCodeLogin(
+  providerId: SubscriptionProviderId,
+  pending: PendingPkceCodeFlow,
+  pastedCode: string,
+): Promise<void> {
+  const tokens = await exchangePkceCode(pkceCodeFlowFor(providerId), pending, pastedCode);
+  await saveTokens(providerId, tokens);
+  // Same invalidation as saveApiToken: drop the stale "disconnected" status
+  // and any cooldown carried over from the previous credential.
+  connectionStatusCache.delete(providerId);
+  cooldownUntilMap.delete(providerId);
+  void clearCooldown(providerId);
 }
 
 /**

@@ -53,7 +53,7 @@ async function sha256Base64Url(input: string): Promise<string> {
   return base64UrlEncode(digestBytes);
 }
 
-async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
+export async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
   const verifier = base64UrlEncode(Crypto.getRandomBytes(32));
   const challenge = await sha256Base64Url(verifier);
   return { verifier, challenge };
