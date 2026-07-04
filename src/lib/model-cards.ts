@@ -53,6 +53,7 @@ export function makeModelCards(): AIModelCardConfig[] {
     subscriptionOnly("copilot", "GitHub Copilot", "GitHub Copilot premium interactions and chat quotas.", "copilot-sub", "CO"),
     subscriptionOnly("chutes", "Chutes", "Chutes subscription usage and quota windows.", "chutes-sub", "CH"),
     subscriptionOnly("factory", "Factory", "Factory AI subscription usage and token windows.", "factory-sub", "FA"),
+    subscriptionOnly("opencode", "OpenCode", "OpenCode Go API-key access and documented monthly spend limits.", "opencode-sub", "OC"),
   ];
   return cards.map((card) => ({ ...card, logo: getProviderLogo(card.id) }));
 }

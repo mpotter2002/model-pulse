@@ -85,11 +85,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const cards = cardsInput;
     const primary = cards[0] ?? null;
 
-    // Cap each provider at its two most important windows (e.g. 5h + weekly)
-    // so one provider with many windows can't squeeze the others out and the
-    // large widget doesn't overflow vertically.
+    // Cap each provider at its three most important windows so one provider
+    // with many windows can't squeeze the others out, then the total is capped
+    // at 12 below to fill the large widget without overflowing vertically.
     const flatLimitRows: WidgetLimitRow[] = cards.flatMap((card) =>
-      (card.limitRows ?? []).slice(0, 2),
+      (card.limitRows ?? []).slice(0, 3),
     );
     const hasLimits = flatLimitRows.length > 0;
 

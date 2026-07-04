@@ -855,6 +855,34 @@ async function fetchFactoryUsage(tokens: StoredTokens): Promise<SubscriptionUsag
   return { summary: limits[0] ?? null, limits, planLabel };
 }
 
+async function fetchOpenCodeUsage(tokens: StoredTokens): Promise<SubscriptionUsage> {
+  void tokens;
+
+  const limits: UsageLimitRow[] = [
+    {
+      label: "Monthly spend limit",
+      used: null,
+      limit: 200,
+      percentUsed: null,
+      resetHint: "$200/mo included",
+    },
+    {
+      label: "Premium models",
+      used: null,
+      limit: 50,
+      percentUsed: null,
+      resetHint: "$50/mo pool",
+    },
+  ];
+
+  return {
+    summary: limits[0],
+    limits,
+    planLabel: "OpenCode Go",
+    debugDetail: "OpenCode docs expose exact usage in the console; SignalStack stores the key locally and shows documented plan limits.",
+  };
+}
+
 function parseFactoryLimits(root: unknown): UsageLimitRow[] {
   const rows: UsageLimitRow[] = [];
 
@@ -1144,6 +1172,20 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     tokenHint: "Paste your Factory API key from app.factory.ai → Settings → API Keys. Factory does not expose an OAuth login, so an API key is required.",
     fetchUsage: fetchFactoryUsage,
   },
+  "opencode-sub": {
+    id: "opencode-sub",
+    label: "OpenCode Go",
+    shortLabel: "OpenCode",
+    accent: "#FF7A59",
+    authKind: "api-token",
+    tokenHint: "Paste your OpenCode API key from the OpenCode console. OpenCode Go tracks exact usage in the console; SignalStack stores the key locally and shows documented plan limits.",
+    setupSteps: [
+      "Open opencode.ai and sign in.",
+      "Create or copy an API key from the OpenCode console.",
+      "Paste the key here to track OpenCode Go alongside your other providers.",
+    ],
+    fetchUsage: fetchOpenCodeUsage,
+  },
 };
 export const SUBSCRIPTION_PROVIDER_ORDER: SubscriptionProviderId[] = [
   "kimi-sub",
@@ -1158,6 +1200,7 @@ export const SUBSCRIPTION_PROVIDER_ORDER: SubscriptionProviderId[] = [
   "copilot-sub",
   "chutes-sub",
   "factory-sub",
+  "opencode-sub",
 ];
 
 // ── helpers ────────────────────────────────────────────────────────────

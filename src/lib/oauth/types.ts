@@ -11,6 +11,7 @@ export type SubscriptionProviderId =
   | "copilot-sub"
   | "chutes-sub"
   | "factory-sub"
+  | "opencode-sub";
 
 export type SubscriptionAuthKind = "device-flow" | "api-token" | "pkce-code";
 

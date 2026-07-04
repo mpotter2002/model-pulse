@@ -4,7 +4,7 @@ export type SnapshotMode = "demo" | "live" | "needs-key" | "failed" | "manual" |
 
 export type ThemeMode = "light" | "dark" | "system";
 
-export type ModelCardId = "openai" | "anthropic" | "kimi" | "minimax" | "zai" | "gemini" | "elevenlabs" | "poe" | "codebuff" | "copilot" | "chutes" | "factory";
+export type ModelCardId = "openai" | "anthropic" | "kimi" | "minimax" | "zai" | "gemini" | "elevenlabs" | "poe" | "codebuff" | "copilot" | "chutes" | "factory" | "opencode";
 
 export type WidgetMetricMode = "api" | "subscription";
 

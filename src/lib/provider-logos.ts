@@ -24,6 +24,11 @@ export const PROVIDER_LOGOS: Partial<Record<ModelCardId, ProviderLogo>> = {
     sourceLight: require("../../assets/logos/kimi-light.svg"),
     tint: "none",
   },
+  opencode: {
+    source: require("../../assets/logos/opencode.svg"),
+    sourceLight: require("../../assets/logos/opencode-light.svg"),
+    tint: "none",
+  },
   zai: { source: require("../../assets/logos/zai.svg"), tint: "foreground" },
   // Brand-colored glyphs that read on both light and dark -> untinted.
   anthropic: { source: require("../../assets/logos/anthropic.svg"), tint: "none" },

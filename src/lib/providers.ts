@@ -40,13 +40,13 @@ export const DEFAULT_STORED_STATE: StoredState = {
   demoMode: false,
   themeMode: "system",
   rateLimitStyle: "bar",
-  modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory"],
+  modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],
   hiddenModelCardIds: [],
   widgetConfig: {
     headline: "SignalStack",
     metricMode: "api",
     visibleProviderIds: ["openai", "anthropic", "kimi"],
-    visibleModelCardIds: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory"],
+    visibleModelCardIds: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],
     focusedModelCardId: "openai",
     subscriptionPricesUsd: {
       openai: "20",
@@ -61,6 +61,7 @@ export const DEFAULT_STORED_STATE: StoredState = {
       copilot: "",
       chutes: "",
       factory: "",
+      opencode: "10",
     },
   },
   providerConfigs: {
