@@ -1042,9 +1042,11 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
       bodyFormat: "json",
     },
     fetchUsage: fetchClaudeUsage,
-    // Anthropic's usage endpoint extends its own cooldown on every
-    // request. Refresh at most once per hour to stay below that radar.
-    minFetchIntervalMs: 60 * 60 * 1000,
+    // With a valid OAuth token + claude-code User-Agent we're in the same
+    // generous rate-limit bucket as Claude Code itself; 15 min is well below
+    // any radar while keeping the data reasonably fresh. A real 429's
+    // retry-after is still honored if it ever happens.
+    minFetchIntervalMs: 15 * 60 * 1000,
   },
   "codex-sub": {
     id: "codex-sub",

@@ -418,7 +418,7 @@ function WidgetPreview({
   const flatLimitRows: Array<{ label: string; ratio: number; accent: string }> =
     metricMode === "subscription"
       ? cards.flatMap((card) =>
-          (subLimitRows[card.id] ?? []).slice(0, 5).map((row) => ({
+          (subLimitRows[card.id] ?? []).slice(0, 2).map((row) => ({
             label: row.label,
             ratio: row.ratio,
             accent: card.accent,
@@ -492,7 +492,7 @@ function WidgetPreview({
           }}
         >
           {flatLimitRows.length > 0
-            ? flatLimitRows.slice(0, size === "large" ? 14 : size === "medium" ? 4 : 7).map((row, i) => (
+            ? flatLimitRows.slice(0, size === "large" ? 12 : size === "medium" ? 4 : 7).map((row, i) => (
                 <PreviewLimitRowView
                   key={`${row.label}-${i}`}
                   row={row}
