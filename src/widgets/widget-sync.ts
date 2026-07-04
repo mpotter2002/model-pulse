@@ -91,6 +91,13 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
     };
   });
 
+  // Fairly cap limit rows across providers BEFORE handing to the widget:
+  // every provider keeps its first 2 windows before any provider gets a
+  // 3rd/4th, leftovers round-robin up to 13 total, and each provider's rows
+  // stay contiguous so the colors stay grouped. Done here because the
+  // expo-widgets SwiftUI transform can't run helpers/loops inside the widget.
+  applyFairLimitRowCaps(cards, 13, 2);
+
   // Ensure cards is never empty to prevent widget crash
   const safeCards = cards.length > 0 ? cards : [{
     id: "openai" as ModelCardId,
@@ -240,4 +247,41 @@ function compact(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
   return value.toString();
+}
+
+/**
+ * Mutates cards' limitRows so each provider keeps up to `guaranteed` rows
+ * first, then leftover capacity (up to `total`) is distributed round-robin.
+ * Rows stay in provider order / contiguous, so widget colors stay grouped.
+ */
+function applyFairLimitRowCaps(
+  cards: Array<{ limitRows?: Array<unknown> }>,
+  total: number,
+  guaranteed: number,
+) {
+  const allot = cards.map(() => 0);
+  let used = 0;
+  for (let p = 0; p < cards.length && used < total; p += 1) {
+    const available = cards[p].limitRows?.length ?? 0;
+    const give = Math.min(guaranteed, available, total - used);
+    allot[p] = give;
+    used += give;
+  }
+  let progressed = true;
+  while (used < total && progressed) {
+    progressed = false;
+    for (let p = 0; p < cards.length && used < total; p += 1) {
+      const available = cards[p].limitRows?.length ?? 0;
+      if (allot[p] < available) {
+        allot[p] += 1;
+        used += 1;
+        progressed = true;
+      }
+    }
+  }
+  for (let p = 0; p < cards.length; p += 1) {
+    if (cards[p].limitRows) {
+      cards[p].limitRows = cards[p].limitRows!.slice(0, allot[p]);
+    }
+  }
 }
