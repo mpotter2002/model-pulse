@@ -17,6 +17,8 @@ export interface ProviderConfig {
   workspaceId: string;
   requestsPerMinuteLimit: string;
   tokensPerMinuteLimit: string;
+  /** Self-set monthly spend budget (USD) used to draw the API budget bar. */
+  monthlyBudgetUsd: string;
 }
 
 export interface UsageSnapshot {
@@ -42,6 +44,8 @@ export interface ProviderSnapshot {
   balanceLabel?: string | null;
   updatedAtLabel: string;
   lastError?: string | null;
+  /** Copied from ProviderConfig so widget-sync can draw spend-vs-budget bars. */
+  monthlyBudgetUsd?: number | null;
 }
 
 export interface StoredState {

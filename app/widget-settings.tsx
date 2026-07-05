@@ -23,6 +23,35 @@ type WidgetSize = "small" | "medium" | "large";
 
 type PreviewLimitRow = { label: string; ratio: number };
 
+// API-side bars for the preview, mirroring apiLimitRows in widget-sync:
+// spend-vs-budget and requests-remaining, as "fraction remaining".
+function previewApiLimitRows(
+  card: { id: string; title: string; apiProviderId?: string },
+  snapshots: ReturnType<typeof useAppStore>["snapshots"],
+): PreviewLimitRow[] {
+  if (!card.apiProviderId) return [];
+  const snapshot = snapshots[card.apiProviderId as keyof typeof snapshots];
+  if (!snapshot || snapshot.mode !== "live") return [];
+  const label = card.title.split(" / ")[0];
+  const rows: PreviewLimitRow[] = [];
+  const budget = snapshot.monthlyBudgetUsd;
+  if (budget !== null && budget !== undefined && budget > 0) {
+    rows.push({
+      label: `${label} budget`,
+      ratio: Math.max(0, Math.min(1, 1 - snapshot.usage.monthlySpendUsd / budget)),
+    });
+  }
+  const rpmTotal = snapshot.limits.requestsPerMinuteLimit;
+  const rpmRemaining = snapshot.limits.requestsRemaining;
+  if (rpmRemaining !== null && rpmTotal !== null && rpmTotal > 0) {
+    rows.push({
+      label: rows.length === 0 ? `${label} req/min` : "Req/min",
+      ratio: Math.max(0, Math.min(1, rpmRemaining / rpmTotal)),
+    });
+  }
+  return rows;
+}
+
 // Same fair distribution as the Home Screen widget (see pickLimitRowsFairly in
 // signal-stack-widget.tsx): give each provider up to `guaranteed` rows first,
 // then round-robin leftover capacity — but emit in provider order so each
@@ -457,16 +486,21 @@ function WidgetPreview({
   // gets its first 2 windows before any provider gets a 3rd/4th, then extras
   // are added round-robin. Keeps the in-app preview honest.
   const flatLimitRows: Array<{ label: string; ratio: number; accent: string }> =
-    metricMode === "subscription"
-      ? pickPreviewLimitRowsFairly(
-          cards.map((card) => ({
-            accent: card.accent,
-            rows: subLimitRows[card.id] ?? [],
-          })),
-          13,
-          2,
-        )
-      : [];
+    pickPreviewLimitRowsFairly(
+      cards.map((card) => {
+        const subRows = subLimitRows[card.id] ?? [];
+        const apiRows = previewApiLimitRows(card, snapshots);
+        // Match widget-sync: API mode leads with API bars, subscription mode
+        // leads with subscription windows; fall back to the other side.
+        const rows =
+          metricMode === "api"
+            ? (apiRows.length > 0 ? apiRows : subRows)
+            : (subRows.length > 0 ? subRows : apiRows);
+        return { accent: card.accent, rows };
+      }),
+      13,
+      2,
+    );
 
   const showBalance = metricMode === "api" && hasApi;
   const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";

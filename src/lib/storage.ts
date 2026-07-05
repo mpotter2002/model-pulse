@@ -149,5 +149,9 @@ function mergeProviderConfig(
       typeof stored.tokensPerMinuteLimit === "string"
         ? stored.tokensPerMinuteLimit
         : DEFAULT_PROVIDER_CONFIG.tokensPerMinuteLimit,
+    monthlyBudgetUsd:
+      typeof stored.monthlyBudgetUsd === "string"
+        ? stored.monthlyBudgetUsd
+        : DEFAULT_PROVIDER_CONFIG.monthlyBudgetUsd,
   };
 }

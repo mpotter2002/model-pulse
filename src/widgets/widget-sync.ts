@@ -86,7 +86,23 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
       status: subscriptionConnected ? subStatus.usage.planLabel ?? "Subscription connected" : apiSnapshot?.statusLabel ?? "Not connected",
       metric,
       ...(ratio !== null ? { ratio } : {}),
-      ...(subscriptionConnected ? { limitRows: subscriptionLimitRows(card.title.split(" / ")[0], card.accent, subStatus.usage) } : {}),
+      ...(() => {
+        const label = card.title.split(" / ")[0];
+        const subRows = subscriptionConnected
+          ? subscriptionLimitRows(label, card.accent, subStatus.usage)
+          : [];
+        const apiRows = isLiveSnapshot(apiSnapshot)
+          ? apiLimitRows(label, card.accent, apiSnapshot!)
+          : [];
+        // In API mode lead with API bars (budget / req-min); in subscription
+        // mode lead with subscription windows. Either way fall back to the
+        // other so a card never loses its bars just because one side is empty.
+        const limitRows =
+          config.metricMode === "api"
+            ? (apiRows.length > 0 ? apiRows : subRows)
+            : (subRows.length > 0 ? subRows : apiRows);
+        return limitRows.length > 0 ? { limitRows } : {};
+      })(),
       accent: card.accent,
     };
   });
@@ -222,6 +238,32 @@ function subscriptionLimitRows(label: string, accent: string, usage: Subscriptio
       accent,
     }];
   });
+}
+
+/**
+ * Bars for API-key providers: spend-vs-budget (when the user set a monthly
+ * budget) and requests-remaining (when the provider/manual caps expose one).
+ * Ratio is "fraction remaining" to match the subscription bars.
+ */
+function apiLimitRows(label: string, accent: string, snapshot: ProviderSnapshot) {
+  const rows: Array<{ id: string; label: string; ratio: number; accent: string }> = [];
+  const budget = snapshot.monthlyBudgetUsd;
+  if (budget !== null && budget !== undefined && budget > 0) {
+    const ratio = Math.max(0, Math.min(1, 1 - snapshot.usage.monthlySpendUsd / budget));
+    rows.push({ id: `${label.toLowerCase()}-budget`, label: `${label} budget`, ratio, accent });
+  }
+  const rpmTotal = snapshot.limits.requestsPerMinuteLimit;
+  const rpmRemaining = snapshot.limits.requestsRemaining;
+  if (rpmRemaining !== null && rpmRemaining !== undefined && rpmTotal !== null && rpmTotal !== undefined && rpmTotal > 0) {
+    const ratio = Math.max(0, Math.min(1, rpmRemaining / rpmTotal));
+    rows.push({
+      id: `${label.toLowerCase()}-rpm`,
+      label: rows.length === 0 ? `${label} req/min` : "Req/min",
+      ratio,
+      accent,
+    });
+  }
+  return rows;
 }
 
 function compactLimitLabel(providerLabel: string, rowLabel: string, includeProvider: boolean) {

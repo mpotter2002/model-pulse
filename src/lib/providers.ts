@@ -34,6 +34,7 @@ export const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
   workspaceId: "",
   requestsPerMinuteLimit: "",
   tokensPerMinuteLimit: "",
+  monthlyBudgetUsd: "",
 };
 
 export const DEFAULT_STORED_STATE: StoredState = {

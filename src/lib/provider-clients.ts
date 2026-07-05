@@ -46,13 +46,16 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
   }
 
   const startTime = Math.floor(Date.now() / 1000) - 60 * 60 * 24;
+  // Costs are month-to-date (the number people budget against), usage tokens
+  // stay on a 24h window (a "current burn" signal).
+  const monthStart = Math.floor(startOfMonthMs() / 1000);
   const [usageJson, costsJson] = await Promise.all([
     fetchJson(`https://api.openai.com/v1/organization/usage/completions?start_time=${startTime}&bucket_width=1d&limit=1`, {
       headers: {
         Authorization: `Bearer ${config.adminKey}`,
       },
     }),
-    fetchJson(`https://api.openai.com/v1/organization/costs?start_time=${startTime}&bucket_width=1d&limit=1`, {
+    fetchJson(`https://api.openai.com/v1/organization/costs?start_time=${monthStart}&bucket_width=1d&limit=31`, {
       headers: {
         Authorization: `Bearer ${config.adminKey}`,
       },
@@ -60,13 +63,17 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
   ]);
 
   const usageBucket = readArrayPath(usageJson, ["data", 0, "results"]);
-  const costBucket = readArrayPath(costsJson, ["data", 0, "results"]);
   const tokensUsed = usageBucket.reduce(
     (sum, item) => sum + readNumber(item, "input_tokens") + readNumber(item, "output_tokens"),
     0,
   );
   const requestsUsed = usageBucket.reduce((sum, item) => sum + readNumber(item, "num_model_requests"), 0);
-  const monthlySpendUsd = costBucket.reduce((sum, item) => sum + readNestedNumber(item, ["amount", "value"]), 0);
+  // Sum every daily bucket in the month-to-date response.
+  const costDays = readArrayPath(costsJson, ["data"]);
+  const monthlySpendUsd = costDays.reduce((sum, day) => {
+    const results = readArrayPath(day, ["results"]);
+    return sum + results.reduce((s, item) => s + readNestedNumber(item, ["amount", "value"]), 0);
+  }, 0);
 
   return {
     mode: "live",
@@ -76,7 +83,7 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
       tokensUsed,
       requestsUsed,
       monthlySpendUsd,
-      windowLabel: "Last 24 hours",
+      windowLabel: "Tokens 24h · spend month-to-date",
     },
     limits: {
       requestsPerMinuteLimit: toNumber(config.requestsPerMinuteLimit),
@@ -86,6 +93,7 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
     },
     balanceLabel: null,
     updatedAtLabel: timeLabel(),
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
   };
 }
 
@@ -101,6 +109,9 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
 
   const endingAt = new Date();
   const startingAt = new Date(endingAt.getTime() - 24 * 60 * 60 * 1000);
+  // Cost is month-to-date (the number people budget against); token usage
+  // stays on a 24h window as a "current burn" signal.
+  const monthStartAt = new Date(startOfMonthMs());
   const headers = {
     "anthropic-version": "2023-06-01",
     "x-api-key": config.adminKey,
@@ -112,7 +123,7 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
       { headers },
     ),
     fetchJson(
-      `https://api.anthropic.com/v1/organizations/cost_report?starting_at=${encodeURIComponent(startingAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}`,
+      `https://api.anthropic.com/v1/organizations/cost_report?starting_at=${encodeURIComponent(monthStartAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}`,
       { headers },
     ),
     fetchJson("https://api.anthropic.com/v1/organizations/rate_limits", { headers }),
@@ -146,7 +157,7 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
       tokensUsed,
       requestsUsed,
       monthlySpendUsd,
-      windowLabel: "Last 24 hours",
+      windowLabel: "Tokens 24h · spend month-to-date",
     },
     limits: {
       requestsPerMinuteLimit,
@@ -156,6 +167,7 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
     },
     balanceLabel: null,
     updatedAtLabel: timeLabel(),
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
   };
 }
 
@@ -199,6 +211,7 @@ async function refreshKimi(config: ProviderConfig): Promise<ProviderSnapshot> {
       resetsAtLabel: fallback.limits.resetsAtLabel,
     },
     balanceLabel: formatBalanceLabel(availableBalance),
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
   };
 }
 
@@ -218,6 +231,7 @@ async function refreshManualProvider(providerId: ProviderId, config: ProviderCon
       tokensPerMinuteLimit: toNumber(config.tokensPerMinuteLimit) ?? fallback.limits.tokensPerMinuteLimit,
       resetsAtLabel: fallback.limits.resetsAtLabel,
     },
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
   };
 }
 
@@ -388,6 +402,11 @@ function toNumber(value: string) {
   if (!trimmed) return null;
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function startOfMonthMs() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 }
 
 function timeLabel() {

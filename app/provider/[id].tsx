@@ -115,6 +115,9 @@ export default function ProviderDetailScreen() {
           ["Tokens tracked", formatInteger(snapshot.usage.tokensUsed)],
           ["Requests tracked", formatInteger(snapshot.usage.requestsUsed)],
           ["Monthly spend", `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`],
+          ...(snapshot.monthlyBudgetUsd
+            ? ([["Budget used", budgetUsedLabel(snapshot.usage.monthlySpendUsd, snapshot.monthlyBudgetUsd)]] as [string, string][])
+            : []),
           ["Window", snapshot.usage.windowLabel],
         ]}
       />
@@ -157,6 +160,7 @@ export default function ProviderDetailScreen() {
           <LabeledInput label="Workspace / org / project" value={currentDraft.workspaceId} onChangeText={(value) => updateDraft({ workspaceId: value })} />
           <LabeledInput label="Requests per minute" value={currentDraft.requestsPerMinuteLimit} keyboardType="number-pad" onChangeText={(value) => updateDraft({ requestsPerMinuteLimit: value })} />
           <LabeledInput label="Tokens per minute" value={currentDraft.tokensPerMinuteLimit} keyboardType="number-pad" onChangeText={(value) => updateDraft({ tokensPerMinuteLimit: value })} />
+          <LabeledInput label="Monthly budget (USD)" value={currentDraft.monthlyBudgetUsd} keyboardType="number-pad" onChangeText={(value) => updateDraft({ monthlyBudgetUsd: value })} />
 
           <Button
             onPress={() => {
@@ -234,6 +238,11 @@ function MetricBlock({
       </View>
     </Card>
   );
+}
+
+function budgetUsedLabel(spend: number, budget: number) {
+  const pct = Math.round((spend / budget) * 100);
+  return `${pct}% of $${budget.toFixed(0)}`;
 }
 
 function formatInteger(value: number) {
