@@ -23,6 +23,10 @@ type WidgetSize = "small" | "medium" | "large";
 
 type PreviewLimitRow = { label: string; ratio: number };
 
+function hasAnyLiveApi(snapshots: ReturnType<typeof useAppStore>["snapshots"]): boolean {
+  return Object.values(snapshots).some((snap) => snap?.mode === "live");
+}
+
 // API-side bars for the preview, mirroring apiLimitRows in widget-sync:
 // spend-vs-budget and requests-remaining, as "fraction remaining".
 function previewApiLimitRows(
@@ -409,6 +413,12 @@ export default function WidgetSettingsScreen() {
               <Text size="sm" family="mono" color="muted" style={{ marginTop: 4 }}>
                 Live previews of all three widget sizes. Data fills in as the app syncs.
               </Text>
+              {widgetConfig.metricMode === "api" && !hasAnyLiveApi(snapshots) ? (
+                <Text size="sm" family="mono" color="muted" style={{ marginTop: 6, opacity: 0.9 }}>
+                  No live API data yet — API view falls back to subscription bars until you add an
+                  API/admin key (and optional monthly budget) in a provider's settings.
+                </Text>
+              ) : null}
             </View>
             {WIDGET_SIZES.map((entry) => (
               <View key={entry.label} style={{ gap: 8, alignItems: "center" }}>
