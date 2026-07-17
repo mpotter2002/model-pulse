@@ -44,9 +44,24 @@ ai,usage tracker,rate limits,api spend,openai,anthropic,claude,chatgpt,kimi,widg
 ## Age rating
 4+ (no objectionable content, no UGC, no gambling, no unrestricted web)
 
+## URLs
+- Support URL: https://mpotter2002.github.io/model-pulse/
+- Privacy policy URL: https://mpotter2002.github.io/model-pulse/privacy.html
+- Marketing URL: (optional, leave blank)
+
+## App privacy (App Store Connect questionnaire)
+- Data collection: **No** ("Data Not Collected"). No analytics, no accounts,
+  no server. Keys stay in the iOS Keychain; requests go device → provider.
+- Encryption: exempt (ITSAppUsesNonExemptEncryption = false, already in the
+  binary — answer "No" to non-exempt encryption if asked).
+
 ## Review notes for Apple (suggestion)
-Model Pulse displays usage and spend data for AI providers. Demo mode is
-enabled on first launch, so all screens and widgets can be reviewed
-without credentials. Reviewers can add their own keys to test live data;
-no account with Model Pulse is required (there is no Model Pulse account
-system).
+Model Pulse displays usage and spend data for third-party AI providers
+(OpenAI, Anthropic, and others). The app launches in Demo Mode with
+clearly-labeled sample data, so every screen can be reviewed without any
+credentials — no sign-in is required at any point. Demo Mode can be
+toggled in Settings. Live data is fetched directly from each provider's
+official API using keys the user supplies; keys are stored only in the
+iOS Keychain and there is no Model Pulse server or account system.
+Subscriptions are the user's own existing provider subscriptions; the app
+sells nothing and contains no in-app purchases.
