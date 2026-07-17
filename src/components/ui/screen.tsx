@@ -29,6 +29,9 @@ export function ScreenScrollView({
   horizontalPadding = true,
   bottomPadding = true,
   contentContainerStyle,
+  automaticallyAdjustKeyboardInsets = true,
+  keyboardShouldPersistTaps = "handled",
+  keyboardDismissMode = "on-drag",
   ...props
 }: ScreenScrollViewProps) {
   const insets = useSafeAreaInsets();
@@ -37,6 +40,9 @@ export function ScreenScrollView({
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="never"
+      automaticallyAdjustKeyboardInsets={automaticallyAdjustKeyboardInsets}
+      keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+      keyboardDismissMode={keyboardDismissMode}
       contentContainerStyle={[
         {
           paddingTop: insets.top + spacing[2],
