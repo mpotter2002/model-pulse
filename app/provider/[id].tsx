@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
@@ -198,6 +198,27 @@ export default function ProviderDetailScreen() {
               </Text>
             ) : null}
           </View>
+          {config[KEY_FIELD_META[providerId].field].trim() ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              style={{ alignSelf: "flex-start" }}
+              onPress={() => {
+                Haptics.selectionAsync();
+                Alert.alert(
+                  "Disconnect API",
+                  `Remove the stored ${KEY_FIELD_META[providerId].label.toLowerCase()}? Live API data stops until you add a new key. This does not affect any subscription connection.`,
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Disconnect", style: "destructive", onPress: () => void disconnectApi() },
+                  ],
+                );
+              }}
+            >
+              Disconnect API
+            </Button>
+          ) : null}
+
           <LabeledInput label="Workspace / org / project" value={currentDraft.workspaceId} onChangeText={(value) => updateDraft({ workspaceId: value })} />
           <LabeledInput label="Requests per minute" value={currentDraft.requestsPerMinuteLimit} keyboardType="number-pad" onChangeText={(value) => updateDraft({ requestsPerMinuteLimit: value })} />
           <LabeledInput label="Tokens per minute" value={currentDraft.tokensPerMinuteLimit} keyboardType="number-pad" onChangeText={(value) => updateDraft({ tokensPerMinuteLimit: value })} />
@@ -231,6 +252,20 @@ export default function ProviderDetailScreen() {
   function updateDraft(next: Partial<ProviderConfig>) {
     setDraft((current) => ({ ...(current ?? config), ...next }));
     setSaveState("idle");
+  }
+
+  async function disconnectApi() {
+    const meta = KEY_FIELD_META[providerId];
+    const cleared = meta.field === "adminKey" ? { ...config, adminKey: "" } : { ...config, apiKey: "" };
+    try {
+      await saveProviderConfig(providerId, cleared);
+      setKeyError(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Rebuild the snapshot so the card drops back to its "key needed" state.
+      void refreshProvider(providerId);
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   }
 
   async function saveAdvancedSettings() {
