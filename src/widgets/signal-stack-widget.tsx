@@ -96,6 +96,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
     const hasBalanceData = rawProps.hasBalanceData === true;
     const showBalance = metricLabel === "Balance" && hasLiveApiData && hasBalanceData;
+    const showTokensTile = hasLiveApiData && !isLarge && metricLabel === "Balance";
     const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
     const primaryTileValue = showBalance ? totalBalance : totalSpend;
 
@@ -429,7 +430,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               </Text>
             </VStack>
           </ZStack>
-          {hasLiveApiData && !isLarge ? (
+          {showTokensTile ? (
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 56, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
               <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>

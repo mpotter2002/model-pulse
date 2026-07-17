@@ -547,7 +547,7 @@ function WidgetPreview({
             <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} compact />
           ) : size === "medium" ? (
             <>
-              {hasApi ? <PreviewTile label="TOKENS" value={compactNumber(totalTokens)} flex={1} /> : null}
+              {hasApi && metricMode === "api" ? <PreviewTile label="TOKENS" value={compactNumber(totalTokens)} flex={1} /> : null}
               <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
             </>
           ) : (
