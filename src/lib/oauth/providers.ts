@@ -397,13 +397,14 @@ async function fetchCodexUsage(tokens: StoredTokens): Promise<SubscriptionUsage>
   if (accountId) headers["ChatGPT-Account-Id"] = accountId;
   const json = await getJson(CODEX_USAGE_URL, headers);
   const rec = asRecord(json);
-  const rateLimit = asRecord(rec.rate_limit);
   const limits: UsageLimitRow[] = [];
 
-  const primary = codexWindow(rateLimit.primary_window, "Primary (5h)");
-  if (primary) limits.push(primary);
-  const secondary = codexWindow(rateLimit.secondary_window, "Weekly");
-  if (secondary) limits.push(secondary);
+  // ChatGPT no longer has a 5-hour bucket — the standard limit is weekly —
+  // so derive each window's label from its server-provided duration instead
+  // of hardcoding. Code review carries its own rate-limit bucket on paid
+  // plans and is surfaced as its own rows when present.
+  limits.push(...codexRateLimitRows(asRecord(rec.rate_limit), ""));
+  limits.push(...codexRateLimitRows(asRecord(rec.code_review_rate_limit), "Code review · "));
 
   const planType = readString(rec, "plan_type") ?? codexPlanType(tokens.accessToken);
   return {
@@ -428,6 +429,44 @@ function retryAfterToEpochMs(value: string | null): number | null {
   }
   const absolute = Date.parse(value);
   return Number.isNaN(absolute) ? null : absolute;
+}
+
+function codexRateLimitRows(
+  rateLimit: Record<string, unknown> | null,
+  labelPrefix: string,
+): UsageLimitRow[] {
+  if (!rateLimit) return [];
+  const rows: UsageLimitRow[] = [];
+  const primaryRaw = rateLimit.primary_window;
+  const primary = codexWindow(primaryRaw, `${labelPrefix}${codexWindowLabel(primaryRaw, "Primary window")}`);
+  if (primary) rows.push(primary);
+  const secondaryRaw = rateLimit.secondary_window;
+  const secondary = codexWindow(
+    secondaryRaw,
+    `${labelPrefix}${codexWindowLabel(secondaryRaw, "Secondary window")}`,
+  );
+  if (secondary) rows.push(secondary);
+  return rows;
+}
+
+function codexWindowLabel(raw: unknown, fallback: string): string {
+  if (!isRecord(raw)) return fallback;
+  const seconds = toInt(raw.limit_window_seconds);
+  if (seconds === null || seconds <= 0) return fallback;
+  if (seconds % 604800 === 0) {
+    const weeks = seconds / 604800;
+    return weeks === 1 ? "Weekly window" : `${weeks}-week window`;
+  }
+  if (seconds % 86400 === 0) {
+    const days = seconds / 86400;
+    return days === 1 ? "Daily window" : `${days}-day window`;
+  }
+  if (seconds % 3600 === 0) {
+    const hours = seconds / 3600;
+    return hours === 1 ? "Hourly window" : `${hours}-hour window`;
+  }
+  if (seconds % 60 === 0) return `${seconds / 60}-minute window`;
+  return fallback;
 }
 
 function codexWindow(raw: unknown, label: string): UsageLimitRow | null {
