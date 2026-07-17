@@ -35,6 +35,7 @@ export async function loadStoredState(): Promise<StoredState> {
       providerConfigs,
       modelCardOrder: mergeModelCardOrder(parsed.modelCardOrder),
       hiddenModelCardIds: mergeHiddenModelCards(parsed.hiddenModelCardIds),
+      homeCardSource: mergeHomeCardSource(parsed.homeCardSource),
       widgetConfig: {
         headline:
           typeof parsed.widgetConfig?.headline === "string" && parsed.widgetConfig.headline.trim()
@@ -55,6 +56,18 @@ export async function loadStoredState(): Promise<StoredState> {
     console.warn("[SignalStack] Stored state was invalid JSON; resetting.", error);
     return DEFAULT_STORED_STATE;
   }
+}
+
+
+function mergeHomeCardSource(value: unknown): StoredState["homeCardSource"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const result: StoredState["homeCardSource"] = {};
+  for (const [key, source] of Object.entries(value as Record<string, unknown>)) {
+    if (isModelCardId(key) && (source === "auto" || source === "subscription" || source === "api")) {
+      result[key] = source;
+    }
+  }
+  return result;
 }
 
 function mergeModelCardOrder(value: unknown): ModelCardId[] {

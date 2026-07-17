@@ -43,6 +43,7 @@ export const DEFAULT_STORED_STATE: StoredState = {
   rateLimitStyle: "bar",
   modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],
   hiddenModelCardIds: [],
+  homeCardSource: {},
   widgetConfig: {
     headline: "Model Pulse",
     metricMode: "api",

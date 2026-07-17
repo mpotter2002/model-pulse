@@ -17,10 +17,16 @@ import { getConnectionStatus, type ConnectionStatus } from "@/lib/oauth/manager"
 import type { AIModelCardConfig } from "@/lib/model-cards";
 import { SubscriptionPanel } from "@/components/subscription-card";
 import { useAppStore } from "@/store/app-store";
-import type { ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domain";
+import type { HomeCardSource, ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domain";
+
+const HOME_CARD_SOURCE_OPTIONS: Array<{ label: string; value: HomeCardSource; hint: string }> = [
+  { label: "Auto", value: "auto", hint: "Combines both" },
+  { label: "Subscription", value: "subscription", hint: "Plan limits first" },
+  { label: "API", value: "api", hint: "Spend & tokens first" },
+];
 
 export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; refreshNonce: number }) {
-  const { providerConfigs, snapshots } = useAppStore();
+  const { providerConfigs, snapshots, homeCardSource } = useAppStore();
   const [subscriptionStatus, setSubscriptionStatus] = useState<ConnectionStatus | null>(null);
   const didMountRef = useRef(false);
 
@@ -55,7 +61,8 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
   const apiConfigured = item.apiProviderId ? isApiConfigured(item.apiProviderId, providerConfigs[item.apiProviderId]) : false;
   const apiSnapshot = item.apiProviderId ? snapshots[item.apiProviderId] : null;
   const hasApi = Boolean(item.apiProviderId);
-  const summary = buildHomeSummary(apiConfigured, apiSnapshot, subscriptionStatus, hasApi);
+  const preferredSource = homeCardSource[item.id] ?? "auto";
+  const summary = buildHomeSummary(apiConfigured, apiSnapshot, subscriptionStatus, hasApi, preferredSource);
   const title = item.title.split(" / ")[0];
 
   return (
@@ -96,7 +103,15 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
             )}
             <View style={{ flex: 1, gap: 2 }}>
               <Text size="xs" family="mono" color="muted" numberOfLines={1} style={{ letterSpacing: 1 }}>
-                {item.subscriptionProviderId ? "SUBSCRIPTION" : "API"}
+                {item.subscriptionProviderId && item.apiProviderId
+                  ? preferredSource === "api"
+                    ? "API"
+                    : preferredSource === "subscription"
+                      ? "SUBSCRIPTION"
+                      : "SUB + API"
+                  : item.subscriptionProviderId
+                    ? "SUBSCRIPTION"
+                    : "API"}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <Text size="2xl" family="sans" weight="bold" numberOfLines={1}>
@@ -225,7 +240,7 @@ function UsageRow({ row, accent }: { row: UsageLimitRow; accent: string }) {
 
 export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
   const theme = useTheme();
-  const { providerConfigs, saveProviderConfig, refreshProvider } = useAppStore();
+  const { providerConfigs, saveProviderConfig, refreshProvider, homeCardSource, setHomeCardSource } = useAppStore();
   const [localRefreshNonce, setLocalRefreshNonce] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const apiConfigured = item.apiProviderId ? isApiConfigured(item.apiProviderId, providerConfigs[item.apiProviderId]) : false;
@@ -266,6 +281,60 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
           </Text>
         </Pressable>
       </View>
+
+      {item.subscriptionProviderId && item.apiProviderId ? (
+        <>
+          <View style={{ marginBottom: 18 }}>
+            <Text size="lg" weight="semibold">
+              Home card
+            </Text>
+            <Text size="sm" color="muted" style={{ marginTop: 2, marginBottom: 12 }}>
+              Choose which usage this card leads with on the home screen.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {HOME_CARD_SOURCE_OPTIONS.map((option) => {
+                const current = homeCardSource[item.id] ?? "auto";
+                const active = current === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      void setHomeCardSource(item.id, option.value);
+                    }}
+                    style={{
+                      flex: 1,
+                      borderRadius: 8,
+                      backgroundColor: active ? theme.accent : theme.muted,
+                      paddingHorizontal: 10,
+                      paddingVertical: 10,
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    <Text
+                      size="sm"
+                      family="mono"
+                      weight="bold"
+                      style={{ color: active ? theme.accentForeground : theme.foreground }}
+                    >
+                      {option.label.toUpperCase()}
+                    </Text>
+                    <Text
+                      size="xs"
+                      family="mono"
+                      style={{ color: active ? theme.accentForeground : theme.mutedForeground, textAlign: "center" }}
+                    >
+                      {option.hint}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <Separator style={{ marginBottom: 18 }} />
+        </>
+      ) : null}
 
       {item.subscriptionProviderId ? <SubscriptionPanel providerId={item.subscriptionProviderId} refreshNonce={localRefreshNonce} /> : null}
 
@@ -419,13 +488,21 @@ function buildHomeSummary(
   apiSnapshot: ProviderSnapshot | null,
   subscriptionStatus: ConnectionStatus | null,
   hasApi: boolean,
+  preferredSource: HomeCardSource,
 ) {
   const subscriptionConnected = subscriptionStatus?.kind === "connected";
   const primarySub = subscriptionConnected ? preferredSubscriptionRow(subscriptionStatus.usage) : null;
-  const secondarySub = subscriptionConnected ? subscriptionStatus.usage.limits.find((row) => row.label !== primarySub?.label) ?? null : null;
   const apiPercent = apiSnapshot ? computeApiLimitPercent(apiSnapshot) : null;
 
   if (subscriptionConnected && apiConfigured && apiSnapshot) {
+    // Both sources live: honor the per-card preference. "auto" keeps the
+    // legacy combined view; subscription/api pin the card to that source.
+    if (preferredSource === "subscription") {
+      return buildSubscriptionSummary(subscriptionStatus);
+    }
+    if (preferredSource === "api") {
+      return buildApiSummary(apiSnapshot);
+    }
     return {
       mode: "both" as const,
       stats: [
@@ -438,29 +515,11 @@ function buildHomeSummary(
   }
 
   if (subscriptionConnected) {
-    const rows = subscriptionStatus.usage.limits;
-    return {
-      mode: "subscription" as const,
-      stats: rows.length > 0 ? [] : [
-        { label: shortUsageLabel(primarySub?.label ?? "Current"), value: formatUsageRow(primarySub) },
-        { label: shortUsageLabel(secondarySub?.label ?? "Plan"), value: formatUsageRow(secondarySub, subscriptionStatus.usage.planLabel ?? "Connected") },
-      ],
-      progress: rows.length > 0 ? null : subscriptionPercent(primarySub),
-      subscriptionRows: rows.length > 0 ? rows : undefined,
-    };
+    return buildSubscriptionSummary(subscriptionStatus);
   }
 
   if (apiConfigured && apiSnapshot) {
-    return {
-      mode: "api" as const,
-      stats: [
-        { label: "Monthly spend", value: `$${apiSnapshot.usage.monthlySpendUsd.toFixed(2)}` },
-        { label: "API tokens", value: compactNumber(apiSnapshot.usage.tokensUsed) },
-        { label: apiSnapshot.balanceLabel ? "Balance" : "RPM left", value: apiSnapshot.balanceLabel ?? formatRemaining(apiSnapshot) },
-      ],
-      progress: apiPercent,
-      subscriptionRows: undefined,
-    };
+    return buildApiSummary(apiSnapshot);
   }
 
   return {
@@ -475,6 +534,34 @@ function buildHomeSummary(
           { label: "Plan", value: "—" },
         ],
     progress: null,
+    subscriptionRows: undefined,
+  };
+}
+
+function buildSubscriptionSummary(status: Extract<ConnectionStatus, { kind: "connected" }>) {
+  const primarySub = preferredSubscriptionRow(status.usage);
+  const secondarySub = status.usage.limits.find((row) => row.label !== primarySub?.label) ?? null;
+  const rows = status.usage.limits;
+  return {
+    mode: "subscription" as const,
+    stats: rows.length > 0 ? [] : [
+      { label: shortUsageLabel(primarySub?.label ?? "Current"), value: formatUsageRow(primarySub) },
+      { label: shortUsageLabel(secondarySub?.label ?? "Plan"), value: formatUsageRow(secondarySub, status.usage.planLabel ?? "Connected") },
+    ],
+    progress: rows.length > 0 ? null : subscriptionPercent(primarySub),
+    subscriptionRows: rows.length > 0 ? rows : undefined,
+  };
+}
+
+function buildApiSummary(apiSnapshot: ProviderSnapshot) {
+  return {
+    mode: "api" as const,
+    stats: [
+      { label: "Monthly spend", value: `$${apiSnapshot.usage.monthlySpendUsd.toFixed(2)}` },
+      { label: "API tokens", value: compactNumber(apiSnapshot.usage.tokensUsed) },
+      { label: apiSnapshot.balanceLabel ? "Balance" : "RPM left", value: apiSnapshot.balanceLabel ?? formatRemaining(apiSnapshot) },
+    ],
+    progress: computeApiLimitPercent(apiSnapshot),
     subscriptionRows: undefined,
   };
 }

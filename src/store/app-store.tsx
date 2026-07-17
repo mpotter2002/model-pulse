@@ -7,7 +7,7 @@ import { DEFAULT_STORED_STATE, PROVIDER_ORDER, demoSnapshot } from "@/lib/provid
 import { getConnectionStatus } from "@/lib/oauth/manager";
 import { SUBSCRIPTION_PROVIDER_ORDER } from "@/lib/oauth/providers";
 import { loadStoredState, saveStoredState } from "@/lib/storage";
-import type { ModelCardId, ProviderConfig, ProviderId, ProviderSnapshot, RateLimitStyle, StoredState, ThemeMode, WidgetConfig } from "@/types/domain";
+import type { HomeCardSource, ModelCardId, ProviderConfig, ProviderId, ProviderSnapshot, RateLimitStyle, StoredState, ThemeMode, WidgetConfig } from "@/types/domain";
 
 const AppStoreContext = React.createContext<AppStoreValue | null>(null);
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -26,6 +26,7 @@ interface AppStoreValue {
   providerConfigs: Record<ProviderId, ProviderConfig>;
   modelCardOrder: ModelCardId[];
   hiddenModelCardIds: ModelCardId[];
+  homeCardSource: StoredState["homeCardSource"];
   widgetConfig: WidgetConfig;
   snapshots: Record<ProviderId, ProviderSnapshot>;
   theme: Theme;
@@ -34,6 +35,7 @@ interface AppStoreValue {
   setRateLimitStyle: (value: RateLimitStyle) => Promise<void>;
   saveProviderConfig: (providerId: ProviderId, config: ProviderConfig) => Promise<void>;
   updateModelCardPreferences: (next: { order?: ModelCardId[]; hidden?: ModelCardId[] }) => Promise<void>;
+  setHomeCardSource: (cardId: ModelCardId, source: HomeCardSource) => Promise<void>;
   updateWidgetConfig: (config: WidgetConfig) => Promise<void>;
   refreshAll: () => Promise<void>;
   refreshProvider: (providerId: ProviderId) => Promise<void>;
@@ -179,6 +181,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     modelCardOrder: storedState.modelCardOrder,
     hiddenModelCardIds: storedState.hiddenModelCardIds,
     widgetConfig: storedState.widgetConfig,
+    homeCardSource: storedState.homeCardSource,
     snapshots,
     theme,
     setDemoMode: async (value) => {
@@ -204,6 +207,12 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
         ...current,
         modelCardOrder: next.order ?? current.modelCardOrder,
         hiddenModelCardIds: next.hidden ?? current.hiddenModelCardIds,
+      }));
+    },
+    setHomeCardSource: async (cardId, source) => {
+      await commitStoredState((current) => ({
+        ...current,
+        homeCardSource: { ...current.homeCardSource, [cardId]: source },
       }));
     },
     updateWidgetConfig: async (config) => {
