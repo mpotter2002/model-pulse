@@ -38,7 +38,10 @@ export const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
 };
 
 export const DEFAULT_STORED_STATE: StoredState = {
-  demoMode: false,
+  // Fresh installs start in demo mode so the app is fully explorable without
+  // keys (also gives App Review sample data out of the box). Existing users
+  // keep their persisted value via the merge in storage.ts.
+  demoMode: true,
   themeMode: "system",
   rateLimitStyle: "bar",
   modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],

@@ -9,7 +9,7 @@
     "scheme": "signalstack",
     "ios": {
       "bundleIdentifier": "com.michaelpotter.signalstack",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

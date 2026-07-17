@@ -29,7 +29,10 @@ export async function loadStoredState(): Promise<StoredState> {
       {} as Record<ProviderId, ProviderConfig>,
     );
     return {
-      demoMode: false,
+      // Respect the persisted flag. Installs that predate the demo-mode
+      // default (no flag stored yet) stay in live mode so we don't flip
+      // existing users into demo data on upgrade.
+      demoMode: typeof parsed.demoMode === "boolean" ? parsed.demoMode : false,
       themeMode: (typeof parsed.themeMode === "string" && ["light", "dark", "system"].includes(parsed.themeMode)) ? parsed.themeMode : DEFAULT_STORED_STATE.themeMode,
       rateLimitStyle: migrateRateLimitStyle(parsed.rateLimitStyle),
       providerConfigs,
