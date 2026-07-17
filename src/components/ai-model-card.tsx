@@ -332,13 +332,26 @@ function ApiSetupPanel({
 }) {
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const copy = apiSetupCopy(providerId);
 
   async function save() {
-    if (!value.trim()) return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (providerId === "openai" && !trimmed.startsWith("sk-admin-")) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setError("That looks like a standard API key. OpenAI usage and cost reporting only works with an organization Admin key, which starts with sk-admin-. Create one at platform.openai.com > Settings > Organization > Admin keys. (Keys with 'All' permissions still can't read organization usage.)");
+      return;
+    }
+    if (providerId === "anthropic" && !trimmed.startsWith("sk-ant-admin")) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setError("That looks like a standard API key. Anthropic usage, cost, and rate limits only work with an Admin API key, which starts with sk-ant-admin. Create one at console.anthropic.com > Settings > Admin keys.");
+      return;
+    }
+    setError(null);
     setSaving(true);
     try {
-      const next = copy.field === "adminKey" ? { ...config, adminKey: value.trim() } : { ...config, apiKey: value.trim() };
+      const next = copy.field === "adminKey" ? { ...config, adminKey: trimmed } : { ...config, apiKey: trimmed };
       await onSave(next);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setValue("");
@@ -351,7 +364,17 @@ function ApiSetupPanel({
     <View style={{ gap: 10 }}>
       <Text size="lg" weight="semibold">{copy.title}</Text>
       <Text size="sm" color="muted">{copy.body}</Text>
-      <input.Input value={value} onChangeText={setValue} secureTextEntry placeholder={copy.placeholder} />
+      <input.Input
+        value={value}
+        onChangeText={(text) => {
+          setValue(text);
+          if (error) setError(null);
+        }}
+        secureTextEntry
+        placeholder={copy.placeholder}
+        invalid={Boolean(error)}
+      />
+      {error ? <Text size="sm" color="destructive">{error}</Text> : null}
       <Button onPress={save} disabled={saving || !value.trim()} size="sm">
         {saving ? "Saving..." : copy.button}
       </Button>
@@ -367,10 +390,10 @@ function isApiConfigured(providerId: ProviderId, config: ProviderConfig) {
 
 function apiSetupCopy(providerId: ProviderId) {
   if (providerId === "openai") {
-    return { field: "adminKey" as const, title: "Add an OpenAI admin key", body: "API usage and cost reporting needs an organization admin key.", placeholder: "OpenAI admin key", button: "Save admin key" };
+    return { field: "adminKey" as const, title: "Add an OpenAI admin key", body: "Usage and cost reporting needs an organization Admin key (starts with sk-admin-) - standard API keys can't read organization usage, even with 'All' permissions. Create one at platform.openai.com > Settings > Organization > Admin keys.", placeholder: "sk-admin-...", button: "Save admin key" };
   }
   if (providerId === "anthropic") {
-    return { field: "adminKey" as const, title: "Add an Anthropic admin key", body: "API usage and organization rate limits need an Anthropic Admin API key.", placeholder: "Anthropic admin key", button: "Save admin key" };
+    return { field: "adminKey" as const, title: "Add an Anthropic admin key", body: "Usage, cost, and organization rate limits need an Anthropic Admin API key (starts with sk-ant-admin) from console.anthropic.com > Settings > Admin keys.", placeholder: "sk-ant-admin-...", button: "Save admin key" };
   }
   return { field: "apiKey" as const, title: "Add a Moonshot API key", body: "Kimi API mode can show live account balance once a Moonshot API key is stored.", placeholder: "Moonshot API key", button: "Save API key" };
 }

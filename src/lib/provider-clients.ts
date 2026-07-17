@@ -49,18 +49,32 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
   // Costs are month-to-date (the number people budget against), usage tokens
   // stay on a 24h window (a "current burn" signal).
   const monthStart = Math.floor(startOfMonthMs() / 1000);
-  const [usageJson, costsJson] = await Promise.all([
-    fetchJson(`https://api.openai.com/v1/organization/usage/completions?start_time=${startTime}&bucket_width=1d&limit=1`, {
-      headers: {
-        Authorization: `Bearer ${config.adminKey}`,
-      },
-    }),
-    fetchJson(`https://api.openai.com/v1/organization/costs?start_time=${monthStart}&bucket_width=1d&limit=31`, {
-      headers: {
-        Authorization: `Bearer ${config.adminKey}`,
-      },
-    }),
-  ]);
+  let usageJson;
+  let costsJson;
+  try {
+    [usageJson, costsJson] = await Promise.all([
+      fetchJson(`https://api.openai.com/v1/organization/usage/completions?start_time=${startTime}&bucket_width=1d&limit=1`, {
+        headers: {
+          Authorization: `Bearer ${config.adminKey}`,
+        },
+      }),
+      fetchJson(`https://api.openai.com/v1/organization/costs?start_time=${monthStart}&bucket_width=1d&limit=31`, {
+        headers: {
+          Authorization: `Bearer ${config.adminKey}`,
+        },
+      }),
+    ]);
+  } catch (error) {
+    const note = adminKeyFailureNote("OpenAI", error);
+    if (!note) throw error;
+    return {
+      ...demoSnapshot("openai"),
+      mode: "failed",
+      statusLabel: "Admin key required",
+      note,
+      updatedAtLabel: "Failed",
+    };
+  }
 
   const usageBucket = readArrayPath(usageJson, ["data", 0, "results"]);
   const tokensUsed = usageBucket.reduce(
@@ -117,17 +131,32 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
     "x-api-key": config.adminKey,
   };
 
-  const [usageJson, costJson, limitsJson] = await Promise.all([
-    fetchJson(
-      `https://api.anthropic.com/v1/organizations/usage_report/messages?starting_at=${encodeURIComponent(startingAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}&bucket_width=1d`,
-      { headers },
-    ),
-    fetchJson(
-      `https://api.anthropic.com/v1/organizations/cost_report?starting_at=${encodeURIComponent(monthStartAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}`,
-      { headers },
-    ),
-    fetchJson("https://api.anthropic.com/v1/organizations/rate_limits", { headers }),
-  ]);
+  let usageJson;
+  let costJson;
+  let limitsJson;
+  try {
+    [usageJson, costJson, limitsJson] = await Promise.all([
+      fetchJson(
+        `https://api.anthropic.com/v1/organizations/usage_report/messages?starting_at=${encodeURIComponent(startingAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}&bucket_width=1d`,
+        { headers },
+      ),
+      fetchJson(
+        `https://api.anthropic.com/v1/organizations/cost_report?starting_at=${encodeURIComponent(monthStartAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}`,
+        { headers },
+      ),
+      fetchJson("https://api.anthropic.com/v1/organizations/rate_limits", { headers }),
+    ]);
+  } catch (error) {
+    const note = adminKeyFailureNote("Anthropic", error);
+    if (!note) throw error;
+    return {
+      ...demoSnapshot("anthropic"),
+      mode: "failed",
+      statusLabel: "Admin key required",
+      note,
+      updatedAtLabel: "Failed",
+    };
+  }
 
   const tokensUsed = sumFieldsDeep(usageJson, [
     "uncached_input_tokens",
@@ -233,6 +262,25 @@ async function refreshManualProvider(providerId: ProviderId, config: ProviderCon
     },
     monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
   };
+}
+
+/**
+ * Organization usage/cost endpoints reject non-admin keys with 401/403
+ * "permission" errors. Translate those into actionable guidance instead of a
+ * raw "Refresh failed" that leaves people guessing.
+ */
+function adminKeyFailureNote(provider: "OpenAI" | "Anthropic", error: unknown): string | null {
+  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  const isPermissionIssue =
+    message.includes("permission") ||
+    message.includes("401") ||
+    message.includes("403") ||
+    message.includes("unauthorized");
+  if (!isPermissionIssue) return null;
+  if (provider === "OpenAI") {
+    return "OpenAI rejected this key: organization usage and cost can only be read by an Admin API key (starts with sk-admin-). Standard API keys cannot access them, even with 'All' permissions. Create one at platform.openai.com > Settings > Organization > Admin keys, then update the saved key.";
+  }
+  return "Anthropic rejected this key: organization usage, cost, and rate limits can only be read by an Admin API key (starts with sk-ant-admin). Create one at console.anthropic.com > Settings > Admin keys, then update the saved key.";
 }
 
 async function fetchJson(url: string, options: RequestInit) {
