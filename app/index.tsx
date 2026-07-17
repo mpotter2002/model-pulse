@@ -74,10 +74,10 @@ export default function HomeScreen() {
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
         <View>
           <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
-            LOCAL NODE // SIGNALSTACK
+            LOCAL NODE // MODEL PULSE
           </Text>
           <Text size="3xl" family="sans" weight="extrabold">
-            SignalStack
+            Model Pulse
           </Text>
           <Text size="sm" family="mono" color="muted">
             AI subscription telemetry // live overview

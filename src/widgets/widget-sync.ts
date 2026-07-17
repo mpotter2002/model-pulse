@@ -117,7 +117,7 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
   // Ensure cards is never empty to prevent widget crash
   const safeCards = cards.length > 0 ? cards : [{
     id: "openai" as ModelCardId,
-    label: "SignalStack",
+    label: "Model Pulse",
     status: "Open app to sync",
     metric: "—",
     accent: "#8E8E93",
@@ -128,7 +128,7 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
       {
         date: new Date(),
         props: {
-          headline: "SignalStack",
+          headline: "Model Pulse",
           subheadline: `${visibleCards.length} model${visibleCards.length === 1 ? "" : "s"}`,
           totalSpend: `$${totalSpend.toFixed(0)}`,
           totalTokens: hasLiveApiData ? compact(totalTokens) : "",

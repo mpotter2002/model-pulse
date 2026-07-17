@@ -1,6 +1,6 @@
-# SignalStack
+# Model Pulse
 
-SignalStack is an Expo prototype for an iPhone app that tracks AI subscription usage, spend, and rate limits in one place, with UI designed to map cleanly into a future iOS widget.
+Model Pulse is an Expo prototype for an iPhone app that tracks AI subscription usage, spend, and rate limits in one place, with UI designed to map cleanly into a future iOS widget.
 
 ## Current Prototype
 

@@ -283,10 +283,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           ]}
         >
           <Text modifiers={[foregroundStyle(text), font({ size: 15, family: "SpaceGrotesk-Bold" })]}>
-            SignalStack
+            Model Pulse
           </Text>
           <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" })]}>
-            Open SignalStack to sync data
+            Open Model Pulse to sync data
           </Text>
           <Spacer />
         </VStack>
@@ -405,7 +405,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           <HStack spacing={6} alignment="top">
             <VStack alignment="leading" spacing={1}>
               <Text modifiers={[foregroundStyle(text), font({ size: 14, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
-                SignalStack
+                Model Pulse
               </Text>
               <Text modifiers={[foregroundStyle(muted), font({ size: 12, family: "SpaceMono-Regular" }), lineLimit(1)]}>
                 {modelsShown}

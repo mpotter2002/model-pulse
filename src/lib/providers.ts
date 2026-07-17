@@ -44,7 +44,7 @@ export const DEFAULT_STORED_STATE: StoredState = {
   modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],
   hiddenModelCardIds: [],
   widgetConfig: {
-    headline: "SignalStack",
+    headline: "Model Pulse",
     metricMode: "api",
     visibleProviderIds: ["openai", "anthropic", "kimi"],
     visibleModelCardIds: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],

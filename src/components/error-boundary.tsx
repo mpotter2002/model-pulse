@@ -23,7 +23,7 @@ export class AppErrorBoundary extends React.Component<Props, State> {
           contentContainerStyle={{ padding: 24, paddingTop: 80, gap: 16 }}
         >
           <Text style={{ color: "#EF4444", fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>
-            SIGNALSTACK CRASHED
+            MODEL PULSE CRASHED
           </Text>
           <Text style={{ color: "#FFFFFF", fontSize: 22, fontWeight: "800" }}>
             {this.state.error.message || "Unknown error"}

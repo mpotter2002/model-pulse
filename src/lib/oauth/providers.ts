@@ -879,7 +879,7 @@ async function fetchOpenCodeUsage(tokens: StoredTokens): Promise<SubscriptionUsa
     summary: limits[0],
     limits,
     planLabel: "OpenCode Go",
-    debugDetail: "OpenCode docs expose exact usage in the console; SignalStack stores the key locally and shows documented plan limits.",
+    debugDetail: "OpenCode docs expose exact usage in the console; Model Pulse stores the key locally and shows documented plan limits.",
   };
 }
 
@@ -1040,7 +1040,7 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     accent: "#F2B278",
     authKind: "pkce-code",
     tokenHint:
-      "Sign in with your Claude account in the browser, then paste the code it shows you. SignalStack gets its own token — it will NOT log out or conflict with Claude Code on your Mac.",
+      "Sign in with your Claude account in the browser, then paste the code it shows you. Model Pulse gets its own token — it will NOT log out or conflict with Claude Code on your Mac.",
     setupSteps: [
       "Tap Connect Claude — your browser opens claude.ai.",
       "Sign in and approve access.",
@@ -1087,7 +1087,7 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     setupSteps: [
       "On your Mac, open Terminal and run Codex once so ChatGPT is logged in.",
       "Print ~/.codex/auth.json, then paste the full JSON here.",
-      "SignalStack extracts the access token, refresh token, account id, and plan claims.",
+      "Model Pulse extracts the access token, refresh token, account id, and plan claims.",
     ],
     helperCommand: "cat ~/.codex/auth.json",
     tokenRefresh: {
@@ -1108,7 +1108,7 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     setupSteps: [
       "On your Mac, run Gemini CLI once and sign in with Google.",
       "Print ~/.gemini/oauth_creds.json, then paste the full JSON here.",
-      "SignalStack reads Gemini Code Assist quota buckets from that OAuth token.",
+      "Model Pulse reads Gemini Code Assist quota buckets from that OAuth token.",
     ],
     helperCommand: "cat ~/.gemini/oauth_creds.json",
     tokenRefresh: {
@@ -1178,7 +1178,7 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     shortLabel: "OpenCode",
     accent: "#FF7A59",
     authKind: "api-token",
-    tokenHint: "Paste your OpenCode API key from the OpenCode console. OpenCode Go tracks exact usage in the console; SignalStack stores the key locally and shows documented plan limits.",
+    tokenHint: "Paste your OpenCode API key from the OpenCode console. OpenCode Go tracks exact usage in the console; Model Pulse stores the key locally and shows documented plan limits.",
     setupSteps: [
       "Open opencode.ai and sign in.",
       "Create or copy an API key from the OpenCode console.",

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SignalStack",
+    "name": "Model Pulse",
     "slug": "ai-subscriptions-widget",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -39,7 +39,7 @@
           "widgets": [
             {
               "name": "SignalStackWidget",
-              "displayName": "SignalStack",
+              "displayName": "Model Pulse",
               "description": "Track AI usage, rate limits, and spend from your iPhone Home Screen.",
               "supportedFamilies": [
                 "systemSmall",
@@ -54,7 +54,7 @@
                   "systemLarge"
                 ],
                 "configuration": {
-                  "title": "SignalStack",
+                  "title": "Model Pulse",
                   "description": "Choose which widget view to pin.",
                   "parameters": {
                     "focus": {

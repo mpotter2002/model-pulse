@@ -522,7 +522,7 @@ function WidgetPreview({
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Text size="sm" weight="bold" color="foreground" style={{ color: colors.text }}>
-                SignalStack
+                Model Pulse
               </Text>
               <Text
                 size="xs"
