@@ -45,7 +45,9 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
     // this on OAuth status; otherwise the home-screen widget can show a
     // different spend total from the preview whenever provider status is stale,
     // cache-only, throttled, or temporarily disconnected.
-    if (card.subscriptionProviderId) spend += parseUsd(config.subscriptionPricesUsd[card.id]);
+    // API mode is the exception: it shows API spend alone so the total truly
+    // resets to $0 at month start for prepaid-credit users.
+    if (card.subscriptionProviderId && config.metricMode !== "api") spend += parseUsd(config.subscriptionPricesUsd[card.id]);
     return sum + spend;
   }, 0);
   const totalTokens = visibleCards.reduce((sum, card) => {

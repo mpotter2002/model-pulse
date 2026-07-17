@@ -486,7 +486,7 @@ function WidgetPreview({
     );
   }
 
-  const totalSpend = totalSpendFor(cards, subscriptionPricesUsd, snapshots);
+  const totalSpend = totalSpendFor(cards, subscriptionPricesUsd, snapshots, metricMode);
   const totalTokens = totalTokensFor(cards, snapshots);
   const totalBalance = totalBalanceFor(cards, snapshots);
   const hasApi = hasLiveApiData(cards, snapshots);
@@ -741,6 +741,7 @@ function totalSpendFor(
   cards: ReturnType<typeof makeModelCards>,
   subscriptionPricesUsd: Record<ModelCardId, string>,
   snapshots: ReturnType<typeof useAppStore>["snapshots"],
+  metricMode: WidgetMetricMode,
 ) {
   return cards.reduce((sum, card) => {
     let spend = 0;
@@ -748,7 +749,9 @@ function totalSpendFor(
       const snap = snapshots[card.apiProviderId];
       if (isLiveSnapshot(snap)) spend += snap.usage.monthlySpendUsd;
     }
-    if (card.subscriptionProviderId) spend += parseUsd(subscriptionPricesUsd[card.id]);
+    // API mode shows API spend alone (resets to $0 monthly); subscription
+    // prices only count toward the total in subscription mode.
+    if (card.subscriptionProviderId && metricMode !== "api") spend += parseUsd(subscriptionPricesUsd[card.id]);
     return sum + spend;
   }, 0);
 }
