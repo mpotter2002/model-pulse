@@ -1,8 +1,8 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import React, { useState } from "react";
-import { Pressable, RefreshControl, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, View } from "react-native";
 
 import { AIModelCard } from "@/components/ai-model-card";
 import { Card } from "@/components/ui/card";
@@ -28,6 +28,22 @@ export default function HomeScreen() {
   } = useAppStore();
   const theme = useTheme();
   const [subRefreshNonce, setSubRefreshNonce] = useState(0);
+  const userPulledRef = useRef(false);
+  const wasRefreshingRef = useRef(false);
+
+  // Fire a completion haptic when a user-pulled refresh finishes, so the
+  // gesture has a clear "done" signal even if the data didn't change.
+  useEffect(() => {
+    if (refreshing) {
+      wasRefreshingRef.current = true;
+      return;
+    }
+    if (wasRefreshingRef.current && userPulledRef.current) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    wasRefreshingRef.current = false;
+    userPulledRef.current = false;
+  }, [refreshing]);
 
   const modelCards = makeModelCards()
     .filter((item) => !hiddenModelCardIds.includes(item.id))
@@ -65,12 +81,22 @@ export default function HomeScreen() {
           tintColor={theme.foreground}
           onRefresh={() => {
             Haptics.selectionAsync();
+            userPulledRef.current = true;
             void refreshAll();
             setSubRefreshNonce((n) => n + 1);
           }}
         />
       }
     >
+      {refreshing ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <ActivityIndicator size="small" color={theme.accent} />
+          <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1 }}>
+            REFRESHING USAGE...
+          </Text>
+        </View>
+      ) : null}
+
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
         <View>
           <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
