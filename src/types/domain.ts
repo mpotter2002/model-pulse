@@ -8,7 +8,7 @@ export type ModelCardId = "openai" | "anthropic" | "kimi" | "minimax" | "zai" | 
 
 export type WidgetMetricMode = "api" | "subscription";
 
-export type HomeCardSource = "auto" | "subscription" | "api";
+export type HomeCardSource = "subscription" | "api";
 
 export type RateLimitStyle = "bar" | "dots" | "dash" | "none";
 
@@ -57,7 +57,7 @@ export interface StoredState {
   providerConfigs: Record<ProviderId, ProviderConfig>;
   modelCardOrder: ModelCardId[];
   hiddenModelCardIds: ModelCardId[];
-  /** Per-card choice of which usage the home screen card leads with. Default: "auto" (combined view). */
+  /** Per-card choice of which usage the home screen card leads with. Default: "subscription". */
   homeCardSource: Partial<Record<ModelCardId, HomeCardSource>>;
   widgetConfig: WidgetConfig;
 }

@@ -63,8 +63,10 @@ function mergeHomeCardSource(value: unknown): StoredState["homeCardSource"] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const result: StoredState["homeCardSource"] = {};
   for (const [key, source] of Object.entries(value as Record<string, unknown>)) {
-    if (isModelCardId(key) && (source === "auto" || source === "subscription" || source === "api")) {
+    if (isModelCardId(key) && (source === "subscription" || source === "api")) {
       result[key] = source;
+    } else if (isModelCardId(key) && source === "auto") {
+      result[key] = "subscription";
     }
   }
   return result;

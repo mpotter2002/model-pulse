@@ -20,7 +20,6 @@ import { useAppStore } from "@/store/app-store";
 import type { HomeCardSource, ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domain";
 
 const HOME_CARD_SOURCE_OPTIONS: Array<{ label: string; value: HomeCardSource; hint: string }> = [
-  { label: "Auto", value: "auto", hint: "Combines both" },
   { label: "Subscription", value: "subscription", hint: "Plan limits first" },
   { label: "API", value: "api", hint: "Spend & tokens first" },
 ];
@@ -61,7 +60,7 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
   const apiConfigured = item.apiProviderId ? isApiConfigured(item.apiProviderId, providerConfigs[item.apiProviderId]) : false;
   const apiSnapshot = item.apiProviderId ? snapshots[item.apiProviderId] : null;
   const hasApi = Boolean(item.apiProviderId);
-  const preferredSource = homeCardSource[item.id] ?? "auto";
+  const preferredSource = homeCardSource[item.id] ?? "subscription";
   const summary = buildHomeSummary(apiConfigured, apiSnapshot, subscriptionStatus, hasApi, preferredSource);
   const title = item.title.split(" / ")[0];
 
@@ -106,9 +105,7 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
                 {item.subscriptionProviderId && item.apiProviderId
                   ? preferredSource === "api"
                     ? "API"
-                    : preferredSource === "subscription"
-                      ? "SUBSCRIPTION"
-                      : "SUB + API"
+                    : "SUBSCRIPTION"
                   : item.subscriptionProviderId
                     ? "SUBSCRIPTION"
                     : "API"}
@@ -491,27 +488,12 @@ function buildHomeSummary(
   preferredSource: HomeCardSource,
 ) {
   const subscriptionConnected = subscriptionStatus?.kind === "connected";
-  const primarySub = subscriptionConnected ? preferredSubscriptionRow(subscriptionStatus.usage) : null;
-  const apiPercent = apiSnapshot ? computeApiLimitPercent(apiSnapshot) : null;
 
   if (subscriptionConnected && apiConfigured && apiSnapshot) {
-    // Both sources live: honor the per-card preference. "auto" keeps the
-    // legacy combined view; subscription/api pin the card to that source.
-    if (preferredSource === "subscription") {
-      return buildSubscriptionSummary(subscriptionStatus);
-    }
-    if (preferredSource === "api") {
-      return buildApiSummary(apiSnapshot);
-    }
-    return {
-      mode: "both" as const,
-      stats: [
-        { label: "API tokens", value: compactNumber(apiSnapshot.usage.tokensUsed) },
-        { label: shortUsageLabel(primarySub?.label ?? "5-hour"), value: formatUsageRow(primarySub) },
-      ],
-      progress: subscriptionPercent(primarySub) ?? apiPercent,
-      subscriptionRows: undefined,
-    };
+    // Both sources live: honor the per-card preference.
+    return preferredSource === "api"
+      ? buildApiSummary(apiSnapshot)
+      : buildSubscriptionSummary(subscriptionStatus);
   }
 
   if (subscriptionConnected) {
