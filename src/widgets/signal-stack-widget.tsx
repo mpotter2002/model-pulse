@@ -40,6 +40,7 @@ export type SignalStackWidgetProps = {
   totalSpend: string;
   totalTokens: string;
   totalBalance: string;
+  hasBalanceData?: boolean;
   hasLiveApiData: boolean;
   metricLabel: string;
   updatedAt: string;
@@ -93,7 +94,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     );
     const hasLimits = flatLimitRows.length > 0;
 
-    const showBalance = metricLabel === "Balance" && hasLiveApiData;
+    const hasBalanceData = rawProps.hasBalanceData === true;
+    const showBalance = metricLabel === "Balance" && hasLiveApiData && hasBalanceData;
     const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
     const primaryTileValue = showBalance ? totalBalance : totalSpend;
 

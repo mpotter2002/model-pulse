@@ -64,6 +64,11 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
     return sum + parseUsd(snap.balanceLabel ?? undefined);
   }, 0);
   const hasLiveApiData = visibleCards.some((card) => card.apiProviderId && isLiveSnapshot(snapshots[card.apiProviderId]));
+  const hasBalanceData = visibleCards.some((card) => {
+    if (!card.apiProviderId) return false;
+    const snap = snapshots[card.apiProviderId];
+    return isLiveSnapshot(snap) && snap.balanceLabel != null;
+  });
   // Ensure we always have at least one card for the widget, even if it's just a placeholder
   const cards = visibleCards.map((card) => {
     const apiSnapshot = card.apiProviderId ? snapshots[card.apiProviderId] : null;
@@ -134,6 +139,7 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
           totalTokens: hasLiveApiData ? compact(totalTokens) : "",
           totalBalance: `$${totalBalance.toFixed(2)}`,
           hasLiveApiData,
+          hasBalanceData,
           metricLabel: metricLabel(config.metricMode),
           updatedAt: new Date().toLocaleTimeString([], {
             hour: "numeric",

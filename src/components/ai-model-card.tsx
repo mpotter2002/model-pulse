@@ -559,7 +559,7 @@ function buildApiSummary(apiSnapshot: ProviderSnapshot) {
     stats: [
       { label: "Monthly spend", value: `$${apiSnapshot.usage.monthlySpendUsd.toFixed(2)}` },
       { label: "API tokens", value: compactNumber(apiSnapshot.usage.tokensUsed) },
-      { label: apiSnapshot.balanceLabel ? "Balance" : "RPM left", value: apiSnapshot.balanceLabel ?? formatRemaining(apiSnapshot) },
+      { label: apiSnapshot.balanceLabel ? "Balance" : "Requests 24h", value: apiSnapshot.balanceLabel ?? formatInt(apiSnapshot.usage.requestsUsed) },
     ],
     progress: computeApiLimitPercent(apiSnapshot),
     subscriptionRows: undefined,
@@ -607,9 +607,4 @@ function shortUsageLabel(label: string) {
   if (/weekly/i.test(label) || /seven/i.test(label)) return "Weekly";
   if (/primary/i.test(label)) return "5-hour";
   return label;
-}
-
-function formatRemaining(snapshot: ProviderSnapshot) {
-  const remaining = snapshot.limits.requestsRemaining;
-  return typeof remaining === "number" ? compactNumber(remaining) : "—";
 }

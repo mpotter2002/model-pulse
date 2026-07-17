@@ -512,7 +512,7 @@ function WidgetPreview({
       2,
     );
 
-  const showBalance = metricMode === "api" && hasApi;
+  const showBalance = metricMode === "api" && hasApi && totalBalance > 0;
   const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
 
   return (

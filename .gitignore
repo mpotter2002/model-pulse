@@ -39,7 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-SignalStack-local*.ipa
+*.ipa
 
 # local build/debug artifacts
 artifacts/

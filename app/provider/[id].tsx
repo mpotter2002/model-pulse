@@ -144,7 +144,11 @@ export default function ProviderDetailScreen() {
         rows={[
           ["Mode", config.mode],
           [KEY_FIELD_META[providerId].label, config[KEY_FIELD_META[providerId].field].trim() ? "Stored" : "Missing"],
-          ["Balance", snapshot.balanceLabel ?? (providerId === "kimi" ? "Unknown" : "Not exposed by provider")],
+          ...(snapshot.balanceLabel != null
+            ? ([["Balance", snapshot.balanceLabel]] as [string, string][])
+            : providerId === "kimi"
+              ? ([["Balance", "Unknown"]] as [string, string][])
+              : ([["Monthly spend (API)", `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`]] as [string, string][])),
           ["Last updated", snapshot.updatedAtLabel],
         ]}
       />
