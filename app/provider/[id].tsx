@@ -246,6 +246,9 @@ export default function ProviderDetailScreen() {
       await saveProviderConfig(providerId, currentDraft);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSaveState("saved");
+      // Rebuild the snapshot so the Limits and Usage blocks reflect the new
+      // caps immediately instead of waiting for the next refresh cycle.
+      void refreshProvider(providerId);
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setSaveState("error");

@@ -224,7 +224,9 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     refreshProvider: async (providerId) => {
       setRefreshing(true);
       try {
-        const snapshot = await buildSnapshot(providerId, storedState.providerConfigs[providerId], storedState.demoMode);
+        // Read from the ref, not the render closure, so a refresh fired right
+        // after saving config uses the values that were just persisted.
+        const snapshot = await buildSnapshot(providerId, storedStateRef.current.providerConfigs[providerId], storedStateRef.current.demoMode);
         setSnapshots((current) => ({
           ...current,
           [providerId]: snapshot,
