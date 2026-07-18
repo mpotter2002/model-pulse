@@ -29,6 +29,11 @@ API SPEND
 - 24-hour token and request tracking
 - Optional monthly budgets to pace prepaid credits
 
+USAGE ALERTS
+- Optional notifications when you cross usage thresholds you pick (25-95%)
+- Works for subscription rate-limit windows and API monthly budgets
+- Scheduled and delivered entirely on-device
+
 YOUR DATA STAYS YOURS
 Model Pulse has no accounts, no analytics, and no tracking. Keys live in
 the iOS Keychain. Requests go straight from your device to the providers
