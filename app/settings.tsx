@@ -424,6 +424,62 @@ export default function SettingsScreen() {
           />
         </View>
       </Card>
+      <Card padding={4} style={{ marginBottom: 16 }}>
+        <View style={{ gap: 10 }}>
+          <View>
+            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 1 }}>
+              ABOUT
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => void Linking.openURL("https://mpotter2002.github.io/model-pulse/privacy.html")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              backgroundColor: theme.muted,
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text size="sm" family="mono" weight="bold">
+                Privacy policy
+              </Text>
+              <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+                No accounts, no analytics, no tracking. Keys stay in the iOS Keychain.
+              </Text>
+            </View>
+            <Image source="sf:arrow.up.right" style={{ width: 12, height: 12, tintColor: theme.mutedForeground }} />
+          </Pressable>
+          <Pressable
+            onPress={() => void Linking.openURL("https://mpotter2002.github.io/model-pulse/")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              backgroundColor: theme.muted,
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text size="sm" family="mono" weight="bold">
+                Support
+              </Text>
+              <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+                Setup guides and contact.
+              </Text>
+            </View>
+            <Image source="sf:arrow.up.right" style={{ width: 12, height: 12, tintColor: theme.mutedForeground }} />
+          </Pressable>
+          <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+            Model Pulse is an independent tracker, not affiliated with the providers it lists.
+          </Text>
+        </View>
+      </Card>
     </ScreenScrollView>
   );
 }

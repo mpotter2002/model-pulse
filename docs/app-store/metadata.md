@@ -34,8 +34,15 @@ Model Pulse has no accounts, no analytics, and no tracking. Keys live in
 the iOS Keychain. Requests go straight from your device to the providers
 you connect — there is no Model Pulse server.
 
+Model Pulse is an independent tracker and is not affiliated with or endorsed
+by OpenAI, Anthropic, Google, or any other listed provider.
+
 ## Keywords (100 char max, comma-separated)
-ai,usage tracker,rate limits,api spend,openai,anthropic,claude,chatgpt,kimi,widget,tokens
+ai,usage tracker,rate limits,api spend,openai,anthropic,claude,kimi,widget,tokens,codex
+
+(Note: "chatgpt" was dropped — third-party trademarks in the hidden keywords
+field are a 5.2.1 rejection risk. Descriptive mentions stay in the
+description, which is standard compatibility language.)
 
 ## Categories
 - Primary: Utilities
