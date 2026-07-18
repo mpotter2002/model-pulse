@@ -1,4 +1,4 @@
-import type { ProviderConfig, ProviderId, ProviderSnapshot, StoredState } from "@/types/domain";
+import type { NotificationPrefs, ProviderConfig, ProviderId, ProviderSnapshot, StoredState } from "@/types/domain";
 
 export const PROVIDER_ORDER: ProviderId[] = ["openai", "anthropic", "kimi"];
 
@@ -37,8 +37,17 @@ export const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
   monthlyBudgetUsd: "",
 };
 
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  enabled: false,
+  thresholds: [50, 80, 90],
+  subscriptionAlerts: true,
+  apiBudgetAlerts: true,
+};
+
 export const DEFAULT_STORED_STATE: StoredState = {
   themeMode: "system",
+  notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   rateLimitStyle: "bar",
   modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],
   hiddenModelCardIds: [],

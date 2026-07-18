@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
-import { DEFAULT_PROVIDER_CONFIG, DEFAULT_STORED_STATE, PROVIDER_ORDER } from "@/lib/providers";
-import type { ModelCardId, ProviderConfig, ProviderId, RateLimitStyle, StoredState, WidgetMetricMode } from "@/types/domain";
+import { DEFAULT_NOTIFICATION_PREFS, DEFAULT_PROVIDER_CONFIG, DEFAULT_STORED_STATE, PROVIDER_ORDER } from "@/lib/providers";
+import type { ModelCardId, NotificationPrefs, ProviderConfig, ProviderId, RateLimitStyle, StoredState, WidgetMetricMode } from "@/types/domain";
 
 const STORAGE_KEY = "signalstack-state-v1";
 
@@ -38,6 +38,7 @@ export async function loadStoredState(): Promise<StoredState> {
       modelCardOrder: mergeModelCardOrder(parsed.modelCardOrder),
       hiddenModelCardIds: mergeHiddenModelCards(parsed.hiddenModelCardIds),
       homeCardSource: mergeHomeCardSource(parsed.homeCardSource),
+      notificationPrefs: mergeNotificationPrefs(parsed.notificationPrefs),
       widgetConfig: {
         headline:
           typeof parsed.widgetConfig?.headline === "string" && parsed.widgetConfig.headline.trim()
@@ -60,6 +61,30 @@ export async function loadStoredState(): Promise<StoredState> {
   }
 }
 
+
+
+function mergeNotificationPrefs(value: unknown): NotificationPrefs {
+  const defaults = DEFAULT_NOTIFICATION_PREFS;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return defaults;
+  const rec = value as Record<string, unknown>;
+  let thresholds = defaults.thresholds;
+  if (Array.isArray(rec.thresholds)) {
+    const cleaned = rec.thresholds.filter(
+      (t): t is number => typeof t === "number" && Number.isFinite(t) && t >= 1 && t <= 100,
+    );
+    if (cleaned.length > 0) {
+      thresholds = [...new Set(cleaned)].sort((a, b) => a - b);
+    }
+  }
+  return {
+    enabled: typeof rec.enabled === "boolean" ? rec.enabled : defaults.enabled,
+    thresholds,
+    subscriptionAlerts:
+      typeof rec.subscriptionAlerts === "boolean" ? rec.subscriptionAlerts : defaults.subscriptionAlerts,
+    apiBudgetAlerts:
+      typeof rec.apiBudgetAlerts === "boolean" ? rec.apiBudgetAlerts : defaults.apiBudgetAlerts,
+  };
+}
 
 function mergeHomeCardSource(value: unknown): StoredState["homeCardSource"] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};

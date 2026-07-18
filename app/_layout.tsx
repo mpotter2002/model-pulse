@@ -15,11 +15,15 @@ import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppErrorBoundary } from "@/components/error-boundary";
+import { configureNotificationHandler } from "@/lib/notifications";
 import { AppStoreProvider, useAppStore } from "@/store/app-store";
 
 // Widget module is consumed by the Expo widget bundler via the "use widget"
 // directive; we intentionally do NOT require it in the main app bundle.
 // Requiring it here caused a fatal Hermes parse error at launch in release builds.
+
+// Present usage alerts as banners even when the app is foregrounded.
+configureNotificationHandler();
 
 declare const ErrorUtils:
   | {

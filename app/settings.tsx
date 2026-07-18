@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
+import * as Linking from "expo-linking";
 import { Link } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, PanResponder, Pressable, Switch, View } from "react-native";
@@ -12,12 +13,14 @@ import { ScreenScrollView } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { useTheme } from "@/components/ui/theme";
 import { makeModelCards } from "@/lib/model-cards";
+import { requestNotificationPermission } from "@/lib/notifications";
 import { useAppStore } from "@/store/app-store";
 import type { ModelCardId, RateLimitStyle } from "@/types/domain";
 
 const ROW_HEIGHT = 52;
 const ROW_GAP = 8;
 const ROW_STRIDE = ROW_HEIGHT + ROW_GAP;
+const ALERT_THRESHOLD_OPTIONS = [25, 50, 75, 80, 90, 95];
 const RATE_LIMIT_STYLE_OPTIONS: Array<{ label: string; value: RateLimitStyle }> = [
   { label: "Bar", value: "bar" },
   { label: "Dots", value: "dots" },
@@ -35,9 +38,43 @@ export default function SettingsScreen() {
     rateLimitStyle,
     updateWidgetConfig,
     setRateLimitStyle,
+    notificationPrefs,
+    updateNotificationPrefs,
   } = useAppStore();
   const modelCards = makeModelCards();
   const [listScrollEnabled, setListScrollEnabled] = useState(true);
+  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
+
+  const onToggleAlerts = async (next: boolean) => {
+    if (!next) {
+      void Haptics.selectionAsync();
+      void updateNotificationPrefs({ enabled: false });
+      return;
+    }
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      setShowPermissionHelp(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    setShowPermissionHelp(false);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void updateNotificationPrefs({ enabled: true });
+  };
+
+  const onToggleThreshold = (threshold: number) => {
+    void Haptics.selectionAsync();
+    const current = notificationPrefs.thresholds;
+    if (current.includes(threshold)) {
+      if (current.length === 1) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        return; // keep at least one threshold
+      }
+      void updateNotificationPrefs({ thresholds: current.filter((t) => t !== threshold) });
+    } else {
+      void updateNotificationPrefs({ thresholds: [...current, threshold].sort((a, b) => a - b) });
+    }
+  };
   const theme = useTheme();
 
   return (
@@ -138,6 +175,154 @@ export default function SettingsScreen() {
               );
             })}
           </View>
+        </View>
+      </Card>
+
+      <Card padding={4} style={{ marginBottom: 16 }}>
+        <View style={{ gap: 14 }}>
+          <View>
+            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 1 }}>
+              NOTIFICATIONS
+            </Text>
+            <Text size="lg" family="sans" weight="semibold" style={{ marginTop: 2 }}>
+              Usage alerts
+            </Text>
+            <Text size="sm" family="mono" color="muted" style={{ marginTop: 2 }}>
+              Get pinged when a rate-limit window or API budget crosses a threshold.
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              backgroundColor: theme.muted,
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text size="sm" family="mono" weight="bold">
+                Alerts
+              </Text>
+              <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+                Local notifications on this iPhone.
+              </Text>
+            </View>
+            <Switch value={notificationPrefs.enabled} onValueChange={(next) => void onToggleAlerts(next)} />
+          </View>
+
+          {showPermissionHelp ? (
+            <Pressable
+              onPress={() => void Linking.openSettings()}
+              style={{ backgroundColor: theme.muted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }}
+            >
+              <Text size="xs" family="mono" weight="bold" style={{ color: theme.accent }}>
+                Notifications are off for Model Pulse in iOS Settings.
+              </Text>
+              <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+                Tap here to open Settings and allow them, then flip Alerts on again.
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <View style={{ gap: 8, opacity: notificationPrefs.enabled ? 1 : 0.4 }}>
+            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 0.8 }}>
+              ALERT ME AT
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {ALERT_THRESHOLD_OPTIONS.map((threshold) => {
+                const active = notificationPrefs.thresholds.includes(threshold);
+                return (
+                  <Pressable
+                    key={threshold}
+                    disabled={!notificationPrefs.enabled}
+                    onPress={() => onToggleThreshold(threshold)}
+                    style={{
+                      borderRadius: 8,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      backgroundColor: active ? theme.accent : theme.muted,
+                    }}
+                  >
+                    <Text
+                      size="sm"
+                      family="mono"
+                      weight="bold"
+                      style={{ color: active ? theme.accentForeground : theme.foreground }}
+                    >
+                      {threshold}%
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={{ gap: 8, opacity: notificationPrefs.enabled ? 1 : 0.4 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                backgroundColor: theme.muted,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text size="sm" family="mono" weight="bold">
+                  Subscription rate limits
+                </Text>
+                <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+                  ChatGPT weekly, Claude 5-hour, and other plan windows.
+                </Text>
+              </View>
+              <Switch
+                value={notificationPrefs.subscriptionAlerts}
+                disabled={!notificationPrefs.enabled}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  void updateNotificationPrefs({ subscriptionAlerts: next });
+                }}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                backgroundColor: theme.muted,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text size="sm" family="mono" weight="bold">
+                  API monthly budgets
+                </Text>
+                <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+                  Spend vs the budgets you set on each provider card.
+                </Text>
+              </View>
+              <Switch
+                value={notificationPrefs.apiBudgetAlerts}
+                disabled={!notificationPrefs.enabled}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  void updateNotificationPrefs({ apiBudgetAlerts: next });
+                }}
+              />
+            </View>
+          </View>
+
+          <Text size="xs" family="mono" color="muted">
+            Background alerts run when iOS schedules them — usually within a few hours of crossing a threshold.
+          </Text>
         </View>
       </Card>
 

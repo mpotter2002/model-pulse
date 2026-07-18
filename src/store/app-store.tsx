@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Platform, useColorScheme } from "react-native";
 
 import { tokens, type ThemeTokens } from "@/design-system/tokens";
+import { registerUsageAlertTask, unregisterUsageAlertTask } from "@/lib/background-usage-task";
+import { evaluateUsageAlerts } from "@/lib/notifications";
 import { buildSnapshot } from "@/lib/provider-clients";
 import { DEFAULT_STORED_STATE, PROVIDER_ORDER, demoSnapshot } from "@/lib/providers";
 import { getConnectionStatus } from "@/lib/oauth/manager";
 import { SUBSCRIPTION_PROVIDER_ORDER } from "@/lib/oauth/providers";
 import { loadStoredState, saveStoredState } from "@/lib/storage";
-import type { HomeCardSource, ModelCardId, ProviderConfig, ProviderId, ProviderSnapshot, RateLimitStyle, StoredState, ThemeMode, WidgetConfig } from "@/types/domain";
+import type { HomeCardSource, ModelCardId, NotificationPrefs, ProviderConfig, ProviderId, ProviderSnapshot, RateLimitStyle, StoredState, ThemeMode, WidgetConfig } from "@/types/domain";
 
 const AppStoreContext = React.createContext<AppStoreValue | null>(null);
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -26,6 +28,7 @@ interface AppStoreValue {
   modelCardOrder: ModelCardId[];
   hiddenModelCardIds: ModelCardId[];
   homeCardSource: StoredState["homeCardSource"];
+  notificationPrefs: NotificationPrefs;
   widgetConfig: WidgetConfig;
   snapshots: Record<ProviderId, ProviderSnapshot>;
   theme: Theme;
@@ -34,6 +37,7 @@ interface AppStoreValue {
   saveProviderConfig: (providerId: ProviderId, config: ProviderConfig) => Promise<void>;
   updateModelCardPreferences: (next: { order?: ModelCardId[]; hidden?: ModelCardId[] }) => Promise<void>;
   setHomeCardSource: (cardId: ModelCardId, source: HomeCardSource) => Promise<void>;
+  updateNotificationPrefs: (patch: Partial<NotificationPrefs>) => Promise<void>;
   updateWidgetConfig: (config: WidgetConfig) => Promise<void>;
   refreshAll: () => Promise<void>;
   refreshProvider: (providerId: ProviderId) => Promise<void>;
@@ -87,6 +91,18 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       void syncSignalStackWidget(snapshots, storedState.widgetConfig, storedState.rateLimitStyle);
     });
   }, [hydrated, snapshots, storedState.widgetConfig, storedState.rateLimitStyle]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (Platform.OS !== "ios") return;
+    if (storedState.notificationPrefs.enabled) {
+      void registerUsageAlertTask().catch((error) =>
+        console.warn("[ModelPulse] background task registration failed", error),
+      );
+    } else {
+      void unregisterUsageAlertTask().catch(() => undefined);
+    }
+  }, [hydrated, storedState.notificationPrefs.enabled]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -145,11 +161,23 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       // Claude's throttled usage endpoint actually updates. Automatic warms
       // (mount, app-active) stay non-forced so background focus can't reignite
       // Anthropic's penalty.
-      await Promise.all(
-        SUBSCRIPTION_PROVIDER_ORDER.map((id) =>
-          getConnectionStatus(id, { allowNetwork: true, force }).catch(() => undefined),
-        ),
-      );
+      const subscriptionUsages = (
+        await Promise.all(
+          SUBSCRIPTION_PROVIDER_ORDER.map((id) =>
+            getConnectionStatus(id, { allowNetwork: true, force })
+              .then((status) => (status.kind === "connected" ? [{ providerId: id, usage: status.usage }] : []))
+              .catch(() => []),
+          ),
+        )
+      ).flat();
+
+      // Threshold alerts (subscription windows + API budgets). Fire-and-forget:
+      // a notification hiccup must never fail the refresh itself.
+      void evaluateUsageAlerts({
+        prefs: nextState.notificationPrefs,
+        apiSnapshots: { openai: entries[0][1], anthropic: entries[1][1], kimi: entries[2][1] },
+        subscriptionUsages,
+      }).catch((error) => console.warn("[ModelPulse] usage alert evaluation failed", error));
     } finally {
       setRefreshing(false);
     }
@@ -179,6 +207,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     hiddenModelCardIds: storedState.hiddenModelCardIds,
     widgetConfig: storedState.widgetConfig,
     homeCardSource: storedState.homeCardSource,
+    notificationPrefs: storedState.notificationPrefs,
     snapshots,
     theme,
     setThemeMode: async (value) => {
@@ -207,6 +236,12 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       await commitStoredState((current) => ({
         ...current,
         homeCardSource: { ...current.homeCardSource, [cardId]: source },
+      }));
+    },
+    updateNotificationPrefs: async (patch) => {
+      await commitStoredState((current) => ({
+        ...current,
+        notificationPrefs: { ...current.notificationPrefs, ...patch },
       }));
     },
     updateWidgetConfig: async (config) => {

@@ -12,6 +12,18 @@ export type HomeCardSource = "subscription" | "api";
 
 export type RateLimitStyle = "bar" | "dots" | "dash" | "none";
 
+
+export interface NotificationPrefs {
+  /** Master switch for all usage alerts. */
+  enabled: boolean;
+  /** Percent-used thresholds that fire an alert (ascending, 1-100). */
+  thresholds: number[];
+  /** Alert when a subscription rate-limit window crosses a threshold. */
+  subscriptionAlerts: boolean;
+  /** Alert when API monthly spend crosses a threshold of the self-set budget. */
+  apiBudgetAlerts: boolean;
+}
+
 export interface ProviderConfig {
   mode: string;
   apiKey: string;
@@ -58,6 +70,8 @@ export interface StoredState {
   hiddenModelCardIds: ModelCardId[];
   /** Per-card choice of which usage the home screen card leads with. Default: "subscription". */
   homeCardSource: Partial<Record<ModelCardId, HomeCardSource>>;
+  /** Usage-alert preferences for local notifications. */
+  notificationPrefs: NotificationPrefs;
   widgetConfig: WidgetConfig;
 }
 
