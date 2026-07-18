@@ -35,8 +35,6 @@ export default function SettingsScreen() {
     rateLimitStyle,
     updateWidgetConfig,
     setRateLimitStyle,
-    demoMode,
-    setDemoMode,
   } = useAppStore();
   const modelCards = makeModelCards();
   const [listScrollEnabled, setListScrollEnabled] = useState(true);
@@ -81,29 +79,6 @@ export default function SettingsScreen() {
           </Card>
         </Pressable>
       </Link>
-
-      <Card padding={4} style={{ marginBottom: 16 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 1 }}>
-              PREVIEW DATA
-            </Text>
-            <Text size="lg" family="sans" weight="semibold">
-              Demo mode
-            </Text>
-            <Text size="sm" family="mono" color="muted" style={{ marginTop: 2 }}>
-              Explore with sample usage data. Turn off once your own keys are connected.
-            </Text>
-          </View>
-          <Switch
-            value={demoMode}
-            onValueChange={(value) => {
-              void Haptics.selectionAsync();
-              void setDemoMode(value);
-            }}
-          />
-        </View>
-      </Card>
 
       <Card padding={4} style={{ marginBottom: 16 }}>
         <View style={{ gap: 14 }}>

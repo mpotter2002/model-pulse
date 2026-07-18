@@ -51,7 +51,6 @@ export interface ProviderSnapshot {
 }
 
 export interface StoredState {
-  demoMode: boolean;
   themeMode: ThemeMode;
   rateLimitStyle: RateLimitStyle;
   providerConfigs: Record<ProviderId, ProviderConfig>;

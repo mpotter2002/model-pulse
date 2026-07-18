@@ -18,7 +18,6 @@ export default function HomeScreen() {
   const {
     snapshots,
     themeMode,
-    demoMode,
     refreshing,
     refreshAll,
     modelCardOrder,
@@ -54,7 +53,7 @@ export default function HomeScreen() {
     0,
   );
   const totalApiSpend = PROVIDER_ORDER.reduce(
-    (sum, id) => sum + (demoMode ? snapshots[id].usage.monthlySpendUsd : snapshots[id].mode === "live" ? snapshots[id].usage.monthlySpendUsd : 0),
+    (sum, id) => sum + (snapshots[id].mode === "live" ? snapshots[id].usage.monthlySpendUsd : 0),
     0,
   );
   const totalMonthlySpend = totalSubscriptionSpend + totalApiSpend;
@@ -131,9 +130,9 @@ export default function HomeScreen() {
               SYSTEM SUMMARY
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: demoMode ? theme.warning : theme.accent }} />
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accent }} />
               <Text size="xs" family="mono" color="muted">
-                {demoMode ? "DEMO" : "LIVE"}
+                LIVE
               </Text>
             </View>
           </View>
@@ -153,11 +152,6 @@ export default function HomeScreen() {
               >
                 ${totalMonthlySpend.toFixed(2)}
               </Text>
-              {demoMode ? (
-                <Text size="xs" family="mono" weight="bold" color="warning">
-                  DEMO
-                </Text>
-              ) : null}
             </View>
             {hasLiveApiData ? (
               <View style={{ flex: 1, gap: 4 }}>

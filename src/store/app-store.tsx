@@ -20,7 +20,6 @@ type Theme = ThemeTokens;
 interface AppStoreValue {
   hydrated: boolean;
   refreshing: boolean;
-  demoMode: boolean;
   themeMode: ThemeMode;
   rateLimitStyle: RateLimitStyle;
   providerConfigs: Record<ProviderId, ProviderConfig>;
@@ -30,7 +29,6 @@ interface AppStoreValue {
   widgetConfig: WidgetConfig;
   snapshots: Record<ProviderId, ProviderSnapshot>;
   theme: Theme;
-  setDemoMode: (value: boolean) => Promise<void>;
   setThemeMode: (value: ThemeMode) => Promise<void>;
   setRateLimitStyle: (value: RateLimitStyle) => Promise<void>;
   saveProviderConfig: (providerId: ProviderId, config: ProviderConfig) => Promise<void>;
@@ -80,7 +78,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   useEffect(() => {
     if (!hydrated) return;
     void refreshAllInternal(storedStateRef.current);
-  }, [hydrated, storedState.demoMode]);
+  }, [hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -113,7 +111,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       const entries = await Promise.all(
         PROVIDER_ORDER.map(async (providerId) => {
           try {
-            const snapshot = await buildSnapshot(providerId, nextState.providerConfigs[providerId], nextState.demoMode);
+            const snapshot = await buildSnapshot(providerId, nextState.providerConfigs[providerId]);
             return [providerId, snapshot] as const;
           } catch (error) {
             return [
@@ -174,7 +172,6 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   const value: AppStoreValue = {
     hydrated,
     refreshing,
-    demoMode: storedState.demoMode,
     themeMode: storedState.themeMode,
     rateLimitStyle: storedState.rateLimitStyle,
     providerConfigs: storedState.providerConfigs,
@@ -184,9 +181,6 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     homeCardSource: storedState.homeCardSource,
     snapshots,
     theme,
-    setDemoMode: async (value) => {
-      await commitStoredState((current) => ({ ...current, demoMode: value }));
-    },
     setThemeMode: async (value) => {
       await commitStoredState((current) => ({ ...current, themeMode: value }));
     },
@@ -226,7 +220,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       try {
         // Read from the ref, not the render closure, so a refresh fired right
         // after saving config uses the values that were just persisted.
-        const snapshot = await buildSnapshot(providerId, storedStateRef.current.providerConfigs[providerId], storedStateRef.current.demoMode);
+        const snapshot = await buildSnapshot(providerId, storedStateRef.current.providerConfigs[providerId]);
         setSnapshots((current) => ({
           ...current,
           [providerId]: snapshot,

@@ -1,11 +1,7 @@
 import { demoSnapshot } from "@/lib/providers";
 import type { ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domain";
 
-export async function buildSnapshot(providerId: ProviderId, config: ProviderConfig, demoMode: boolean) {
-  if (demoMode) {
-    return demoSnapshot(providerId);
-  }
-
+export async function buildSnapshot(providerId: ProviderId, config: ProviderConfig) {
   if (config.mode.includes("subscription")) {
     return refreshSubscriptionProvider(providerId, config);
   }
