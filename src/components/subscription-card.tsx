@@ -227,7 +227,7 @@ export function SubscriptionPanel({
         {pending ? (
           <View style={{ gap: 8, borderRadius: 12, padding: 14, backgroundColor: theme.muted }}>
             <Text size="sm" color="muted">
-              Approve in your browser. Enter this code if asked:
+              {def.deviceFlow?.verificationHint ?? "Approve in your browser. Enter this code if asked:"}
             </Text>
             <Pressable onPress={() => Clipboard.setStringAsync(pending.authorization.userCode)}>
               <Text size="2xl" weight="extrabold" style={{ letterSpacing: 4, fontVariant: ["tabular-nums"] }}>
@@ -276,9 +276,16 @@ export function SubscriptionPanel({
         {error ? <Text color="destructive">{error}</Text> : null}
 
         {!connected && def.authKind === "device-flow" && !pending ? (
-          <Button onPress={startDeviceLogin} disabled={busy}>
-            {busy ? "Starting…" : `Connect ${def.shortLabel}`}
-          </Button>
+          <View style={{ gap: 10 }}>
+            {def.tokenHint ? (
+              <Text size="sm" color="muted">
+                {def.tokenHint}
+              </Text>
+            ) : null}
+            <Button onPress={startDeviceLogin} disabled={busy}>
+              {busy ? "Starting…" : `Connect ${def.shortLabel}`}
+            </Button>
+          </View>
         ) : null}
 
         {!connected && def.authKind === "pkce-code" ? (

@@ -385,7 +385,25 @@ async function fetchClaudeUsage(
   };
 }
 
-// ── ChatGPT / Codex (OAuth access token) ───────────────────────────────
+// ── ChatGPT / Codex (device-code OAuth) ────────────────────────────────
+// OpenAI's public OAuth client (the same one the Codex CLI uses) supports the
+// RFC 8628 device-authorization grant, so users can sign in with their ChatGPT
+// account right in the phone's browser — no desktop terminal step. Endpoints
+// mirror codex-rs/login/src/device_code_auth.rs.
+const OPENAI_AUTH_ISSUER = "https://auth.openai.com";
+
+const codexDeviceFlow: DeviceFlowConfig = {
+  clientId: "app_EMoamEEZ73f0CkXaXp7hrann",
+  deviceAuthorizationUrl: `${OPENAI_AUTH_ISSUER}/api/accounts/deviceauth/usercode`,
+  tokenUrl: `${OPENAI_AUTH_ISSUER}/api/accounts/deviceauth/token`,
+  dialect: "openai",
+  verificationUrl: `${OPENAI_AUTH_ISSUER}/codex/device`,
+  exchangeUrl: `${OPENAI_AUTH_ISSUER}/oauth/token`,
+  exchangeRedirectUri: `${OPENAI_AUTH_ISSUER}/deviceauth/callback`,
+  verificationHint:
+    "Your browser will open OpenAI's sign-in page. Sign in with your ChatGPT account, then enter this one-time code:",
+};
+
 const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
 
 async function fetchCodexUsage(tokens: StoredTokens): Promise<SubscriptionUsage> {
@@ -1120,20 +1138,10 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     label: "ChatGPT / Codex (subscription)",
     shortLabel: "ChatGPT",
     accent: "#A0E7C5",
-    authKind: "api-token",
+    authKind: "device-flow",
+    deviceFlow: codexDeviceFlow,
     tokenHint:
-      "Paste your Codex access_token from ~/.codex/auth.json. Run 'codex' on your computer to log in, then copy the token. You can also paste the full JSON file contents. Auto-refreshes when a refresh token is included.",
-    setupSteps: [
-      "On your Mac, open Terminal and run Codex once so ChatGPT is logged in.",
-      "Print ~/.codex/auth.json, then paste the full JSON here.",
-      "Model Pulse extracts the access token, refresh token, account id, and plan claims.",
-    ],
-    helperCommand: "cat ~/.codex/auth.json",
-    tokenRefresh: {
-      tokenUrl: "https://auth.openai.com/oauth/token",
-      clientId: "app_EMoamEEZ73f0CkXaXp7hrann",
-      scopes: ["openid", "profile", "email", "offline_access"],
-    },
+      "Sign in with your ChatGPT account in the browser and enter the one-time code it asks for. Model Pulse gets its own token — it will NOT log out or conflict with the Codex CLI on your Mac.",
     fetchUsage: fetchCodexUsage,
   },
   "gemini-sub": {

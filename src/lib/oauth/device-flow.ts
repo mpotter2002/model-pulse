@@ -1,12 +1,15 @@
 import * as Crypto from "expo-crypto";
 
+// NOTE: providers.ts only imports *types* from this module, so this runtime
+// import does not create a cycle.
+import { decodeJwtPayload } from "@/lib/oauth/providers";
 import type {
   DeviceAuthorization,
   DevicePollResult,
   StoredTokens,
 } from "@/lib/oauth/types";
 
-export type DeviceFlowDialect = "standard" | "minimax";
+export type DeviceFlowDialect = "standard" | "minimax" | "openai";
 
 export interface DeviceFlowConfig {
   clientId: string;
@@ -18,9 +21,29 @@ export interface DeviceFlowConfig {
   /**
    * Provider-specific quirks. "minimax" omits device_code (the session is keyed
    * by user_code), reports interval in ms, echoes a `state`, and signals pending
-   * via a `status` field instead of an OAuth error code.
+   * via a `status` field instead of an OAuth error code. "openai" is the Codex
+   * CLI's device-code login against auth.openai.com: JSON bodies keyed by
+   * device_auth_id + user_code, pending signalled by HTTP 403/404, and a
+   * successful poll returns an authorization_code that must still be exchanged
+   * (PKCE) for tokens.
    */
   dialect?: DeviceFlowDialect;
+  /**
+   * OpenAI dialect: fixed page where the user enters the code. The usercode
+   * response carries no verification URI, so (like the Codex CLI) it is
+   * hardcoded in the provider config.
+   */
+  verificationUrl?: string;
+  /**
+   * OpenAI dialect: endpoint for the authorization-code exchange after a
+   * successful poll. Also used for refresh_token grants (OpenAI expects JSON
+   * there), falling back to tokenUrl when unset.
+   */
+  exchangeUrl?: string;
+  /** OpenAI dialect: redirect_uri sent during the code exchange. */
+  exchangeRedirectUri?: string;
+  /** Optional copy shown in the "waiting for approval" box in the app. */
+  verificationHint?: string;
 }
 
 const DEVICE_CODE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
@@ -32,6 +55,8 @@ export interface PendingDeviceFlow {
   authorization: DeviceAuthorization;
   codeVerifier: string | null;
   state: string | null;
+  /** Epoch ms when the flow started; used to enforce the provider's code TTL. */
+  startedAt: number;
 }
 
 function base64UrlEncode(bytes: Uint8Array): string {
@@ -77,6 +102,27 @@ async function postForm(url: string, params: Record<string, string>) {
     data = text ? (JSON.parse(text) as Record<string, unknown>) : {};
   } catch {
     // Non-JSON body; expose the raw text for error messages.
+    data = text ? { _raw: text } : {};
+  }
+  return { status: response.status, data };
+}
+
+async function postJson(url: string, body: Record<string, unknown>) {
+  const response = await fetchWithNetworkRetry(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "Cache-Control": "no-store",
+    },
+    body: JSON.stringify(body),
+  });
+  let data: Record<string, unknown> = {};
+  let text = "";
+  try {
+    text = await response.text();
+    data = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  } catch {
     data = text ? { _raw: text } : {};
   }
   return { status: response.status, data };
@@ -158,6 +204,10 @@ function baseRespError(data: Record<string, unknown>): string | null {
 }
 
 export async function startDeviceFlow(config: DeviceFlowConfig): Promise<PendingDeviceFlow> {
+  if (config.dialect === "openai") {
+    return startOpenAiDeviceFlow(config);
+  }
+
   const params: Record<string, string> = { client_id: config.clientId };
   if (config.scopes && config.scopes.length > 0) {
     params.scope = config.scopes.join(" ");
@@ -225,7 +275,130 @@ export async function startDeviceFlow(config: DeviceFlowConfig): Promise<Pending
     interval,
   };
 
-  return { authorization, codeVerifier, state };
+  return { authorization, codeVerifier, state, startedAt: Date.now() };
+}
+
+// ── OpenAI (Codex CLI) device-code login ───────────────────────────────
+// Mirrors codex-rs/login/src/device_code_auth.rs: request a user code, the
+// user approves at a fixed page in their browser, we poll for an
+// authorization_code, then exchange it (PKCE) for tokens. Codes live 15 min.
+const OPENAI_DEVICE_TTL_MS = 15 * 60 * 1000;
+
+async function startOpenAiDeviceFlow(config: DeviceFlowConfig): Promise<PendingDeviceFlow> {
+  const { status, data } = await postJson(config.deviceAuthorizationUrl, {
+    client_id: config.clientId,
+  });
+
+  if (status >= 400) {
+    throw new Error(
+      readString(data, "error_description") ??
+        readString(data, "error") ??
+        readString(data, "message") ??
+        readString(data, "_raw") ??
+        `Device authorization failed (HTTP ${status}).`,
+    );
+  }
+
+  const userCode = readString(data, "user_code") ?? readString(data, "usercode");
+  const deviceAuthId = readString(data, "device_auth_id");
+  if (!userCode || !deviceAuthId) {
+    throw new Error("Device authorization response was missing user_code or device_auth_id.");
+  }
+
+  // OpenAI returns the poll interval as a *string* number.
+  const intervalRaw = data.interval;
+  const intervalParsed =
+    typeof intervalRaw === "string" ? Number(intervalRaw) : typeof intervalRaw === "number" ? intervalRaw : NaN;
+  const interval = Number.isFinite(intervalParsed) && intervalParsed > 0 ? Math.max(1, Math.round(intervalParsed)) : 5;
+
+  return {
+    authorization: {
+      deviceCode: deviceAuthId,
+      userCode,
+      verificationUri: config.verificationUrl ?? "",
+      verificationUriComplete: null,
+      expiresIn: Math.round(OPENAI_DEVICE_TTL_MS / 1000),
+      interval,
+    },
+    codeVerifier: null,
+    state: null,
+    startedAt: Date.now(),
+  };
+}
+
+async function pollOpenAiDeviceFlow(
+  config: DeviceFlowConfig,
+  pending: PendingDeviceFlow,
+): Promise<DevicePollResult> {
+  const { status, data } = await postJson(config.tokenUrl, {
+    device_auth_id: pending.authorization.deviceCode,
+    user_code: pending.authorization.userCode,
+  });
+
+  if (status === 200) {
+    const authorizationCode = readString(data, "authorization_code");
+    // The server generates the PKCE pair for this flow; we need the verifier.
+    const codeVerifier = readString(data, "code_verifier");
+    if (!authorizationCode || !codeVerifier) {
+      throw new Error("Device login succeeded but the response was incomplete. Please try again.");
+    }
+    const tokens = await exchangeOpenAiDeviceCode(config, authorizationCode, codeVerifier);
+    return { kind: "success", tokens };
+  }
+
+  // The Codex CLI treats 403/404 as "not approved yet" and 5xx as transient.
+  if (status === 403 || status === 404 || status >= 500) {
+    if (Date.now() - pending.startedAt >= OPENAI_DEVICE_TTL_MS) {
+      return { kind: "expired" };
+    }
+    return { kind: "pending" };
+  }
+
+  throw new Error(
+    readString(data, "error_description") ??
+      readString(data, "error") ??
+      readString(data, "message") ??
+      `Device login failed (HTTP ${status}).`,
+  );
+}
+
+async function exchangeOpenAiDeviceCode(
+  config: DeviceFlowConfig,
+  code: string,
+  codeVerifier: string,
+): Promise<StoredTokens> {
+  const { status, data } = await postForm(config.exchangeUrl ?? config.tokenUrl, {
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: config.exchangeRedirectUri ?? "",
+    client_id: config.clientId,
+    code_verifier: codeVerifier,
+  });
+
+  if (status >= 400 || typeof data.access_token !== "string") {
+    throw new Error(
+      readString(data, "error_description") ??
+        readString(data, "error") ??
+        readString(data, "message") ??
+        `Sign-in completed but the token exchange failed (HTTP ${status}).`,
+    );
+  }
+
+  const tokens = tokensFromResponse(data);
+  // iOS SecureStore silently fails above ~2 KB and OpenAI's id_token alone can
+  // be that big. Everything Model Pulse needs (account id, plan) is claimed on
+  // the access token, so don't persist the id_token for this flow.
+  tokens.idToken = null;
+  if (tokens.expiresAt === null) {
+    tokens.expiresAt = jwtExpMs(tokens.accessToken);
+  }
+  return tokens;
+}
+
+function jwtExpMs(token: string): number | null {
+  const payload = decodeJwtPayload(token);
+  const exp = payload?.exp;
+  return typeof exp === "number" ? exp * 1000 : null;
 }
 
 function tokensFromResponse(data: Record<string, unknown>): StoredTokens {
@@ -246,6 +419,7 @@ function tokensFromResponse(data: Record<string, unknown>): StoredTokens {
     accessToken,
     refreshToken: readString(data, "refresh_token"),
     expiresAt,
+    idToken: readString(data, "id_token"),
     resourceUrl: readString(data, "resource_url"),
     scope: readString(data, "scope"),
   };
@@ -255,6 +429,10 @@ export async function pollDeviceFlow(
   config: DeviceFlowConfig,
   pending: PendingDeviceFlow,
 ): Promise<DevicePollResult> {
+  if (config.dialect === "openai") {
+    return pollOpenAiDeviceFlow(config, pending);
+  }
+
   const params: Record<string, string> = {
     client_id: config.clientId,
     grant_type: DEVICE_CODE_GRANT,
@@ -305,11 +483,20 @@ export async function refreshTokens(
   config: DeviceFlowConfig,
   refreshToken: string,
 ): Promise<StoredTokens> {
-  const { status, data } = await postForm(config.tokenUrl, {
-    client_id: config.clientId,
-    grant_type: "refresh_token",
-    refresh_token: refreshToken,
-  });
+  // OpenAI's token endpoint expects a JSON refresh request (codex-rs
+  // AuthManager); every other dialect uses the standard form encoding.
+  const { status, data } =
+    config.dialect === "openai"
+      ? await postJson(config.exchangeUrl ?? config.tokenUrl, {
+          client_id: config.clientId,
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+        })
+      : await postForm(config.tokenUrl, {
+          client_id: config.clientId,
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+        });
 
   if (status >= 400 || typeof data.access_token !== "string") {
     throw new Error(
@@ -322,5 +509,10 @@ export async function refreshTokens(
 
   const tokens = tokensFromResponse(data);
   if (!tokens.refreshToken) tokens.refreshToken = refreshToken;
+  // Keep SecureStore payloads small for OpenAI (see exchangeOpenAiDeviceCode).
+  if (config.dialect === "openai") tokens.idToken = null;
+  if (tokens.expiresAt === null) {
+    tokens.expiresAt = jwtExpMs(tokens.accessToken);
+  }
   return tokens;
 }

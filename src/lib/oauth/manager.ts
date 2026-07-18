@@ -518,9 +518,17 @@ async function forceRefreshTokens(
   try {
     if (def.deviceFlow) {
       const refreshed = await refreshTokens(def.deviceFlow, tokens.refreshToken);
-      await saveTokens(providerId, refreshed);
+      const merged = {
+        ...tokens,
+        ...refreshed,
+        idToken: refreshed.idToken ?? tokens.idToken ?? null,
+        accountId: refreshed.accountId ?? tokens.accountId ?? null,
+        resourceUrl: refreshed.resourceUrl ?? tokens.resourceUrl ?? null,
+        scope: refreshed.scope ?? tokens.scope ?? null,
+      };
+      await saveTokens(providerId, merged);
       lastRefreshErrorMap.delete(providerId);
-      return refreshed;
+      return merged;
     }
     if (def.tokenRefresh) {
       const refreshed = await refreshApiToken(def.tokenRefresh, tokens.refreshToken, tokens);
@@ -562,8 +570,16 @@ async function ensureFreshTokens(
   // Device-flow providers use the existing refreshTokens helper.
   if (def.deviceFlow) {
     const refreshed = await refreshTokens(def.deviceFlow, tokens.refreshToken);
-    await saveTokens(providerId, refreshed);
-    return refreshed;
+    const merged = {
+      ...tokens,
+      ...refreshed,
+      idToken: refreshed.idToken ?? tokens.idToken ?? null,
+      accountId: refreshed.accountId ?? tokens.accountId ?? null,
+      resourceUrl: refreshed.resourceUrl ?? tokens.resourceUrl ?? null,
+      scope: refreshed.scope ?? tokens.scope ?? null,
+    };
+    await saveTokens(providerId, merged);
+    return merged;
   }
 
   // Api-token providers with a tokenRefresh config.
