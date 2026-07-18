@@ -43,3 +43,5 @@ yarn-error.*
 
 # local build/debug artifacts
 artifacts/
+docs/app-store/hypershots-kit/
+docs/app-store/shots/out/

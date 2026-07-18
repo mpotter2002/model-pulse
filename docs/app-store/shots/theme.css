@@ -1,0 +1,31 @@
+/* Model Pulse LIGHT brand layer — from src/design-system/tokens.ts (light) */
+:root{
+  --paper:#E8EAED;
+  --paper-hi:#FCFCFC;
+  --ink:#101112;
+  --mid:#6B7077;
+  --rule:rgba(16,17,18,.14);
+  --accent:#2563EB;
+  --badge-bg:#FCFCFC;
+  --badge-ink:#2563EB;
+  --font-sans:'Space Grotesk',system-ui,sans-serif;
+  --font-mono:'Space Mono',ui-monospace,monospace;
+}
+.headline{
+  font-weight:700;
+  letter-spacing:-1.4px;
+  color:var(--ink);
+}
+.sub{
+  font-family:var(--font-mono);
+  font-weight:400;
+  color:var(--mid);
+  letter-spacing:-0.2px;
+}
+.eyebrow b{
+  font-family:var(--font-mono);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:2.5px;
+  color:var(--accent);
+}
