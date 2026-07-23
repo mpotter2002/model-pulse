@@ -121,6 +121,10 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     }, AUTO_REFRESH_MS);
     const subscription = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
+      // Re-apply the app icon on foreground: iOS won't change the icon while
+      // backgrounded, so if the system light/dark appearance flipped while the
+      // app was away, "system" mode needs to resync now that we're active.
+      void applyAppIconMode(storedStateRef.current.appIconMode);
       if (Date.now() - lastRefreshAtRef.current >= AUTO_REFRESH_MS) {
         void refreshAllInternal(storedStateRef.current);
       }
