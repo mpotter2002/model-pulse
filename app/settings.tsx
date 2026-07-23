@@ -338,7 +338,7 @@ export default function SettingsScreen() {
             <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 0.8 }}>
               ALERT ME AT
             </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <View style={{ flexDirection: "row", gap: 6 }}>
               {ALERT_THRESHOLD_OPTIONS.map((threshold) => {
                 const active = notificationPrefs.thresholds.includes(threshold);
                 return (
@@ -347,8 +347,10 @@ export default function SettingsScreen() {
                     disabled={!notificationPrefs.enabled}
                     onPress={() => onToggleThreshold(threshold)}
                     style={{
+                      flex: 1,
+                      alignItems: "center",
                       borderRadius: 8,
-                      paddingHorizontal: 14,
+                      paddingHorizontal: 4,
                       paddingVertical: 8,
                       backgroundColor: active ? theme.accent : theme.muted,
                     }}
