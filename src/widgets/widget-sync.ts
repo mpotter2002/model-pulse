@@ -71,6 +71,15 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
     const snap = snapshots[card.apiProviderId];
     return isLiveSnapshot(snap) && snap.balanceLabel != null;
   });
+  // "Active" = the provider is actually connected/enabled, not just visible:
+  // a subscription that is logged in, or an API key that returned live data.
+  // The widget PROVIDERS tile counts this (e.g. 5 instead of 13) so the number
+  // reflects what the user set up, not the full catalog of supported providers.
+  const activeCount = visibleCards.reduce((count, card) => {
+    const subscriptionConnected = subscriptionStatusById[card.id]?.kind === "connected";
+    const apiLive = card.apiProviderId ? isLiveSnapshot(snapshots[card.apiProviderId]) : false;
+    return subscriptionConnected || apiLive ? count + 1 : count;
+  }, 0);
   // Ensure we always have at least one card for the widget, even if it's just a placeholder
   const cards = visibleCards.map((card) => {
     const apiSnapshot = card.apiProviderId ? snapshots[card.apiProviderId] : null;
@@ -136,7 +145,8 @@ export async function syncSignalStackWidget(snapshots: SnapshotMap, config: Widg
         date: new Date(),
         props: {
           headline: "Model Pulse",
-          subheadline: `${visibleCards.length} model${visibleCards.length === 1 ? "" : "s"}`,
+          subheadline: `${activeCount} provider${activeCount === 1 ? "" : "s"}`,
+          providerCount: activeCount,
           totalSpend: `$${totalSpend.toFixed(0)}`,
           totalTokens: hasLiveApiData ? compact(totalTokens) : "",
           totalBalance: `$${totalBalance.toFixed(2)}`,

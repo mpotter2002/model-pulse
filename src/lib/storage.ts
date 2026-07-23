@@ -33,6 +33,7 @@ export async function loadStoredState(): Promise<StoredState> {
       // default (no flag stored yet) stay in live mode so we don't flip
       // existing users into demo data on upgrade.
       themeMode: (typeof parsed.themeMode === "string" && ["light", "dark", "system"].includes(parsed.themeMode)) ? parsed.themeMode : DEFAULT_STORED_STATE.themeMode,
+      appIconMode: (typeof parsed.appIconMode === "string" && ["system", "light", "dark"].includes(parsed.appIconMode)) ? parsed.appIconMode : DEFAULT_STORED_STATE.appIconMode,
       rateLimitStyle: migrateRateLimitStyle(parsed.rateLimitStyle),
       providerConfigs,
       modelCardOrder: mergeModelCardOrder(parsed.modelCardOrder),
@@ -83,6 +84,8 @@ function mergeNotificationPrefs(value: unknown): NotificationPrefs {
       typeof rec.subscriptionAlerts === "boolean" ? rec.subscriptionAlerts : defaults.subscriptionAlerts,
     apiBudgetAlerts:
       typeof rec.apiBudgetAlerts === "boolean" ? rec.apiBudgetAlerts : defaults.apiBudgetAlerts,
+    resetAlerts:
+      typeof rec.resetAlerts === "boolean" ? rec.resetAlerts : defaults.resetAlerts,
   };
 }
 

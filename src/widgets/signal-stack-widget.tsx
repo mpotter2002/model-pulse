@@ -37,6 +37,7 @@ type WidgetCard = {
 export type SignalStackWidgetProps = {
   headline: string;
   subheadline: string;
+  providerCount?: number;
   totalSpend: string;
   totalTokens: string;
   totalBalance: string;
@@ -77,6 +78,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const hasLiveApiData = rawProps.hasLiveApiData === true;
     const metricLabel = rawProps.metricLabel ?? "Spend";
     const updatedAt = rawProps.updatedAt ?? "now";
+    // Number of active/connected providers (falls back to the card count so
+    // older timelines without providerCount still render a sensible number).
+    const providerCount =
+      typeof rawProps.providerCount === "number" ? rawProps.providerCount : cardsInput.length;
 
     const family = environment.widgetFamily;
     const isSmall = family === "systemSmall";
@@ -100,8 +105,8 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const primaryTileLabel = showBalance ? "BALANCE" : "SPEND";
     const primaryTileValue = showBalance ? totalBalance : totalSpend;
 
-    const modelsLabel = cards.length === 1 ? "1 MODEL SHOWN" : `${cards.length} MODELS SHOWN`;
-    const modelsShown = cards.length === 1 ? "1 model shown" : `${cards.length} models shown`;
+    const modelsLabel = providerCount === 1 ? "1 PROVIDER ACTIVE" : `${providerCount} PROVIDERS ACTIVE`;
+    const modelsShown = providerCount === 1 ? "1 provider active" : `${providerCount} providers active`;
     const mediumRows = flatLimitRows.slice(0, 8);
     const mediumHalf = Math.ceil(mediumRows.length / 2);
     const leftLimitRows = mediumRows.slice(0, mediumHalf);
@@ -307,7 +312,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             containerBackground(background, "widget"),
           ]}
         >
-          {/* Compact tiles: SPEND + MODELS */}
+          {/* Compact tiles: SPEND + PROVIDERS */}
           <HStack spacing={6}>
             <ZStack alignment="leading" modifiers={[frame({ maxWidth: 10000, height: 36, alignment: "leading" })]}>
               <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
@@ -324,10 +329,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
               <RoundedRectangle cornerRadius={12} modifiers={[foregroundStyle(panel)]} />
               <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 8, vertical: 4 })]}>
                 <Text modifiers={[foregroundStyle(muted), font({ size: 9, family: "SpaceMono-Regular" }), lineLimit(1)]}>
-                  MODELS
+                  PROVIDERS
                 </Text>
                 <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 14, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
-                  {`${cards.length}`}
+                  {`${providerCount}`}
                 </Text>
               </VStack>
             </ZStack>
@@ -447,10 +452,10 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
             <RoundedRectangle cornerRadius={16} modifiers={[foregroundStyle(panel)]} />
             <VStack alignment="leading" spacing={0} modifiers={[padding({ horizontal: 10, vertical: 6 })]}>
               <Text modifiers={[foregroundStyle(muted), font({ size: 11, family: "SpaceMono-Regular" }), lineLimit(1)]}>
-                MODELS
+                PROVIDERS
               </Text>
               <Text modifiers={[foregroundStyle(text), monospacedDigit(), font({ size: 18, family: "SpaceGrotesk-Bold" }), lineLimit(1)]}>
-                {`${cards.length}`}
+                {`${providerCount}`}
               </Text>
             </VStack>
           </ZStack>

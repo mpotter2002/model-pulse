@@ -4,6 +4,8 @@ export type SnapshotMode = "demo" | "live" | "needs-key" | "failed" | "manual" |
 
 export type ThemeMode = "light" | "dark" | "system";
 
+export type AppIconMode = "system" | "light" | "dark";
+
 export type ModelCardId = "openai" | "anthropic" | "kimi" | "minimax" | "zai" | "gemini" | "elevenlabs" | "poe" | "codebuff" | "copilot" | "chutes" | "factory" | "opencode";
 
 export type WidgetMetricMode = "api" | "subscription";
@@ -22,6 +24,8 @@ export interface NotificationPrefs {
   subscriptionAlerts: boolean;
   /** Alert when API monthly spend crosses a threshold of the self-set budget. */
   apiBudgetAlerts: boolean;
+  /** Alert when a subscription rate-limit window resets back to full. */
+  resetAlerts: boolean;
 }
 
 export interface ProviderConfig {
@@ -64,6 +68,8 @@ export interface ProviderSnapshot {
 
 export interface StoredState {
   themeMode: ThemeMode;
+  /** Which app icon variant to show. "system" follows the iPhone appearance. */
+  appIconMode: AppIconMode;
   rateLimitStyle: RateLimitStyle;
   providerConfigs: Record<ProviderId, ProviderConfig>;
   modelCardOrder: ModelCardId[];

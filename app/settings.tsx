@@ -15,12 +15,22 @@ import { useTheme } from "@/components/ui/theme";
 import { makeModelCards } from "@/lib/model-cards";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { useAppStore } from "@/store/app-store";
-import type { ModelCardId, RateLimitStyle } from "@/types/domain";
+import type { AppIconMode, ModelCardId, RateLimitStyle, ThemeMode } from "@/types/domain";
 
 const ROW_HEIGHT = 52;
 const ROW_GAP = 8;
 const ROW_STRIDE = ROW_HEIGHT + ROW_GAP;
 const ALERT_THRESHOLD_OPTIONS = [25, 50, 75, 80, 90, 95];
+const APP_ICON_OPTIONS: Array<{ label: string; value: AppIconMode }> = [
+  { label: "System", value: "system" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+];
+const THEME_OPTIONS: Array<{ label: string; value: ThemeMode }> = [
+  { label: "System", value: "system" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+];
 const RATE_LIMIT_STYLE_OPTIONS: Array<{ label: string; value: RateLimitStyle }> = [
   { label: "Bar", value: "bar" },
   { label: "Dots", value: "dots" },
@@ -38,6 +48,10 @@ export default function SettingsScreen() {
     rateLimitStyle,
     updateWidgetConfig,
     setRateLimitStyle,
+    appIconMode,
+    setAppIconMode,
+    themeMode,
+    setThemeMode,
     notificationPrefs,
     updateNotificationPrefs,
   } = useAppStore();
@@ -116,6 +130,98 @@ export default function SettingsScreen() {
           </Card>
         </Pressable>
       </Link>
+
+      <Card padding={4} style={{ marginBottom: 16 }}>
+        <View style={{ gap: 14 }}>
+          <View>
+            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 1 }}>
+              APPEARANCE
+            </Text>
+            <Text size="lg" family="sans" weight="semibold" style={{ marginTop: 2 }}>
+              Theme & icon
+            </Text>
+            <Text size="sm" family="mono" color="muted" style={{ marginTop: 2 }}>
+              Override the iPhone light/dark setting for the app and its icon.
+            </Text>
+          </View>
+          <View>
+            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 0.8 }}>
+              APP THEME
+            </Text>
+            <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+              How the app itself looks.
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {THEME_OPTIONS.map((option) => {
+              const active = themeMode === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    void setThemeMode(option.value);
+                  }}
+                  style={{
+                    flex: 1,
+                    borderRadius: 8,
+                    paddingVertical: 10,
+                    alignItems: "center",
+                    backgroundColor: active ? theme.accent : theme.muted,
+                  }}
+                >
+                  <Text
+                    size="sm"
+                    family="mono"
+                    weight="bold"
+                    style={{ color: active ? theme.accentForeground : theme.foreground }}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View>
+            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 0.8 }}>
+              APP ICON
+            </Text>
+            <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+              Home Screen icon. System follows your iPhone.
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {APP_ICON_OPTIONS.map((option) => {
+              const active = appIconMode === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    void setAppIconMode(option.value);
+                  }}
+                  style={{
+                    flex: 1,
+                    borderRadius: 8,
+                    paddingVertical: 10,
+                    alignItems: "center",
+                    backgroundColor: active ? theme.accent : theme.muted,
+                  }}
+                >
+                  <Text
+                    size="sm"
+                    family="mono"
+                    weight="bold"
+                    style={{ color: active ? theme.accentForeground : theme.foreground }}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Card>
 
       <Card padding={4} style={{ marginBottom: 16 }}>
         <View style={{ gap: 14 }}>
@@ -287,6 +393,34 @@ export default function SettingsScreen() {
                 onValueChange={(next) => {
                   void Haptics.selectionAsync();
                   void updateNotificationPrefs({ subscriptionAlerts: next });
+                }}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                backgroundColor: theme.muted,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text size="sm" family="mono" weight="bold">
+                  Rate limit reset
+                </Text>
+                <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
+                  Ping me when a window I hit resets back to full.
+                </Text>
+              </View>
+              <Switch
+                value={notificationPrefs.resetAlerts}
+                disabled={!notificationPrefs.enabled || !notificationPrefs.subscriptionAlerts}
+                onValueChange={(next) => {
+                  void Haptics.selectionAsync();
+                  void updateNotificationPrefs({ resetAlerts: next });
                 }}
               />
             </View>

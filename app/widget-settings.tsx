@@ -152,6 +152,7 @@ export default function WidgetSettingsScreen() {
   // Cache-only so opening this screen never hammers a throttled endpoint; the
   // real data is populated by the subscription cards elsewhere in the app.
   const [subLimitRows, setSubLimitRows] = React.useState<Record<string, PreviewLimitRow[]>>({});
+  const [connectedSubIds, setConnectedSubIds] = React.useState<Set<string>>(new Set());
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -162,7 +163,7 @@ export default function WidgetSettingsScreen() {
             const status = await getConnectionStatus(card.subscriptionProviderId!, {
               allowNetwork: false,
             });
-            if (status.kind !== "connected") return [card.id, []] as const;
+            if (status.kind !== "connected") return [card.id, [], false] as const;
             const providerLabel = card.title.split(" / ")[0];
             let emitted = 0;
             const rows: PreviewLimitRow[] = status.usage.limits
@@ -187,10 +188,13 @@ export default function WidgetSettingsScreen() {
                 emitted += 1;
                 return { label, ratio: row.ratio };
               });
-            return [card.id, rows] as const;
+            return [card.id, rows, true] as const;
           }),
       );
-      if (!cancelled) setSubLimitRows(Object.fromEntries(entries));
+      if (!cancelled) {
+        setSubLimitRows(Object.fromEntries(entries.map(([id, rows]) => [id, [...rows]] as const)));
+        setConnectedSubIds(new Set(entries.filter(([, , connected]) => connected).map(([id]) => id)));
+      }
     })();
     return () => {
       cancelled = true;
@@ -442,6 +446,7 @@ export default function WidgetSettingsScreen() {
                   subscriptionPricesUsd={widgetConfig.subscriptionPricesUsd}
                   snapshots={snapshots}
                   subLimitRows={subLimitRows}
+                  connectedSubIds={connectedSubIds}
                 />
               </View>
             ))}
@@ -464,6 +469,7 @@ function WidgetPreview({
   subscriptionPricesUsd,
   snapshots,
   subLimitRows,
+  connectedSubIds,
 }: {
   size: WidgetSize;
   width: number;
@@ -475,6 +481,7 @@ function WidgetPreview({
   subscriptionPricesUsd: Record<ModelCardId, string>;
   snapshots: ReturnType<typeof useAppStore>["snapshots"];
   subLimitRows: Record<string, PreviewLimitRow[]>;
+  connectedSubIds: Set<string>;
 }) {
   const colors = useWidgetColors();
   const focused = cards.find((card) => card.id === focusedCardId) ?? cards[0];
@@ -490,6 +497,14 @@ function WidgetPreview({
   const totalTokens = totalTokensFor(cards, snapshots);
   const totalBalance = totalBalanceFor(cards, snapshots);
   const hasApi = hasLiveApiData(cards, snapshots);
+  // Mirror the native widget: count only providers that are actually
+  // connected/enabled (API live or subscription logged in), not every visible
+  // card, so the PROVIDERS tile matches the Home Screen widget.
+  const activeCount = cards.reduce((count, card) => {
+    const apiLive = card.apiProviderId ? isLiveSnapshot(snapshots[card.apiProviderId]) : false;
+    const subConnected = connectedSubIds.has(card.id);
+    return apiLive || subConnected ? count + 1 : count;
+  }, 0);
   const updatedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
   // Mirror the real Home Screen widget's fair distribution: every provider
@@ -530,7 +545,7 @@ function WidgetPreview({
                 color="muted"
                 style={{ color: colors.muted, marginTop: 2 }}
               >
-                {cards.length === 1 ? "1 model shown" : `${cards.length} models shown`}
+                {activeCount === 1 ? "1 provider active" : `${activeCount} providers active`}
               </Text>
             </View>
           </View>
@@ -544,14 +559,14 @@ function WidgetPreview({
             compact={size === "small"}
           />
           {size === "small" ? (
-            <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} compact />
+            <PreviewTile label="PROVIDERS" value={`${activeCount}`} flex={1} compact />
           ) : size === "medium" ? (
             <>
               {hasApi && metricMode === "api" ? <PreviewTile label="TOKENS" value={compactNumber(totalTokens)} flex={1} /> : null}
-              <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
+              <PreviewTile label="PROVIDERS" value={`${activeCount}`} flex={1} />
             </>
           ) : (
-            <PreviewTile label="MODELS" value={`${cards.length}`} flex={1} />
+            <PreviewTile label="PROVIDERS" value={`${activeCount}`} flex={1} />
           )}
         </View>
 

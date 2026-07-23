@@ -43,10 +43,12 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   thresholds: [50, 80, 90],
   subscriptionAlerts: true,
   apiBudgetAlerts: true,
+  resetAlerts: true,
 };
 
 export const DEFAULT_STORED_STATE: StoredState = {
   themeMode: "system",
+  appIconMode: "system",
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   rateLimitStyle: "bar",
   modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],

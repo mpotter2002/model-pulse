@@ -132,7 +132,27 @@ export async function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promis
   for (const metric of metrics) {
     let already = fired[metric.key] ?? [];
     if (already.length > 0 && metric.percent < Math.min(...already) - 5) {
-      // Window reset: usage fell well below the lowest fired threshold.
+      // Window reset: usage fell well below the lowest fired threshold. Tell
+      // the user their limit is back to full, but only for subscription
+      // windows they actually got an alert on (avoids noise for windows they
+      // never came close to hitting).
+      if (prefs.resetAlerts && metric.key.startsWith("sub:")) {
+        try {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `${metric.title} · reset`,
+              body:
+                `Rate limit reset — back to full (${metric.percent}% used).` +
+                (metric.detail ? ` ${metric.detail}.` : ""),
+              sound: true,
+            },
+            trigger: null,
+          });
+          sent += 1;
+        } catch (error) {
+          console.warn("[ModelPulse] failed to deliver reset alert", error);
+        }
+      }
       already = [];
     }
     const newlyCrossed = thresholds.filter((t) => metric.percent >= t && !already.includes(t));

@@ -127,7 +127,26 @@
           ]
         }
       ],
-      "expo-background-task"
+      "expo-background-task",
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "LightIcon",
+            "ios": {
+              "light": "./assets/icon.png",
+              "dark": "./assets/icon.png"
+            }
+          },
+          {
+            "name": "DarkIcon",
+            "ios": {
+              "light": "./assets/icon-dark.png",
+              "dark": "./assets/icon-dark.png"
+            }
+          }
+        ]
+      ]
     ],
     "extra": {
       "router": {},

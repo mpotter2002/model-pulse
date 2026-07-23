@@ -2,14 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Platform, useColorScheme } from "react-native";
 
 import { tokens, type ThemeTokens } from "@/design-system/tokens";
-import { registerUsageAlertTask, unregisterUsageAlertTask } from "@/lib/background-usage-task";
+import { applyAppIconMode } from "@/lib/app-icon";
+import { registerUsageAlertTask } from "@/lib/background-usage-task";
 import { evaluateUsageAlerts } from "@/lib/notifications";
 import { buildSnapshot } from "@/lib/provider-clients";
 import { DEFAULT_STORED_STATE, PROVIDER_ORDER, demoSnapshot } from "@/lib/providers";
 import { getConnectionStatus } from "@/lib/oauth/manager";
 import { SUBSCRIPTION_PROVIDER_ORDER } from "@/lib/oauth/providers";
 import { loadStoredState, saveStoredState } from "@/lib/storage";
-import type { HomeCardSource, ModelCardId, NotificationPrefs, ProviderConfig, ProviderId, ProviderSnapshot, RateLimitStyle, StoredState, ThemeMode, WidgetConfig } from "@/types/domain";
+import type { AppIconMode, HomeCardSource, ModelCardId, NotificationPrefs, ProviderConfig, ProviderId, ProviderSnapshot, RateLimitStyle, StoredState, ThemeMode, WidgetConfig } from "@/types/domain";
 
 const AppStoreContext = React.createContext<AppStoreValue | null>(null);
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -23,6 +24,7 @@ interface AppStoreValue {
   hydrated: boolean;
   refreshing: boolean;
   themeMode: ThemeMode;
+  appIconMode: AppIconMode;
   rateLimitStyle: RateLimitStyle;
   providerConfigs: Record<ProviderId, ProviderConfig>;
   modelCardOrder: ModelCardId[];
@@ -33,6 +35,7 @@ interface AppStoreValue {
   snapshots: Record<ProviderId, ProviderSnapshot>;
   theme: Theme;
   setThemeMode: (value: ThemeMode) => Promise<void>;
+  setAppIconMode: (value: AppIconMode) => Promise<void>;
   setRateLimitStyle: (value: RateLimitStyle) => Promise<void>;
   saveProviderConfig: (providerId: ProviderId, config: ProviderConfig) => Promise<void>;
   updateModelCardPreferences: (next: { order?: ModelCardId[]; hidden?: ModelCardId[] }) => Promise<void>;
@@ -81,6 +84,11 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
 
   useEffect(() => {
     if (!hydrated) return;
+    void applyAppIconMode(storedState.appIconMode);
+  }, [hydrated, storedState.appIconMode]);
+
+  useEffect(() => {
+    if (!hydrated) return;
     void refreshAllInternal(storedStateRef.current);
   }, [hydrated]);
 
@@ -92,17 +100,17 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     });
   }, [hydrated, snapshots, storedState.widgetConfig, storedState.rateLimitStyle]);
 
+  // Register the periodic background task on iOS regardless of notification
+  // settings: it refreshes the Home Screen widget so it stays up to date even
+  // when the user never opens the app. When alerts are on it also fires usage
+  // notifications; when they are off it just refreshes the widget.
   useEffect(() => {
     if (!hydrated) return;
     if (Platform.OS !== "ios") return;
-    if (storedState.notificationPrefs.enabled) {
-      void registerUsageAlertTask().catch((error) =>
-        console.warn("[ModelPulse] background task registration failed", error),
-      );
-    } else {
-      void unregisterUsageAlertTask().catch(() => undefined);
-    }
-  }, [hydrated, storedState.notificationPrefs.enabled]);
+    void registerUsageAlertTask().catch((error) =>
+      console.warn("[ModelPulse] background task registration failed", error),
+    );
+  }, [hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -201,6 +209,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     hydrated,
     refreshing,
     themeMode: storedState.themeMode,
+    appIconMode: storedState.appIconMode,
     rateLimitStyle: storedState.rateLimitStyle,
     providerConfigs: storedState.providerConfigs,
     modelCardOrder: storedState.modelCardOrder,
@@ -212,6 +221,9 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     theme,
     setThemeMode: async (value) => {
       await commitStoredState((current) => ({ ...current, themeMode: value }));
+    },
+    setAppIconMode: async (value) => {
+      await commitStoredState((current) => ({ ...current, appIconMode: value }));
     },
     setRateLimitStyle: async (value) => {
       await commitStoredState((current) => ({ ...current, rateLimitStyle: value }));
