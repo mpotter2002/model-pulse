@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { Link } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, PanResponder, Pressable, Switch, View } from "react-native";
+import { Animated, LayoutAnimation, PanResponder, Pressable, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/card";
@@ -552,6 +552,9 @@ export default function SettingsScreen() {
             }}
             onToggle={(cardId) => {
               void Haptics.selectionAsync();
+              // Smoothly animate the subscription-price row appearing/collapsing
+              // above, so toggling doesn't snap the screen up/down.
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
               const hidden = hiddenModelCardIds.includes(cardId)
                 ? hiddenModelCardIds.filter((id) => id !== cardId)
                 : [...hiddenModelCardIds, cardId];

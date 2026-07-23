@@ -84,8 +84,10 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
 
   useEffect(() => {
     if (!hydrated) return;
+    // Re-apply on appearance change too: "system" mode resolves to the
+    // matching light/dark alternate icon at apply time.
     void applyAppIconMode(storedState.appIconMode);
-  }, [hydrated, storedState.appIconMode]);
+  }, [hydrated, storedState.appIconMode, systemColorScheme]);
 
   useEffect(() => {
     if (!hydrated) return;

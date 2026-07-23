@@ -12,6 +12,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppErrorBoundary } from "@/components/error-boundary";
@@ -50,13 +51,15 @@ if (typeof ErrorUtils !== "undefined") {
 
 export default function RootLayout() {
   return (
-    <AppErrorBoundary>
-      <SafeAreaProvider>
-        <AppStoreProvider>
-          <RootNavigator />
-        </AppStoreProvider>
-      </SafeAreaProvider>
-    </AppErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppErrorBoundary>
+        <SafeAreaProvider>
+          <AppStoreProvider>
+            <RootNavigator />
+          </AppStoreProvider>
+        </SafeAreaProvider>
+      </AppErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
 
