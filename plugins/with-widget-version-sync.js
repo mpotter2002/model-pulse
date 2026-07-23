@@ -1,25 +1,33 @@
-const { withXcodeProject } = require('@expo/config-plugins');
+const { withXcodeProject, withDangerousMod } = require('@expo/config-plugins');
+const plist = require('@expo/plist').default;
+const fs = require('fs');
+const path = require('path');
 
 const WIDGET_INFOPLIST_FRAGMENT = 'ExpoWidgetsTarget/Info.plist';
 
-/**
- * expo-widgets creates the widget extension target with
- * GENERATE_INFOPLIST_FILE = YES. At archive time xcodebuild then regenerates
- * CFBundleVersion / CFBundleShortVersionString from the target's static
- * CURRENT_PROJECT_VERSION (1) / MARKETING_VERSION (1.0) build settings,
- * overriding the real values EAS Build writes into the extension's
- * Info.plist when using remote appVersionSource. Result: the app ships as
- * build N while the embedded widget ships as build 1, and xcodebuild warns
- * the versions must match.
- *
- * Flipping GENERATE_INFOPLIST_FILE to NO makes the compiled appex use the
- * Info.plist file as written (and patched by EAS), so versions stay in sync.
- */
+// Keys Xcode normally injects into a generated Info.plist. With
+// GENERATE_INFOPLIST_FILE=NO the file is used verbatim, so these must be
+// present or the built appex is an invalid bundle (AppIntents SSU training
+// fails at archive time with "Unable to parse Info.plist").
+// NOTE: CFBundleVersion / CFBundleShortVersionString stay as literal values
+// in the file on purpose - EAS Build patches them with the real version on
+// the builder, and a $(CURRENT_PROJECT_VERSION) variable would clobber that.
+const REQUIRED_INFOPLIST_KEYS = {
+  CFBundleDevelopmentRegion: '$(DEVELOPMENT_LANGUAGE)',
+  CFBundleExecutable: '$(EXECUTABLE_NAME)',
+  CFBundleIdentifier: '$(PRODUCT_BUNDLE_IDENTIFIER)',
+  CFBundleInfoDictionaryVersion: '6.0',
+  CFBundleName: '$(PRODUCT_NAME)',
+  CFBundlePackageType: 'XPC!',
+  CFBundleTypeRole: 'Editor',
+  LSMinimumSystemVersion: '$(IPHONEOS_DEPLOYMENT_TARGET)',
+};
+
 function withWidgetVersionSync(config) {
   // Like with-widget-fonts, app.json lists this plugin BEFORE expo-widgets.
   // Expo's mod pipeline is a stack, so earlier registration executes AFTER
   // expo-widgets has created the ExpoWidgetsTarget in the xcodeProject mod.
-  return withXcodeProject(config, (config) => {
+  config = withXcodeProject(config, (config) => {
     const project = config.modResults;
     const buildConfigs = project.hash.project.objects['XCBuildConfiguration'] ?? {};
     let touched = 0;
@@ -38,6 +46,39 @@ function withWidgetVersionSync(config) {
     );
     return config;
   });
+
+  // Dangerous mods run after the project files are written, so the
+  // expo-widgets-generated Info.plist exists by the time this runs.
+  config = withDangerousMod(config, [
+    'ios',
+    (config) => {
+      const infoPlistPath = path.join(
+        config.modRequest.platformProjectRoot,
+        WIDGET_INFOPLIST_FRAGMENT
+      );
+      if (!fs.existsSync(infoPlistPath)) {
+        console.warn(`[with-widget-version-sync] ${WIDGET_INFOPLIST_FRAGMENT} not found, skipping key merge.`);
+        return config;
+      }
+      const parsed = plist.parse(fs.readFileSync(infoPlistPath, 'utf8'));
+      const added = [];
+      for (const [key, value] of Object.entries(REQUIRED_INFOPLIST_KEYS)) {
+        if (!(key in parsed)) {
+          parsed[key] = value;
+          added.push(key);
+        }
+      }
+      if (added.length > 0) {
+        fs.writeFileSync(infoPlistPath, plist.build(parsed));
+      }
+      console.log(
+        `[with-widget-version-sync] Merged ${added.length} required key(s) into ${WIDGET_INFOPLIST_FRAGMENT}.`
+      );
+      return config;
+    },
+  ]);
+
+  return config;
 }
 
 module.exports = withWidgetVersionSync;
