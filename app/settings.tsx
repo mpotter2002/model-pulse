@@ -20,7 +20,7 @@ import type { AppIconMode, ModelCardId, RateLimitStyle, ThemeMode } from "@/type
 const ROW_HEIGHT = 52;
 const ROW_GAP = 8;
 const ROW_STRIDE = ROW_HEIGHT + ROW_GAP;
-const ALERT_THRESHOLD_OPTIONS = [25, 50, 75, 80, 90, 95];
+const ALERT_THRESHOLD_OPTIONS = [25, 50, 75, 80, 90, 95, 100];
 const APP_ICON_OPTIONS: Array<{ label: string; value: AppIconMode }> = [
   { label: "System", value: "system" },
   { label: "Light", value: "light" },
