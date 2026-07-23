@@ -6,12 +6,21 @@ import { signalStackWidget } from "@/widgets/signal-stack-widget";
 
 type SnapshotMap = Record<ProviderId, ProviderSnapshot>;
 
-export async function syncSignalStackWidget(snapshots: SnapshotMap, config: WidgetConfig, rateLimitStyle: RateLimitStyle) {
+export async function syncSignalStackWidget(
+  snapshots: SnapshotMap,
+  config: WidgetConfig,
+  rateLimitStyle: RateLimitStyle,
+  hiddenModelCardIds: ModelCardId[] = [],
+) {
   const modelCards = makeModelCards();
   const visibleModelIds =
     config.visibleModelCardIds.length > 0 ? config.visibleModelCardIds : modelCards.map((card) => card.id);
   const visibleCards = modelCards
-    .filter((card) => visibleModelIds.includes(card.id))
+    // Exclude cards the user hid on the home page so the widget's card list and
+    // spend total stay in lockstep with the in-app total. Without this, a card
+    // that is hidden on the home page but still in visibleModelCardIds adds its
+    // configured price to the widget's SPEND tile only, causing a mismatch.
+    .filter((card) => visibleModelIds.includes(card.id) && !hiddenModelCardIds.includes(card.id))
     // Put the chosen primary (focusedModelCardId) first so it drives the
     // widget's "Overview" headline / focus dot.
     .sort((a, b) => {

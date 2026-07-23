@@ -58,7 +58,7 @@ TaskManager.defineTask(USAGE_ALERT_TASK, async () => {
           anthropic: apiSnapshots.anthropic ?? demoSnapshot("anthropic"),
           kimi: apiSnapshots.kimi ?? demoSnapshot("kimi"),
         };
-        await syncSignalStackWidget(snapshots, state.widgetConfig, state.rateLimitStyle);
+        await syncSignalStackWidget(snapshots, state.widgetConfig, state.rateLimitStyle, state.hiddenModelCardIds);
       } catch (error) {
         console.warn("[ModelPulse] background widget sync failed", error);
       }

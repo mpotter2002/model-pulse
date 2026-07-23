@@ -96,7 +96,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     if (!hydrated) return;
     if (Platform.OS !== "ios") return;
     void import("@/widgets/widget-sync").then(({ syncSignalStackWidget }) => {
-      void syncSignalStackWidget(snapshots, storedState.widgetConfig, storedState.rateLimitStyle);
+      void syncSignalStackWidget(snapshots, storedState.widgetConfig, storedState.rateLimitStyle, storedState.hiddenModelCardIds);
     });
   }, [hydrated, snapshots, storedState.widgetConfig, storedState.rateLimitStyle]);
 
