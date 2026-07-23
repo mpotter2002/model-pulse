@@ -36,6 +36,7 @@
       "expo-secure-store",
       "expo-image",
       "./plugins/with-widget-fonts.js",
+      "./plugins/with-widget-version-sync.js",
       [
         "expo-widgets",
         {
