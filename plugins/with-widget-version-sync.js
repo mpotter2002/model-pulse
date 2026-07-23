@@ -20,6 +20,7 @@ const REQUIRED_INFOPLIST_KEYS = {
   CFBundleName: '$(PRODUCT_NAME)',
   CFBundlePackageType: 'XPC!',
   CFBundleTypeRole: 'Editor',
+  CFBundleDisplayName: 'Model Pulse',
   LSMinimumSystemVersion: '$(IPHONEOS_DEPLOYMENT_TARGET)',
 };
 
