@@ -133,17 +133,11 @@
         [
           {
             "name": "LightIcon",
-            "ios": {
-              "light": "./assets/icon.png",
-              "dark": "./assets/icon.png"
-            }
+            "ios": "./assets/icon.png"
           },
           {
             "name": "DarkIcon",
-            "ios": {
-              "light": "./assets/icon-dark.png",
-              "dark": "./assets/icon-dark.png"
-            }
+            "ios": "./assets/icon-dark.png"
           }
         ]
       ]
