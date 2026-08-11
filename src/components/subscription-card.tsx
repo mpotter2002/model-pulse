@@ -25,6 +25,7 @@ import {
 } from "@/lib/oauth/manager";
 import type { PendingPkceCodeFlow } from "@/lib/oauth/pkce-code-flow";
 import { SUBSCRIPTION_PROVIDERS } from "@/lib/oauth/providers";
+import { useAppStore } from "@/store/app-store";
 import type { SubscriptionProviderId, UsageLimitRow } from "@/lib/oauth/types";
 
 export function SubscriptionCard({ providerId, refreshNonce }: { providerId: SubscriptionProviderId; refreshNonce: number }) {
@@ -45,6 +46,7 @@ export function SubscriptionPanel({
   showHeader?: boolean;
 }) {
   const theme = useTheme();
+  const { providerDataSharingConsent, requestProviderDataSharingConsent } = useAppStore();
   const def = SUBSCRIPTION_PROVIDERS[providerId];
   const [status, setStatus] = useState<ConnectionStatus>({ kind: "disconnected" });
   const [busy, setBusy] = useState(false);
@@ -91,6 +93,10 @@ export function SubscriptionPanel({
   };
 
   async function startDeviceLogin() {
+    if (providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -138,6 +144,10 @@ export function SubscriptionPanel({
 
   async function connectToken() {
     if (!tokenDraft.trim()) return;
+    if (providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
+      return;
+    }
     setBusy(true);
     setChecking(true);
     setError(null);
@@ -155,6 +165,10 @@ export function SubscriptionPanel({
   }
 
   async function startPkceLogin() {
+    if (providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -170,6 +184,10 @@ export function SubscriptionPanel({
 
   async function submitPkceCode() {
     if (!pendingPkce || !tokenDraft.trim()) return;
+    if (providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
+      return;
+    }
     setBusy(true);
     setChecking(true);
     setError(null);

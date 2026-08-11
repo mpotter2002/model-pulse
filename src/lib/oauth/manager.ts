@@ -21,6 +21,10 @@ import {
   loadCooldownUntil,
   saveCooldownUntil,
 } from "@/lib/oauth/cooldown-store";
+import {
+  isProviderDataSharingAllowed,
+  requireProviderDataSharingConsent,
+} from "@/lib/provider-data-sharing";
 import type {
   DevicePollResult,
   StoredTokens,
@@ -122,6 +126,7 @@ function deviceFlowFor(providerId: SubscriptionProviderId) {
 export async function beginDeviceLogin(
   providerId: SubscriptionProviderId,
 ): Promise<PendingDeviceFlow> {
+  await requireProviderDataSharingConsent();
   return startDeviceFlow(deviceFlowFor(providerId));
 }
 
@@ -129,6 +134,7 @@ export async function pollDeviceLogin(
   providerId: SubscriptionProviderId,
   pending: PendingDeviceFlow,
 ): Promise<DevicePollResult> {
+  await requireProviderDataSharingConsent();
   const result = await pollDeviceFlow(deviceFlowFor(providerId), pending);
   if (result.kind === "success") {
     await saveTokens(providerId, result.tokens);
@@ -148,6 +154,7 @@ function pkceCodeFlowFor(providerId: SubscriptionProviderId) {
 export async function beginPkceCodeLogin(
   providerId: SubscriptionProviderId,
 ): Promise<PendingPkceCodeFlow> {
+  await requireProviderDataSharingConsent();
   return startPkceCodeFlow(pkceCodeFlowFor(providerId));
 }
 
@@ -157,6 +164,7 @@ export async function completePkceCodeLogin(
   pending: PendingPkceCodeFlow,
   pastedCode: string,
 ): Promise<void> {
+  await requireProviderDataSharingConsent();
   const tokens = await exchangePkceCode(pkceCodeFlowFor(providerId), pending, pastedCode);
   await saveTokens(providerId, tokens);
   // Same invalidation as saveApiToken: drop the stale "disconnected" status
@@ -396,6 +404,7 @@ export async function parseAndSaveApiToken(
   providerId: SubscriptionProviderId,
   raw: string,
 ): Promise<void> {
+  await requireProviderDataSharingConsent();
   const parsed = parseTokenInput(raw);
   if (!parsed.accessToken) throw new Error("No access token found in input.");
   console.log(
@@ -428,6 +437,14 @@ export async function disconnect(providerId: SubscriptionProviderId): Promise<vo
   lastGoodUsage.delete(providerId);
   cooldownUntilMap.delete(providerId);
   connectionStatusCache.delete(providerId);
+}
+
+export async function disconnectAllProviders(): Promise<void> {
+  await Promise.all(
+    (Object.keys(SUBSCRIPTION_PROVIDERS) as SubscriptionProviderId[]).map((providerId) =>
+      disconnect(providerId),
+    ),
+  );
 }
 
 // ── Token refresh for api-token providers ──────────────────────────────
@@ -612,7 +629,7 @@ export async function getConnectionStatus(
   providerId: SubscriptionProviderId,
   options: ConnectionStatusOptions = {},
 ): Promise<ConnectionStatus> {
-  const allowNetwork = options.allowNetwork ?? true;
+  const allowNetwork = (options.allowNetwork ?? true) && (await isProviderDataSharingAllowed());
   const force = options.force ?? false;
   const cached = connectionStatusCache.get(providerId);
   if (!force && cached && cached.expiresAt > Date.now() && shouldUseCachedStatus(cached.status, allowNetwork)) {

@@ -5,6 +5,7 @@ import * as TaskManager from "expo-task-manager";
 import { evaluateUsageAlerts } from "@/lib/notifications";
 import { getConnectionStatus } from "@/lib/oauth/manager";
 import { SUBSCRIPTION_PROVIDER_ORDER } from "@/lib/oauth/providers";
+import { isProviderDataSharingAllowed } from "@/lib/provider-data-sharing";
 import type { SubscriptionProviderId, SubscriptionUsage } from "@/lib/oauth/types";
 import { buildSnapshot } from "@/lib/provider-clients";
 import { PROVIDER_ORDER, demoSnapshot } from "@/lib/providers";
@@ -22,6 +23,10 @@ export const USAGE_ALERT_TASK = "model-pulse-usage-alerts";
  */
 TaskManager.defineTask(USAGE_ALERT_TASK, async () => {
   try {
+    if (!(await isProviderDataSharingAllowed())) {
+      return BackgroundTask.BackgroundTaskResult.Success;
+    }
+
     const state = await loadStoredState();
 
     const apiSnapshots: Partial<Record<ProviderId, ProviderSnapshot>> = {};

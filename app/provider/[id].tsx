@@ -19,7 +19,14 @@ import { radius, spacing } from "@/design-system/tokens";
 export default function ProviderDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { snapshots, providerConfigs, refreshProvider, saveProviderConfig } = useAppStore();
+  const {
+    snapshots,
+    providerConfigs,
+    refreshProvider,
+    saveProviderConfig,
+    providerDataSharingConsent,
+    requestProviderDataSharingConsent,
+  } = useAppStore();
   const theme = useTheme();
   const [draft, setDraft] = useState<ProviderConfig | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -81,6 +88,10 @@ export default function ProviderDetailScreen() {
             style={{ alignSelf: "flex-start" }}
             onPress={() => {
               Haptics.selectionAsync();
+              if (providerDataSharingConsent !== "granted") {
+                requestProviderDataSharingConsent();
+                return;
+              }
               void refreshProvider(providerId);
             }}
           >
@@ -274,6 +285,10 @@ export default function ProviderDetailScreen() {
     if (keyValue && meta.prefix && !keyValue.startsWith(meta.prefix)) {
       setKeyError(meta.prefixError);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    if (keyValue && providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
       return;
     }
     setSaveState("saving");

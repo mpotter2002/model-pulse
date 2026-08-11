@@ -20,9 +20,10 @@ Privacy policy & support: https://mpotter2002.github.io/model-pulse/
 - **Usage alerts** — optional local notifications when you cross thresholds
   you pick (25–95%), for both subscription windows and API budgets. Alerts
   are scheduled and fire entirely on-device
-- **Privacy first** — no accounts, no analytics, no tracking, no server.
-  Credentials live in the iOS Keychain; requests go straight from your
-  device to the provider
+- **Privacy controls** — no accounts, no analytics, no tracking, and no
+  Model Pulse server. Before any direct provider request, the app discloses
+  what data is shared and asks for permission; credentials live in the iOS
+  Keychain.
 
 ## Tech
 

@@ -1,50 +1,53 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Model Pulse — Privacy Policy</title>
-<style>
-:root { color-scheme: light dark; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; max-width: 680px; margin: 0 auto; padding: 48px 24px; line-height: 1.6; }
-h1 { font-size: 28px; letter-spacing: -0.5px; }
-h2 { font-size: 18px; margin-top: 32px; }
-a { color: #0A7CFF; }
-.muted { opacity: 0.6; font-size: 14px; }
-.card { border: 1px solid rgba(128,128,128,0.3); border-radius: 12px; padding: 20px 24px; margin-top: 24px; }
-</style></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Model Pulse Privacy Policy</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      line-height: 1.6;
+    }
+    h1 { font-size: 28px; letter-spacing: 0; }
+    h2 { font-size: 19px; margin-top: 32px; }
+    a { color: #0a7cff; }
+    .muted { opacity: 0.65; font-size: 14px; }
+  </style>
+</head>
 <body>
-<h1>Model Pulse Privacy Policy</h1>
-<p>Last updated: July 17, 2026</p>
-<p>Model Pulse (&quot;the app&quot;) is designed to show you your own AI provider</p>
-<p>usage and spend data while collecting as little information as possible.</p>
-<h2>Data the app accesses</h2>
-<ul>
-<li>API keys, admin keys, and OAuth tokens you choose to enter, used solely</li>
-</ul>
-<p>  to fetch usage, spend, and rate-limit data from the providers you</p>
-<p>  connect.</p>
-<ul>
-<li>Usage, spend, and rate-limit data returned by those providers.</li>
-</ul>
-<h2>Where data is stored</h2>
-<ul>
-<li>Keys and tokens are stored in the iOS Keychain (Secure Enclave-backed)</li>
-</ul>
-<p>  on your device.</p>
-<ul>
-<li>Preferences and cached usage data are stored locally on your device.</li>
-<li>Model Pulse does not operate any server. Your data is never sent to us.</li>
-</ul>
-<h2>Network requests</h2>
-<p>The app communicates only with the AI providers you explicitly connect</p>
-<p>(for example OpenAI, Anthropic, Moonshot) using their official APIs, and</p>
-<p>only with the credentials you provide.</p>
-<h2>Analytics, tracking, and ads</h2>
-<p>None. The app contains no analytics, no advertising, no tracking SDKs,</p>
-<p>and no third-party data sharing.</p>
-<h2>Data deletion</h2>
-<p>Delete the app to remove all locally stored data. Keys can also be</p>
-<p>removed individually in the app&#x27;s settings.</p>
-<h2>Contact</h2>
-<p>Questions: mpotter2002@gmail.com</p>
-<p class="muted"><a href="index.html">← Model Pulse support</a></p>
-</body></html>
+  <h1>Model Pulse Privacy Policy</h1>
+  <p>Last updated: August 11, 2026</p>
+  <p>Model Pulse helps you view your own AI-provider usage, limits, and spend. The app has no user accounts and does not operate a Model Pulse server.</p>
+
+  <h2>Permission before provider sharing</h2>
+  <p>Before Model Pulse sends personal data to an AI provider, the app presents an in-app disclosure and asks for your affirmative permission. You may decline. In Settings, <strong>Stop &amp; remove access</strong> withdraws permission, stops future provider requests, and removes saved provider credentials and cached usage data from this device.</p>
+
+  <h2>Data stored on your device</h2>
+  <ul>
+    <li>API keys, admin keys, OAuth access and refresh tokens, authorization codes, account IDs, and OAuth scopes that you enter or approve.</li>
+    <li>Provider account telemetry, including plan name, usage and quota windows, reset times, token and request totals, account balance, organization spend, and rate-limit information.</li>
+    <li>App preferences, optional monthly budgets, widget configuration, and local alert thresholds.</li>
+  </ul>
+  <p>Credentials are stored with iOS Keychain through Expo SecureStore. Preferences and cached usage are stored locally. Model Pulse does not receive or store this data on a developer-operated server.</p>
+
+  <h2>Direct sharing with providers</h2>
+  <p>After you grant permission, Model Pulse sends data directly from your device to the provider you choose. Depending on the connection method, this consists of an API key, admin key, OAuth access or refresh token, OAuth authorization code, and the request needed to obtain account telemetry. The provider returns that telemetry so Model Pulse can show it in the app and Home Screen widget and, if enabled, evaluate local usage alerts.</p>
+  <p>Possible recipients are OpenAI/ChatGPT, Anthropic/Claude, Moonshot/Kimi, MiniMax, Z.ai, Google/Gemini, ElevenLabs, Poe, Codebuff, GitHub/Copilot, Chutes, Factory, and OpenCode.</p>
+  <p>Model Pulse does not send chat prompts, chat responses, files, contacts, analytics identifiers, advertising identifiers, or data to a Model Pulse server. The selected provider's handling of data it receives is governed by that provider's own terms and privacy policy.</p>
+
+  <h2>Other uses and disclosures</h2>
+  <p>Model Pulse does not use personal data for advertising, cross-app tracking, marketing, sale, profiling, or analytics. It includes no advertising or analytics SDKs and does not share personal data with any party other than the provider you select and approve.</p>
+
+  <h2>Data deletion</h2>
+  <p>You can remove an individual subscription connection from its model screen or an API key from its provider screen. Stop &amp; remove access in Settings removes all saved provider credentials and cached provider usage from the device. Deleting the app removes remaining app data stored by the app.</p>
+
+  <h2>Contact</h2>
+  <p>Questions: mpotter2002@gmail.com</p>
+  <p class="muted"><a href="index.html">Back to Model Pulse support</a></p>
+</body>
+</html>

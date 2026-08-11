@@ -1,7 +1,12 @@
+import { isProviderDataSharingAllowed } from "@/lib/provider-data-sharing";
 import { demoSnapshot } from "@/lib/providers";
 import type { ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domain";
 
 export async function buildSnapshot(providerId: ProviderId, config: ProviderConfig) {
+  if (!(await isProviderDataSharingAllowed())) {
+    return providerPermissionSnapshot(providerId, config);
+  }
+
   if (config.mode.includes("subscription")) {
     return refreshSubscriptionProvider(providerId, config);
   }
@@ -19,6 +24,29 @@ export async function buildSnapshot(providerId: ProviderId, config: ProviderConf
   }
 
   return refreshManualProvider(providerId, config);
+}
+
+function providerPermissionSnapshot(providerId: ProviderId, config: ProviderConfig): ProviderSnapshot {
+  return {
+    mode: "needs-key",
+    statusLabel: "Permission required",
+    note: "Allow provider data sharing in Settings before Model Pulse sends credentials or requests live account telemetry.",
+    usage: {
+      tokensUsed: 0,
+      requestsUsed: 0,
+      monthlySpendUsd: 0,
+      windowLabel: "Not refreshed",
+    },
+    limits: {
+      requestsPerMinuteLimit: null,
+      requestsRemaining: null,
+      tokensPerMinuteLimit: null,
+      resetsAtLabel: null,
+    },
+    balanceLabel: null,
+    updatedAtLabel: "Not refreshed",
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
+  };
 }
 
 async function refreshSubscriptionProvider(providerId: ProviderId, config: ProviderConfig): Promise<ProviderSnapshot> {

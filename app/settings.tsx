@@ -3,10 +3,11 @@ import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { Link } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, LayoutAnimation, PanResponder, Pressable, Switch, View } from "react-native";
+import { Alert, Animated, LayoutAnimation, PanResponder, Pressable, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RateLimitLine } from "@/components/ui/rate-limit-line";
 import { ScreenScrollView } from "@/components/ui/screen";
@@ -54,6 +55,9 @@ export default function SettingsScreen() {
     setThemeMode,
     notificationPrefs,
     updateNotificationPrefs,
+    providerDataSharingConsent,
+    requestProviderDataSharingConsent,
+    revokeProviderDataSharing,
   } = useAppStore();
   const modelCards = makeModelCards();
   const [listScrollEnabled, setListScrollEnabled] = useState(true);
@@ -220,6 +224,66 @@ export default function SettingsScreen() {
               );
             })}
           </View>
+        </View>
+      </Card>
+
+      <Card padding={4} style={{ marginBottom: 16 }}>
+        <View style={{ gap: 14 }}>
+          <View>
+            <Text size="xs" family="mono" weight="bold" color="muted" style={{ letterSpacing: 1 }}>
+              PROVIDER DATA
+            </Text>
+            <Text size="lg" family="sans" weight="semibold" style={{ marginTop: 2 }}>
+              Provider data sharing
+            </Text>
+            <Text size="sm" family="mono" color="muted" style={{ marginTop: 2 }}>
+              Required before Model Pulse sends credentials or usage requests to a connected provider.
+            </Text>
+          </View>
+
+          {providerDataSharingConsent === "granted" ? (
+            <>
+              <View style={{ gap: 3, backgroundColor: theme.muted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }}>
+                <Text size="sm" family="mono" weight="bold">
+                  Sharing allowed
+                </Text>
+                <Text size="xs" family="mono" color="muted">
+                  Connected providers can be refreshed directly from this device.
+                </Text>
+              </View>
+              <Button
+                variant="destructive"
+                size="sm"
+                style={{ alignSelf: "flex-start" }}
+                onPress={() =>
+                  Alert.alert(
+                    "Stop provider sharing?",
+                    "This stops future requests and removes saved provider API keys, admin keys, OAuth tokens, and cached usage from this device.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Stop & remove", style: "destructive", onPress: () => void revokeProviderDataSharing() },
+                    ],
+                  )
+                }
+              >
+                Stop & remove access
+              </Button>
+            </>
+          ) : (
+            <>
+              <View style={{ gap: 3, backgroundColor: theme.muted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }}>
+                <Text size="sm" family="mono" weight="bold">
+                  Sharing not allowed
+                </Text>
+                <Text size="xs" family="mono" color="muted">
+                  Model Pulse will not send credentials or account telemetry until you approve the disclosure.
+                </Text>
+              </View>
+              <Button size="sm" style={{ alignSelf: "flex-start" }} onPress={requestProviderDataSharingConsent}>
+                Review permission
+              </Button>
+            </>
+          )}
         </View>
       </Card>
 
@@ -587,7 +651,7 @@ export default function SettingsScreen() {
                 Privacy policy
               </Text>
               <Text size="xs" family="mono" color="muted" style={{ marginTop: 2 }}>
-                No accounts, no analytics, no tracking. Keys stay in the iOS Keychain.
+                No accounts, no analytics, no tracking. Provider sharing requires your permission.
               </Text>
             </View>
             <Image source="sf:arrow.up.right" style={{ width: 12, height: 12, tintColor: theme.mutedForeground }} />

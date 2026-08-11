@@ -62,28 +62,41 @@ description, which is standard compatibility language.)
 - Marketing URL: (optional, leave blank)
 
 ## App privacy (App Store Connect questionnaire)
-- Data collection: **No** ("Data Not Collected"). No analytics, no accounts,
-  no server. Keys stay in the iOS Keychain; requests go device → provider.
+- Data collection: Update this questionnaire to match the implemented
+  provider connections. Model Pulse stores credentials and usage telemetry
+  locally and, only after in-app permission, sends credentials and
+  account-telemetry requests directly from the device to the provider the user
+  chooses. Do not submit the prior **Data Not Collected** answer without
+  confirming that it accurately reflects Apple's current questionnaire for
+  these direct provider transmissions.
 - Encryption: exempt (ITSAppUsesNonExemptEncryption = false, already in the
   binary — answer "No" to non-exempt encryption if asked).
 
 ## Review notes for Apple (suggestion)
 Model Pulse displays usage, rate-limit, and spend data for third-party AI
-providers (OpenAI, Anthropic, and others) that the user already has accounts
-with. No sign-in or account is required to review the app: on first launch,
-cards show clearly-labeled "not connected" / "key needed" placeholder states,
-and every screen — provider details, settings, widget configuration — is
-fully reachable without credentials. Live data is fetched directly from each
-provider's official API using keys or OAuth sign-ins the user supplies;
-credentials are stored only in the iOS Keychain and there is no Model Pulse
-server or account system.
+providers that the user already has accounts with. No sign-in or account is
+required to review the app: on first launch, the app presents an in-app
+provider-data disclosure before any provider request can occur. It identifies
+the data sent (the API/admin key or OAuth credential the user chooses, plus
+the account-telemetry request), the possible recipients (OpenAI/ChatGPT,
+Anthropic/Claude, Moonshot/Kimi, MiniMax, Z.ai, Google/Gemini, ElevenLabs,
+Poe, Codebuff, GitHub/Copilot, Chutes, Factory, and OpenCode), and the
+purpose. The user must affirmatively choose "Allow provider data sharing"
+before a provider connection, manual refresh, automatic refresh, background
+task, or widget sync can send provider data.
+
+The user can decline and still review all non-connected app screens. In
+Settings, "Stop & remove access" withdraws permission, stops future provider
+requests, and removes stored provider API keys, admin keys, OAuth tokens, and
+cached provider usage from the device. The privacy policy contains the same
+data collection, use, recipient, storage, and deletion details.
 
 The app offers optional local notifications ("Usage alerts" in Settings).
 Notification permission is requested only when the user turns that toggle on
 — never at launch. The Background Processing mode is used solely to
 periodically refresh usage numbers so those threshold alerts can fire while
-the app is closed. No data leaves the device except requests to the
-providers the user connected.
+the app is closed. No data leaves the device except the direct provider
+requests the user has specifically approved.
 
 Subscriptions are the user's own existing provider subscriptions; the app
 sells nothing and contains no in-app purchases.

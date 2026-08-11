@@ -5,9 +5,14 @@ import { tokens, type ThemeTokens } from "@/design-system/tokens";
 import { applyAppIconMode } from "@/lib/app-icon";
 import { registerUsageAlertTask } from "@/lib/background-usage-task";
 import { evaluateUsageAlerts } from "@/lib/notifications";
+import {
+  loadProviderDataSharingConsent,
+  setProviderDataSharingConsent as persistProviderDataSharingConsent,
+  type ProviderDataSharingConsent,
+} from "@/lib/provider-data-sharing";
 import { buildSnapshot } from "@/lib/provider-clients";
 import { DEFAULT_STORED_STATE, PROVIDER_ORDER, demoSnapshot } from "@/lib/providers";
-import { getConnectionStatus } from "@/lib/oauth/manager";
+import { disconnectAllProviders, getConnectionStatus } from "@/lib/oauth/manager";
 import { SUBSCRIPTION_PROVIDER_ORDER } from "@/lib/oauth/providers";
 import { loadStoredState, saveStoredState } from "@/lib/storage";
 import type { AppIconMode, HomeCardSource, ModelCardId, NotificationPrefs, ProviderConfig, ProviderId, ProviderSnapshot, RateLimitStyle, StoredState, ThemeMode, WidgetConfig } from "@/types/domain";
@@ -34,6 +39,8 @@ interface AppStoreValue {
   widgetConfig: WidgetConfig;
   snapshots: Record<ProviderId, ProviderSnapshot>;
   theme: Theme;
+  providerDataSharingConsent: ProviderDataSharingConsent;
+  providerDataConsentPromptVisible: boolean;
   setThemeMode: (value: ThemeMode) => Promise<void>;
   setAppIconMode: (value: AppIconMode) => Promise<void>;
   setRateLimitStyle: (value: RateLimitStyle) => Promise<void>;
@@ -42,6 +49,10 @@ interface AppStoreValue {
   setHomeCardSource: (cardId: ModelCardId, source: HomeCardSource) => Promise<void>;
   updateNotificationPrefs: (patch: Partial<NotificationPrefs>) => Promise<void>;
   updateWidgetConfig: (config: WidgetConfig) => Promise<void>;
+  requestProviderDataSharingConsent: () => void;
+  dismissProviderDataSharingConsent: () => Promise<void>;
+  setProviderDataSharingConsent: (value: Exclude<ProviderDataSharingConsent, "unknown">) => Promise<void>;
+  revokeProviderDataSharing: () => Promise<void>;
   refreshAll: () => Promise<void>;
   refreshProvider: (providerId: ProviderId) => Promise<void>;
 }
@@ -51,6 +62,9 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   const [hydrated, setHydrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [storedState, setStoredState] = useState<StoredState>(DEFAULT_STORED_STATE);
+  const [providerDataSharingConsent, setProviderDataSharingConsentState] =
+    useState<ProviderDataSharingConsent>("unknown");
+  const [providerDataConsentPromptVisible, setProviderDataConsentPromptVisible] = useState(false);
   const storedStateRef = useRef<StoredState>(DEFAULT_STORED_STATE);
   const lastRefreshAtRef = useRef(0);
   const [snapshots, setSnapshots] = useState<Record<ProviderId, ProviderSnapshot>>({
@@ -66,13 +80,14 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   }, [storedState.themeMode, systemColorScheme]);
 
   useEffect(() => {
-    loadStoredState()
-      .then((next) => {
+    Promise.all([loadStoredState(), loadProviderDataSharingConsent()])
+      .then(([next, consent]) => {
         storedStateRef.current = next;
         // Commit the loaded state and the hydrated flag in the same render so
         // effects gated on `hydrated` (widget sync, refresh) never observe the
         // default state (e.g. rateLimitStyle "bar") after a cold launch.
         setStoredState(next);
+        setProviderDataSharingConsentState(consent);
         setHydrated(true);
       })
       .catch(() => setHydrated(true));
@@ -91,8 +106,10 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
 
   useEffect(() => {
     if (!hydrated) return;
-    void refreshAllInternal(storedStateRef.current);
-  }, [hydrated]);
+    if (providerDataSharingConsent === "granted") {
+      void refreshAllInternal(storedStateRef.current);
+    }
+  }, [hydrated, providerDataSharingConsent]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -117,7 +134,9 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   useEffect(() => {
     if (!hydrated) return;
     const interval = setInterval(() => {
-      if (AppState.currentState === "active") void refreshAllInternal(storedStateRef.current);
+      if (AppState.currentState === "active" && providerDataSharingConsent === "granted") {
+        void refreshAllInternal(storedStateRef.current);
+      }
     }, AUTO_REFRESH_MS);
     const subscription = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
@@ -125,7 +144,10 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       // backgrounded, so if the system light/dark appearance flipped while the
       // app was away, "system" mode needs to resync now that we're active.
       void applyAppIconMode(storedStateRef.current.appIconMode);
-      if (Date.now() - lastRefreshAtRef.current >= AUTO_REFRESH_MS) {
+      if (
+        providerDataSharingConsent === "granted" &&
+        Date.now() - lastRefreshAtRef.current >= AUTO_REFRESH_MS
+      ) {
         void refreshAllInternal(storedStateRef.current);
       }
     });
@@ -133,7 +155,7 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       clearInterval(interval);
       subscription.remove();
     };
-  }, [hydrated]);
+  }, [hydrated, providerDataSharingConsent]);
 
   async function refreshAllInternal(nextState: StoredState, force = false) {
     setRefreshing(true);
@@ -225,6 +247,8 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     notificationPrefs: storedState.notificationPrefs,
     snapshots,
     theme,
+    providerDataSharingConsent,
+    providerDataConsentPromptVisible,
     setThemeMode: async (value) => {
       await commitStoredState((current) => ({ ...current, themeMode: value }));
     },
@@ -264,6 +288,39 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
     },
     updateWidgetConfig: async (config) => {
       await commitStoredState((current) => ({ ...current, widgetConfig: config }));
+    },
+    requestProviderDataSharingConsent: () => {
+      setProviderDataConsentPromptVisible(true);
+    },
+    dismissProviderDataSharingConsent: async () => {
+      setProviderDataConsentPromptVisible(false);
+      if (providerDataSharingConsent === "unknown") {
+        await persistProviderDataSharingConsent("declined");
+        setProviderDataSharingConsentState("declined");
+      }
+    },
+    setProviderDataSharingConsent: async (value) => {
+      await persistProviderDataSharingConsent(value);
+      setProviderDataSharingConsentState(value);
+      setProviderDataConsentPromptVisible(false);
+    },
+    revokeProviderDataSharing: async () => {
+      await persistProviderDataSharingConsent("declined");
+      await disconnectAllProviders();
+      await commitStoredState((current) => ({
+        ...current,
+        providerConfigs: {
+          openai: { ...current.providerConfigs.openai, apiKey: "", adminKey: "" },
+          anthropic: { ...current.providerConfigs.anthropic, apiKey: "", adminKey: "" },
+          kimi: { ...current.providerConfigs.kimi, apiKey: "", adminKey: "" },
+        },
+      }));
+      setProviderDataSharingConsentState("declined");
+      setSnapshots({
+        openai: await buildSnapshot("openai", { ...storedStateRef.current.providerConfigs.openai, apiKey: "", adminKey: "" }),
+        anthropic: await buildSnapshot("anthropic", { ...storedStateRef.current.providerConfigs.anthropic, apiKey: "", adminKey: "" }),
+        kimi: await buildSnapshot("kimi", { ...storedStateRef.current.providerConfigs.kimi, apiKey: "", adminKey: "" }),
+      });
     },
     refreshAll: async () => {
       await refreshAllInternal(storedState, true);

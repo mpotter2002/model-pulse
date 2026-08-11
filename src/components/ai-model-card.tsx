@@ -237,12 +237,24 @@ function UsageRow({ row, accent }: { row: UsageLimitRow; accent: string }) {
 
 export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
   const theme = useTheme();
-  const { providerConfigs, saveProviderConfig, refreshProvider, homeCardSource, setHomeCardSource } = useAppStore();
+  const {
+    providerConfigs,
+    saveProviderConfig,
+    refreshProvider,
+    homeCardSource,
+    setHomeCardSource,
+    providerDataSharingConsent,
+    requestProviderDataSharingConsent,
+  } = useAppStore();
   const [localRefreshNonce, setLocalRefreshNonce] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const apiConfigured = item.apiProviderId ? isApiConfigured(item.apiProviderId, providerConfigs[item.apiProviderId]) : false;
 
   async function refreshAll() {
+    if (providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
+      return;
+    }
     setRefreshing(true);
     Haptics.selectionAsync();
     try {
@@ -354,7 +366,11 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
               </Link>
             </>
           ) : (
-            <ApiSetupPanel providerId={item.apiProviderId} config={providerConfigs[item.apiProviderId]} onSave={(next) => saveProviderConfig(item.apiProviderId!, next)} />
+            <ApiSetupPanel
+              providerId={item.apiProviderId}
+              config={providerConfigs[item.apiProviderId]}
+              onSave={(next) => saveProviderConfig(item.apiProviderId!, next)}
+            />
           )}
         </View>
       ) : null}
@@ -400,10 +416,15 @@ function ApiSetupPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const copy = apiSetupCopy(providerId);
+  const { providerDataSharingConsent, requestProviderDataSharingConsent } = useAppStore();
 
   async function save() {
     const trimmed = value.trim();
     if (!trimmed) return;
+    if (providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
+      return;
+    }
     if (providerId === "openai" && !trimmed.startsWith("sk-admin-")) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       setError("That looks like a standard API key. OpenAI usage and cost reporting only works with an organization Admin key, which starts with sk-admin-. Create one at platform.openai.com > Settings > Organization > Admin keys. (Keys with 'All' permissions still can't read organization usage.)");

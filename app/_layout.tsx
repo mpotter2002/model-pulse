@@ -16,6 +16,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppErrorBoundary } from "@/components/error-boundary";
+import { ProviderDataConsentModal } from "@/components/provider-data-consent";
 import { configureNotificationHandler } from "@/lib/notifications";
 import { AppStoreProvider, useAppStore } from "@/store/app-store";
 
@@ -64,7 +65,14 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { hydrated, theme } = useAppStore();
+  const {
+    hydrated,
+    theme,
+    providerDataSharingConsent,
+    providerDataConsentPromptVisible,
+    dismissProviderDataSharingConsent,
+    setProviderDataSharingConsent,
+  } = useAppStore();
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
@@ -144,6 +152,11 @@ function RootNavigator() {
           }}
         />
       </Stack>
+      <ProviderDataConsentModal
+        visible={providerDataSharingConsent === "unknown" || providerDataConsentPromptVisible}
+        onAllow={() => void setProviderDataSharingConsent("granted")}
+        onNotNow={() => void dismissProviderDataSharingConsent()}
+      />
     </>
   );
 }
