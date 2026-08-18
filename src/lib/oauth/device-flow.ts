@@ -35,6 +35,12 @@ export interface DeviceFlowConfig {
    */
   verificationUrl?: string;
   /**
+   * Optional origin override for verification URLs returned by the provider.
+   * This keeps token requests on the OAuth host while opening the provider's
+   * current public website for user approval.
+   */
+  verificationOrigin?: string;
+  /**
    * OpenAI dialect: endpoint for the authorization-code exchange after a
    * successful poll. Also used for refresh_token grants (OpenAI expects JSON
    * there), falling back to tokenUrl when unset.
@@ -181,6 +187,19 @@ function safeHost(url: string) {
   }
 }
 
+function withOrigin(url: string | null, origin: string | undefined) {
+  if (!url || !origin) return url;
+  try {
+    const source = new URL(url);
+    const target = new URL(origin);
+    source.protocol = target.protocol;
+    source.host = target.host;
+    return source.toString();
+  } catch {
+    return url;
+  }
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -266,11 +285,19 @@ export async function startDeviceFlow(config: DeviceFlowConfig): Promise<Pending
         ? Math.max(1, Math.round(rawInterval / 1000))
         : rawInterval;
 
+  const verificationUri = withOrigin(
+    readString(data, "verification_uri"),
+    config.verificationOrigin,
+  );
+  const verificationUriComplete = withOrigin(
+    readString(data, "verification_uri_complete"),
+    config.verificationOrigin,
+  );
   const authorization: DeviceAuthorization = {
     deviceCode: deviceCode ?? "",
     userCode,
-    verificationUri: readString(data, "verification_uri") ?? "",
-    verificationUriComplete: readString(data, "verification_uri_complete"),
+    verificationUri: verificationUri ?? "",
+    verificationUriComplete,
     expiresIn: typeof data.expires_in === "number" ? data.expires_in : null,
     interval,
   };

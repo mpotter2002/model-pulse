@@ -64,6 +64,8 @@ const kimiDeviceFlow: DeviceFlowConfig = {
   clientId: "17e5f671-d194-4dfb-9706-5516cb48c098",
   deviceAuthorizationUrl: `${KIMI_OAUTH_HOST}/api/oauth/device_authorization`,
   tokenUrl: `${KIMI_OAUTH_HOST}/api/oauth/token`,
+  verificationOrigin: "https://www.kimi.ai",
+  verificationHint: "Approve on kimi.ai. Enter this code if asked:",
 };
 
 async function fetchKimiUsage(tokens: StoredTokens): Promise<SubscriptionUsage> {
