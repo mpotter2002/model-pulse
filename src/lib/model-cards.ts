@@ -53,7 +53,31 @@ export function makeModelCards(): AIModelCardConfig[] {
     subscriptionOnly("copilot", "GitHub Copilot", "GitHub Copilot premium interactions and chat quotas.", "copilot-sub", "CO"),
     subscriptionOnly("chutes", "Chutes", "Chutes subscription usage and quota windows.", "chutes-sub", "CH"),
     subscriptionOnly("factory", "Factory", "Factory AI subscription usage and token windows.", "factory-sub", "FA"),
-    subscriptionOnly("opencode", "OpenCode", "OpenCode Go API-key access and documented monthly spend limits.", "opencode-sub", "OC"),
+    {
+      id: "opencode",
+      title: "OpenCode",
+      subtitle: "OpenCode Go limits plus an optional OpenCode Zen API connection.",
+      initials: "OC",
+      accent: SUBSCRIPTION_PROVIDERS["opencode-sub"].accent,
+      apiProviderId: "opencode",
+      subscriptionProviderId: "opencode-sub",
+    },
+    {
+      id: "openrouter",
+      title: "OpenRouter",
+      subtitle: "OpenRouter API credit usage and key-level spending cap.",
+      initials: "OR",
+      accent: PROVIDERS.openrouter.accent,
+      apiProviderId: "openrouter",
+    },
+    {
+      id: "fal",
+      title: "fal.ai",
+      subtitle: "fal API spend and workspace credit balance.",
+      initials: "FL",
+      accent: PROVIDERS.fal.accent,
+      apiProviderId: "fal",
+    },
   ];
   return cards.map((card) => ({ ...card, logo: getProviderLogo(card.id) }));
 }

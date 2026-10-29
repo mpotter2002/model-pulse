@@ -1,3 +1,4 @@
+import { cancelUsageResetAlerts } from "@/lib/notifications";
 import {
   pollDeviceFlow,
   refreshTokens,
@@ -437,6 +438,7 @@ export async function disconnect(providerId: SubscriptionProviderId): Promise<vo
   lastGoodUsage.delete(providerId);
   cooldownUntilMap.delete(providerId);
   connectionStatusCache.delete(providerId);
+  await cancelUsageResetAlerts(providerId);
 }
 
 export async function disconnectAllProviders(): Promise<void> {

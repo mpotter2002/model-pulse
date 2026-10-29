@@ -493,7 +493,7 @@ function WidgetPreview({
     );
   }
 
-  const totalSpend = totalSpendFor(cards, subscriptionPricesUsd, snapshots, metricMode);
+  const totalSpend = totalSpendFor(cards, subscriptionPricesUsd, snapshots);
   const totalTokens = totalTokensFor(cards, snapshots);
   const totalBalance = totalBalanceFor(cards, snapshots);
   const hasApi = hasLiveApiData(cards, snapshots);
@@ -745,7 +745,11 @@ function cardMetric(
   snapshots: ReturnType<typeof useAppStore>["snapshots"],
 ) {
   const snapshot = card.apiProviderId ? snapshots[card.apiProviderId] : null;
-  if (metricMode === "api") return snapshot?.balanceLabel ?? `$${snapshot?.usage.monthlySpendUsd.toFixed(2) ?? "0.00"}`;
+  if (metricMode === "api") {
+    if (snapshot?.balanceLabel) return snapshot.balanceLabel;
+    if (snapshot?.usage.spendAvailable === false) return "Unavailable";
+    return `$${snapshot?.usage.monthlySpendUsd.toFixed(2) ?? "0.00"}`;
+  }
   if (snapshot?.limits.requestsRemaining !== null && snapshot?.limits.requestsRemaining !== undefined) {
     return compactNumber(snapshot.limits.requestsRemaining);
   }
@@ -756,7 +760,6 @@ function totalSpendFor(
   cards: ReturnType<typeof makeModelCards>,
   subscriptionPricesUsd: Record<ModelCardId, string>,
   snapshots: ReturnType<typeof useAppStore>["snapshots"],
-  metricMode: WidgetMetricMode,
 ) {
   return cards.reduce((sum, card) => {
     let spend = 0;
@@ -764,9 +767,9 @@ function totalSpendFor(
       const snap = snapshots[card.apiProviderId];
       if (isLiveSnapshot(snap)) spend += snap.usage.monthlySpendUsd;
     }
-    // API mode shows API spend alone (resets to $0 monthly); subscription
-    // prices only count toward the total in subscription mode.
-    if (card.subscriptionProviderId && metricMode !== "api") spend += parseUsd(subscriptionPricesUsd[card.id]);
+    // Keep this in sync with the Home Screen widget: mode changes limit data,
+    // not the combined subscription-plus-API spend total.
+    if (card.subscriptionProviderId) spend += parseUsd(subscriptionPricesUsd[card.id]);
     return sum + spend;
   }, 0);
 }

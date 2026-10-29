@@ -1,6 +1,8 @@
 import type { ModelCardId } from "@/types/domain";
 
-// Provider logos from the MIT-licensed thesvg library (github.com/GLINCKER/thesvg).
+// Provider logos sourced from the thesvg registry (github.com/GLINCKER/thesvg).
+// Individual assets retain the license listed by that registry; OpenRouter is
+// CC0-1.0 and Fal is MIT.
 // Brand marks are trademarks of their owners, used here for identification only.
 //
 // `tint: "foreground"` logos are single-color brand glyphs; we render them in the
@@ -16,6 +18,7 @@ export const PROVIDER_LOGOS: Partial<Record<ModelCardId, ProviderLogo>> = {
   openai: { source: require("../../assets/logos/openai.svg"), tint: "foreground" },
   copilot: { source: require("../../assets/logos/copilot.svg"), tint: "foreground" },
   elevenlabs: { source: require("../../assets/logos/elevenlabs.svg"), tint: "foreground" },
+  openrouter: { source: require("../../assets/logos/openrouter.svg"), tint: "foreground" },
   // Two-color mark: brand-blue dot stays, but the "K" must flip black/white per
   // theme. expo-image tintColor can't recolor a single path, so ship a dark
   // (white K) + light (black K) asset and pick by theme in the renderer.
@@ -35,7 +38,8 @@ export const PROVIDER_LOGOS: Partial<Record<ModelCardId, ProviderLogo>> = {
   gemini: { source: require("../../assets/logos/gemini.svg"), tint: "none" },
   minimax: { source: require("../../assets/logos/minimax.svg"), tint: "none" },
   poe: { source: require("../../assets/logos/poe.svg"), tint: "none" },
-  // codebuff, chutes, factory: no logo in the library yet -> initials fallback.
+  fal: { source: require("../../assets/logos/fal.svg"), tint: "none" },
+  // codebuff, chutes, factory: no exact logo in the library yet -> initials fallback.
 };
 
 export function getProviderLogo(id: ModelCardId): ProviderLogo | undefined {

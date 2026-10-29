@@ -31,19 +31,6 @@ export default function ModelDetailScreen() {
 
   return (
     <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 96 }}>
-      <View style={{ marginBottom: 8 }}>
-        <Text size="2xl" weight="extrabold">
-          {item.title.split(" / ")[0]}
-        </Text>
-        <Text size="sm" color="muted" style={{ marginTop: 4 }}>
-          {item.subscriptionProviderId && item.apiProviderId
-            ? "Manage subscription and API settings for this model."
-            : item.subscriptionProviderId
-              ? "Manage subscription settings for this model."
-              : "Manage API settings for this model."}
-        </Text>
-      </View>
-
       <ModelDetailPanel item={item} />
     </ScreenScrollView>
   );

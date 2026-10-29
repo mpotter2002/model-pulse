@@ -1,6 +1,6 @@
 import type { NotificationPrefs, ProviderConfig, ProviderId, ProviderSnapshot, StoredState } from "@/types/domain";
 
-export const PROVIDER_ORDER: ProviderId[] = ["openai", "anthropic", "kimi"];
+export const PROVIDER_ORDER: ProviderId[] = ["openai", "anthropic", "kimi", "opencode", "openrouter", "fal"];
 
 export const PROVIDERS: Record<
   ProviderId,
@@ -24,6 +24,21 @@ export const PROVIDERS: Record<
     label: "Kimi / Moonshot",
     accent: "#91B7FF",
     connectionHint: "Kimi support starts in manual mode because usage telemetry is less standardized than OpenAI.",
+  },
+  opencode: {
+    label: "OpenCode Zen",
+    accent: "#FF7A59",
+    connectionHint: "A Zen API key can be saved, but Zen does not currently publish account spend, credit, or usage telemetry through its public API.",
+  },
+  openrouter: {
+    label: "OpenRouter",
+    accent: "#8B9DFF",
+    connectionHint: "A standard API key reports totals; an optional management key adds a per-model activity breakdown.",
+  },
+  fal: {
+    label: "fal.ai",
+    accent: "#F04E23",
+    connectionHint: "An Admin API key reports month-to-date API cost and the workspace credit balance.",
   },
 };
 
@@ -51,35 +66,40 @@ export const DEFAULT_STORED_STATE: StoredState = {
   appIconMode: "system",
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   rateLimitStyle: "bar",
-  modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],
+  modelCardOrder: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode", "openrouter", "fal"],
   hiddenModelCardIds: [],
   homeCardSource: {},
   widgetConfig: {
     headline: "Model Pulse",
     metricMode: "api",
     visibleProviderIds: ["openai", "anthropic", "kimi"],
-    visibleModelCardIds: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode"],
+    visibleModelCardIds: ["openai", "anthropic", "kimi", "minimax", "zai", "gemini", "elevenlabs", "poe", "codebuff", "copilot", "chutes", "factory", "opencode", "openrouter", "fal"],
     focusedModelCardId: "openai",
     subscriptionPricesUsd: {
-      openai: "20",
-      anthropic: "20",
+      openai: "",
+      anthropic: "",
       kimi: "",
       minimax: "",
       zai: "",
-      gemini: "20",
+      gemini: "",
       elevenlabs: "",
       poe: "",
       codebuff: "",
       copilot: "",
       chutes: "",
       factory: "",
-      opencode: "10",
+      opencode: "",
+      openrouter: "",
+      fal: "",
     },
   },
   providerConfigs: {
     openai: { ...DEFAULT_PROVIDER_CONFIG, mode: "openai-admin" },
     anthropic: { ...DEFAULT_PROVIDER_CONFIG, mode: "anthropic-manual" },
     kimi: { ...DEFAULT_PROVIDER_CONFIG, mode: "kimi-manual" },
+    opencode: { ...DEFAULT_PROVIDER_CONFIG, mode: "opencode-zen-api" },
+    openrouter: { ...DEFAULT_PROVIDER_CONFIG, mode: "openrouter-api" },
+    fal: { ...DEFAULT_PROVIDER_CONFIG, mode: "fal-admin" },
   },
 };
 
@@ -127,6 +147,79 @@ export function demoSnapshot(providerId: ProviderId): ProviderSnapshot {
         requestsRemaining: 140,
         tokensPerMinuteLimit: 400_000,
         resetsAtLabel: "42 sec",
+      },
+      balanceLabel: null,
+      updatedAtLabel,
+    };
+  }
+
+  if (providerId === "openrouter") {
+    return {
+      mode: "demo",
+      statusLabel: "API key needed",
+      note: "OpenRouter can report month-to-date credit usage and a key-level spending cap from a standard API key.",
+      usage: {
+        tokensUsed: 0,
+        requestsUsed: 0,
+        monthlySpendUsd: 0,
+        windowLabel: "Month-to-date",
+        tokensAvailable: false,
+        requestsAvailable: false,
+      },
+      limits: {
+        requestsPerMinuteLimit: null,
+        requestsRemaining: null,
+        tokensPerMinuteLimit: null,
+        resetsAtLabel: null,
+      },
+      balanceLabel: null,
+      updatedAtLabel,
+    };
+  }
+
+  if (providerId === "opencode") {
+    return {
+      mode: "demo",
+      statusLabel: "Zen API key needed",
+      note: "Add an OpenCode Zen API key to save the connection. Zen does not currently expose account usage, credit balance, or rate-limit telemetry through its public API.",
+      usage: {
+        tokensUsed: 0,
+        requestsUsed: 0,
+        monthlySpendUsd: 0,
+        windowLabel: "Not reported by Zen",
+        spendAvailable: false,
+        tokensAvailable: false,
+        requestsAvailable: false,
+      },
+      limits: {
+        requestsPerMinuteLimit: null,
+        requestsRemaining: null,
+        tokensPerMinuteLimit: null,
+        resetsAtLabel: null,
+      },
+      balanceLabel: null,
+      updatedAtLabel,
+    };
+  }
+
+  if (providerId === "fal") {
+    return {
+      mode: "demo",
+      statusLabel: "Admin key needed",
+      note: "fal.ai can report month-to-date API cost and workspace credits from an Admin API key.",
+      usage: {
+        tokensUsed: 0,
+        requestsUsed: 0,
+        monthlySpendUsd: 0,
+        windowLabel: "Month-to-date",
+        tokensAvailable: false,
+        requestsAvailable: false,
+      },
+      limits: {
+        requestsPerMinuteLimit: null,
+        requestsRemaining: null,
+        tokensPerMinuteLimit: null,
+        resetsAtLabel: null,
       },
       balanceLabel: null,
       updatedAtLabel,

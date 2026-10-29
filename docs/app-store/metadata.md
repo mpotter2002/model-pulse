@@ -25,14 +25,17 @@ SUBSCRIPTIONS
   your device except to talk to the provider
 
 API SPEND
-- Month-to-date spend for OpenAI and Anthropic organization accounts
+- Month-to-date spend for OpenAI, Anthropic, OpenRouter, and fal.ai
 - 24-hour token and request tracking
+- OpenRouter key credit caps and fal.ai workspace credit balance
+- Optional OpenRouter spend, requests, and token breakdown by model
 - Optional monthly budgets to pace prepaid credits
 
 USAGE ALERTS
 - Optional notifications when you cross usage thresholds you pick (25-95%)
 - Works for subscription rate-limit windows and API monthly budgets
-- Scheduled and delivered entirely on-device
+- Delivered on-device after usage refreshes; iOS controls background checks
+- Known provider reset times can notify while the app is closed
 
 YOUR DATA STAYS YOURS
 Model Pulse has no accounts, no analytics, and no tracking. Keys live in
@@ -80,7 +83,8 @@ provider-data disclosure before any provider request can occur. It identifies
 the data sent (the API/admin key or OAuth credential the user chooses, plus
 the account-telemetry request), the possible recipients (OpenAI/ChatGPT,
 Anthropic/Claude, Moonshot/Kimi, MiniMax, Z.ai, Google/Gemini, ElevenLabs,
-Poe, Codebuff, GitHub/Copilot, Chutes, Factory, and OpenCode), and the
+Poe, Codebuff, GitHub/Copilot, Chutes, Factory, OpenCode, OpenRouter, and
+fal.ai), and the
 purpose. The user must affirmatively choose "Allow provider data sharing"
 before a provider connection, manual refresh, automatic refresh, background
 task, or widget sync can send provider data.

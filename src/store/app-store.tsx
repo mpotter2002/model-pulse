@@ -4,7 +4,7 @@ import { AppState, Platform, useColorScheme } from "react-native";
 import { tokens, type ThemeTokens } from "@/design-system/tokens";
 import { applyAppIconMode } from "@/lib/app-icon";
 import { registerUsageAlertTask } from "@/lib/background-usage-task";
-import { evaluateUsageAlerts } from "@/lib/notifications";
+import { cancelUsageResetAlerts, evaluateUsageAlerts } from "@/lib/notifications";
 import {
   loadProviderDataSharingConsent,
   setProviderDataSharingConsent as persistProviderDataSharingConsent,
@@ -67,11 +67,9 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   const [providerDataConsentPromptVisible, setProviderDataConsentPromptVisible] = useState(false);
   const storedStateRef = useRef<StoredState>(DEFAULT_STORED_STATE);
   const lastRefreshAtRef = useRef(0);
-  const [snapshots, setSnapshots] = useState<Record<ProviderId, ProviderSnapshot>>({
-    openai: demoSnapshot("openai"),
-    anthropic: demoSnapshot("anthropic"),
-    kimi: demoSnapshot("kimi"),
-  });
+  const [snapshots, setSnapshots] = useState<Record<ProviderId, ProviderSnapshot>>(
+    buildDemoSnapshots(),
+  );
 
   const theme = useMemo<Theme>(() => {
     const mode = storedState.themeMode;
@@ -132,6 +130,26 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
   }, [hydrated]);
 
   useEffect(() => {
+    if (!hydrated || Platform.OS !== "ios") return;
+    if (providerDataSharingConsent !== "granted") {
+      void cancelUsageResetAlerts().catch((error) =>
+        console.warn("[ModelPulse] reset alert cancellation failed", error),
+      );
+      return;
+    }
+    // Reconcile immediately when preferences change, using cached usage only.
+    void Promise.all(SUBSCRIPTION_PROVIDER_ORDER.map(async (providerId) => {
+      const status = await getConnectionStatus(providerId, { allowNetwork: false });
+      return status.kind === "connected" ? [{ providerId, usage: status.usage }] : [];
+    })).then((entries) => evaluateUsageAlerts({
+      notifyThresholds: false,
+      prefs: storedStateRef.current.notificationPrefs,
+      apiSnapshots: {},
+      subscriptionUsages: entries.flat(),
+    })).catch((error) => console.warn("[ModelPulse] reset alert reconciliation failed", error));
+  }, [hydrated, storedState.notificationPrefs, providerDataSharingConsent]);
+
+  useEffect(() => {
     if (!hydrated) return;
     const interval = setInterval(() => {
       if (AppState.currentState === "active" && providerDataSharingConsent === "granted") {
@@ -181,11 +199,8 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
         }),
       );
 
-      setSnapshots({
-        openai: entries[0][1],
-        anthropic: entries[1][1],
-        kimi: entries[2][1],
-      });
+      const nextSnapshots = Object.fromEntries(entries) as Record<ProviderId, ProviderSnapshot>;
+      setSnapshots(nextSnapshots);
       lastRefreshAtRef.current = Date.now();
 
       // Warm subscription usage (Claude, ChatGPT, Gemini, ...). Each provider's
@@ -211,9 +226,17 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       // a notification hiccup must never fail the refresh itself.
       void evaluateUsageAlerts({
         prefs: nextState.notificationPrefs,
-        apiSnapshots: { openai: entries[0][1], anthropic: entries[1][1], kimi: entries[2][1] },
+        apiSnapshots: nextSnapshots,
         subscriptionUsages,
       }).catch((error) => console.warn("[ModelPulse] usage alert evaluation failed", error));
+
+      // Snapshot state updates before subscription refreshes finish. Publish
+      // again after warming subscriptions so the widget gets those new rows.
+      if (Platform.OS === "ios") {
+        void import("@/widgets/widget-sync").then(({ syncSignalStackWidget }) =>
+          syncSignalStackWidget(nextSnapshots, nextState.widgetConfig, nextState.rateLimitStyle, nextState.hiddenModelCardIds),
+        ).catch((error) => console.warn("[ModelPulse] widget sync after refresh failed", error));
+      }
     } finally {
       setRefreshing(false);
     }
@@ -310,17 +333,26 @@ export function AppStoreProvider({ children }: React.PropsWithChildren) {
       await commitStoredState((current) => ({
         ...current,
         providerConfigs: {
-          openai: { ...current.providerConfigs.openai, apiKey: "", adminKey: "" },
-          anthropic: { ...current.providerConfigs.anthropic, apiKey: "", adminKey: "" },
-          kimi: { ...current.providerConfigs.kimi, apiKey: "", adminKey: "" },
+          ...Object.fromEntries(
+            PROVIDER_ORDER.map((providerId) => [
+              providerId,
+              { ...current.providerConfigs[providerId], apiKey: "", adminKey: "" },
+            ]),
+          ) as Record<ProviderId, ProviderConfig>,
         },
       }));
       setProviderDataSharingConsentState("declined");
-      setSnapshots({
-        openai: await buildSnapshot("openai", { ...storedStateRef.current.providerConfigs.openai, apiKey: "", adminKey: "" }),
-        anthropic: await buildSnapshot("anthropic", { ...storedStateRef.current.providerConfigs.anthropic, apiKey: "", adminKey: "" }),
-        kimi: await buildSnapshot("kimi", { ...storedStateRef.current.providerConfigs.kimi, apiKey: "", adminKey: "" }),
-      });
+      const clearedEntries = await Promise.all(
+        PROVIDER_ORDER.map(async (providerId) => [
+          providerId,
+          await buildSnapshot(providerId, {
+            ...storedStateRef.current.providerConfigs[providerId],
+            apiKey: "",
+            adminKey: "",
+          }),
+        ] as const),
+      );
+      setSnapshots(Object.fromEntries(clearedEntries) as Record<ProviderId, ProviderSnapshot>);
     },
     refreshAll: async () => {
       await refreshAllInternal(storedState, true);
@@ -364,4 +396,10 @@ export function useAppStore() {
   }
 
   return value;
+}
+
+function buildDemoSnapshots(): Record<ProviderId, ProviderSnapshot> {
+  return Object.fromEntries(
+    PROVIDER_ORDER.map((providerId) => [providerId, demoSnapshot(providerId)]),
+  ) as Record<ProviderId, ProviderSnapshot>;
 }

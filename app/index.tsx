@@ -13,6 +13,7 @@ import { makeModelCards } from "@/lib/model-cards";
 import { PROVIDER_ORDER } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
 import type { ThemeMode } from "@/types/domain";
+import { spacing } from "@/design-system/tokens";
 
 export default function HomeScreen() {
   const {
@@ -96,19 +97,19 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
-        <View>
-          <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 18 }}>
+        <View style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+          <Text size="xs" family="mono" color="muted" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ letterSpacing: 1.1, marginBottom: 6 }}>
             LOCAL NODE // MODEL PULSE
           </Text>
           <Text size="3xl" family="sans" weight="extrabold">
             Model Pulse
           </Text>
-          <Text size="sm" family="mono" color="muted">
+          <Text size="sm" family="mono" color="muted" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
             AI subscription telemetry // live overview
           </Text>
         </View>
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flexDirection: "row", gap: 8, flexShrink: 0, paddingRight: spacing[2] }}>
           <Pressable onPress={cycleTheme} style={{ padding: 8, borderRadius: 999, backgroundColor: theme.muted }}>
             <Image
               source={themeMode === "light" ? "sf:sun.max.fill" : themeMode === "dark" ? "sf:moon.fill" : "sf:circle.lefthalf.filled"}

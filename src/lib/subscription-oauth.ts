@@ -54,10 +54,37 @@ export const SUBSCRIPTION_OAUTH_CAPABILITIES: Record<ProviderId, SubscriptionOAu
       "SIGNALSTACK_KIMI_OAUTH_TOKEN_URL",
     ],
   },
+  opencode: {
+    providerId: "opencode",
+    displayName: "OpenCode Zen",
+    status: "unavailable",
+    reason:
+      "OpenCode Zen uses an API key rather than a separate subscription OAuth telemetry flow. Model Pulse saves the key without a billable validation request; Zen does not expose account usage or balance telemetry publicly.",
+    officialTelemetryAvailable: false,
+    requiredEnv: [],
+  },
+  openrouter: {
+    providerId: "openrouter",
+    displayName: "OpenRouter",
+    status: "unavailable",
+    reason:
+      "OpenRouter is a credit-based API service and does not expose a separate consumer subscription quota. Model Pulse connects with a standard API key instead.",
+    officialTelemetryAvailable: false,
+    requiredEnv: [],
+  },
+  fal: {
+    providerId: "fal",
+    displayName: "fal.ai",
+    status: "unavailable",
+    reason:
+      "fal Agent plans add credits to the same workspace balance used by the pay-as-you-go API. Model Pulse reads that balance with an Admin API key rather than a separate subscription OAuth feed.",
+    officialTelemetryAvailable: false,
+    requiredEnv: [],
+  },
 };
 
 export function isProviderId(value: string | null): value is ProviderId {
-  return value === "openai" || value === "anthropic" || value === "kimi";
+  return value === "openai" || value === "anthropic" || value === "kimi" || value === "opencode" || value === "openrouter" || value === "fal";
 }
 
 export function getSubscriptionOAuthEnv(providerId: ProviderId) {

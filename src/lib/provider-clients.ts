@@ -1,6 +1,9 @@
+import * as Crypto from "expo-crypto";
+
 import { isProviderDataSharingAllowed } from "@/lib/provider-data-sharing";
+import { inputCacheUsage, usageRows } from "@/lib/input-cache";
 import { demoSnapshot } from "@/lib/providers";
-import type { ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domain";
+import type { ProviderConfig, ProviderId, ProviderModelUsage, ProviderSnapshot } from "@/types/domain";
 
 export async function buildSnapshot(providerId: ProviderId, config: ProviderConfig) {
   if (!(await isProviderDataSharingAllowed())) {
@@ -21,6 +24,18 @@ export async function buildSnapshot(providerId: ProviderId, config: ProviderConf
 
   if (providerId === "kimi") {
     return refreshKimi(config);
+  }
+
+  if (providerId === "opencode") {
+    return refreshOpenCodeZen(config);
+  }
+
+  if (providerId === "openrouter") {
+    return refreshOpenRouter(config);
+  }
+
+  if (providerId === "fal") {
+    return refreshFal(config);
   }
 
   return refreshManualProvider(providerId, config);
@@ -77,12 +92,12 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
   let costsJson;
   try {
     [usageJson, costsJson] = await Promise.all([
-      fetchJson(`https://api.openai.com/v1/organization/usage/completions?start_time=${startTime}&bucket_width=1d&limit=1`, {
+      fetchReport(`https://api.openai.com/v1/organization/usage/completions?start_time=${startTime}&end_time=${Math.floor(Date.now() / 1000)}&bucket_width=1h&limit=24`, {
         headers: {
           Authorization: `Bearer ${config.adminKey}`,
         },
       }),
-      fetchJson(`https://api.openai.com/v1/organization/costs?start_time=${monthStart}&bucket_width=1d&limit=31`, {
+      fetchReport(`https://api.openai.com/v1/organization/costs?start_time=${monthStart}&bucket_width=1d&limit=31`, {
         headers: {
           Authorization: `Bearer ${config.adminKey}`,
         },
@@ -100,7 +115,8 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
     };
   }
 
-  const usageBucket = readArrayPath(usageJson, ["data", 0, "results"]);
+  const usageBucket = usageRows(usageJson);
+  const inputCache = inputCacheUsage("openai", usageBucket);
   const tokensUsed = usageBucket.reduce(
     (sum, item) => sum + readNumber(item, "input_tokens") + readNumber(item, "output_tokens"),
     0,
@@ -119,6 +135,7 @@ async function refreshOpenAI(config: ProviderConfig): Promise<ProviderSnapshot> 
     note: "Usage and cost are being fetched from the OpenAI admin API. RPM and TPM still rely on your manual caps unless a stronger rate-limit source is added.",
     usage: {
       tokensUsed,
+      inputCache,
       requestsUsed,
       monthlySpendUsd,
       windowLabel: "Tokens 24h · spend month-to-date",
@@ -160,11 +177,11 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
   let limitsJson;
   try {
     [usageJson, costJson, limitsJson] = await Promise.all([
-      fetchJson(
+      fetchReport(
         `https://api.anthropic.com/v1/organizations/usage_report/messages?starting_at=${encodeURIComponent(startingAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}&bucket_width=1d`,
         { headers },
       ),
-      fetchJson(
+      fetchReport(
         `https://api.anthropic.com/v1/organizations/cost_report?starting_at=${encodeURIComponent(monthStartAt.toISOString())}&ending_at=${encodeURIComponent(endingAt.toISOString())}`,
         { headers },
       ),
@@ -182,21 +199,13 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
     };
   }
 
-  const tokensUsed = sumFieldsDeep(usageJson, [
-    "uncached_input_tokens",
-    "input_tokens",
-    "cache_creation_input_tokens",
-    "cache_read_input_tokens",
-    "output_tokens",
-  ]);
+  const inputCache = inputCacheUsage("anthropic", usageRows(usageJson));
+  const tokensUsed = (inputCache.freshInputTokens ?? 0) + (inputCache.cacheReadTokens ?? 0)
+    + (inputCache.cacheWriteTokens ?? 0) + sumFieldsDeep(usageJson, ["output_tokens"]);
   const requestsUsed = sumFieldsDeep(usageJson, ["requests", "request_count", "api_requests"]);
-  const monthlySpendUsd = sumCurrencyFields(costJson, [
-    "amount_cents",
-    "cost_cents",
-    "usd_cents",
-    "amount",
-    "cost",
-  ]);
+  // Anthropic reports USD amounts in cents, including decimal strings.
+  const monthlySpendUsd = usageRows(costJson).reduce((sum, row) =>
+    sum + (row.currency === "USD" ? readNumber(row, "amount") / 100 : 0), 0);
   const modelGroup = findAnthropicModelGroup(limitsJson);
   const requestsPerMinuteLimit = findLimitValue(modelGroup, "requests_per_minute") ?? toNumber(config.requestsPerMinuteLimit);
   const tokensPerMinuteLimit =
@@ -208,6 +217,7 @@ async function refreshAnthropic(config: ProviderConfig): Promise<ProviderSnapsho
     note: "Anthropic usage, cost, and organization rate limits are being read from the Admin API.",
     usage: {
       tokensUsed,
+      inputCache,
       requestsUsed,
       monthlySpendUsd,
       windowLabel: "Tokens 24h · spend month-to-date",
@@ -268,6 +278,166 @@ async function refreshKimi(config: ProviderConfig): Promise<ProviderSnapshot> {
   };
 }
 
+async function refreshOpenCodeZen(config: ProviderConfig): Promise<ProviderSnapshot> {
+  if (!config.apiKey) {
+    return {
+      ...demoSnapshot("opencode"),
+      mode: "needs-key",
+      statusLabel: "Zen API key needed",
+      note: "Add an OpenCode Zen API key to save the API connection. Zen usage, balance, and rate-limit telemetry are not published through the public API.",
+      monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
+    };
+  }
+
+  return {
+    mode: "live",
+    statusLabel: "Zen API key saved",
+    note: "Zen's public model list does not authenticate API keys, so Model Pulse cannot verify this key without making a billable request. Zen does not publish account spend, credit balance, request count, token count, or rate-limit telemetry through the public API.",
+    usage: {
+      tokensUsed: 0,
+      requestsUsed: 0,
+      monthlySpendUsd: 0,
+      windowLabel: "Not reported by Zen",
+      spendAvailable: false,
+      tokensAvailable: false,
+      requestsAvailable: false,
+    },
+    limits: {
+      requestsPerMinuteLimit: toNumber(config.requestsPerMinuteLimit),
+      requestsRemaining: null,
+      tokensPerMinuteLimit: toNumber(config.tokensPerMinuteLimit),
+      resetsAtLabel: "Manual caps",
+    },
+    balanceLabel: null,
+    updatedAtLabel: timeLabel(),
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
+  };
+}
+
+async function refreshOpenRouter(config: ProviderConfig): Promise<ProviderSnapshot> {
+  if (!config.apiKey) {
+    return {
+      ...demoSnapshot("openrouter"),
+      mode: "needs-key",
+      statusLabel: "API key needed",
+      note: "Add a standard OpenRouter API key to read its month-to-date usage and any key-level credit cap.",
+      monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
+    };
+  }
+
+  const json = await fetchJson("https://openrouter.ai/api/v1/key", {
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+  });
+  const data = asObject(json).data;
+  const rec = asObject(data);
+  const monthlySpendUsd =
+    firstNumber(rec, ["usage_monthly", "usage"]) ?? 0;
+  const remaining = firstNumber(rec, ["limit_remaining"]);
+  const limit = firstNumber(rec, ["limit"]);
+  let modelBreakdown: ProviderModelUsage[] | undefined;
+  let modelBreakdownError: string | null = null;
+
+  if (config.adminKey) {
+    try {
+      const apiKeyHash = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        config.apiKey,
+      );
+      const activityJson = await fetchJson(
+        `https://openrouter.ai/api/v1/activity?api_key_hash=${encodeURIComponent(apiKeyHash)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${config.adminKey}`,
+          },
+        },
+      );
+      modelBreakdown = normalizeOpenRouterActivity(activityJson);
+    } catch (error) {
+      modelBreakdownError =
+        error instanceof Error ? error.message : "Could not load OpenRouter model activity.";
+    }
+  }
+
+  return {
+    mode: "live",
+    statusLabel: "Live key usage",
+    note: "OpenRouter usage is live from the key telemetry endpoint. Token and request totals are not included in this account response.",
+    usage: {
+      tokensUsed: 0,
+      requestsUsed: 0,
+      monthlySpendUsd,
+      windowLabel: "Month-to-date",
+      tokensAvailable: false,
+      requestsAvailable: false,
+    },
+    limits: {
+      requestsPerMinuteLimit: toNumber(config.requestsPerMinuteLimit),
+      requestsRemaining: null,
+      tokensPerMinuteLimit: toNumber(config.tokensPerMinuteLimit),
+      resetsAtLabel: limit !== null ? "Key credit cap" : null,
+    },
+    balanceLabel: remaining !== null ? `$${remaining.toFixed(2)} key cap left` : null,
+    updatedAtLabel: timeLabel(),
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
+    modelBreakdown,
+    modelBreakdownWindowLabel: modelBreakdown ? "Last 30 completed UTC days" : null,
+    modelBreakdownError,
+  };
+}
+
+async function refreshFal(config: ProviderConfig): Promise<ProviderSnapshot> {
+  if (!config.adminKey) {
+    return {
+      ...demoSnapshot("fal"),
+      mode: "needs-key",
+      statusLabel: "Admin key needed",
+      note: "Add a fal Admin API key to read month-to-date model cost and the workspace credit balance.",
+      monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
+    };
+  }
+
+  const start = new Date(startOfMonthMs()).toISOString();
+  const end = new Date().toISOString();
+  const headers = {
+    Authorization: `Key ${config.adminKey}`,
+  };
+  const [usageJson, billingJson] = await Promise.all([
+    fetchJson(
+      `https://api.fal.ai/v1/models/usage?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&expand=summary`,
+      { headers },
+    ),
+    fetchJson("https://api.fal.ai/v1/account/billing?expand=credits", { headers }),
+  ]);
+  const monthlySpendUsd = sumFieldsDeep(usageJson, ["cost_total"]);
+  const credits = asObject(asObject(billingJson).credits);
+  const currentBalance = firstNumber(credits, ["current_balance"]);
+
+  return {
+    mode: "live",
+    statusLabel: "Live workspace billing",
+    note: "fal API cost and prepaid credit balance are live. fal Agent subscriptions add credits to the same account balance rather than exposing a separate quota feed.",
+    usage: {
+      tokensUsed: 0,
+      requestsUsed: 0,
+      monthlySpendUsd,
+      windowLabel: "Month-to-date",
+      tokensAvailable: false,
+      requestsAvailable: false,
+    },
+    limits: {
+      requestsPerMinuteLimit: toNumber(config.requestsPerMinuteLimit),
+      requestsRemaining: null,
+      tokensPerMinuteLimit: toNumber(config.tokensPerMinuteLimit),
+      resetsAtLabel: null,
+    },
+    balanceLabel: currentBalance !== null ? `$${currentBalance.toFixed(2)} credits` : null,
+    updatedAtLabel: timeLabel(),
+    monthlyBudgetUsd: toNumber(config.monthlyBudgetUsd),
+  };
+}
+
 async function refreshManualProvider(providerId: ProviderId, config: ProviderConfig): Promise<ProviderSnapshot> {
   const fallback = demoSnapshot(providerId);
 
@@ -305,6 +475,26 @@ function adminKeyFailureNote(provider: "OpenAI" | "Anthropic", error: unknown): 
     return "OpenAI rejected this key: organization usage and cost can only be read by an Admin API key (starts with sk-admin-). Standard API keys cannot access them, even with 'All' permissions. Create one at platform.openai.com > Settings > Organization > Admin keys, then update the saved key.";
   }
   return "Anthropic rejected this key: organization usage, cost, and rate limits can only be read by an Admin API key (starts with sk-ant-admin). Create one at console.anthropic.com > Settings > Admin keys, then update the saved key.";
+}
+
+// Follow every report page so a cache ratio never silently describes a partial window.
+async function fetchReport(url: string, options: RequestInit) {
+  const data: unknown[] = [];
+  const seen = new Set<string>();
+  let nextUrl = url;
+  for (let page = 0; page < 100; page += 1) {
+    const response = await fetchJson(nextUrl, options);
+    if (!Array.isArray(response.data)) throw new Error("Usage report has no data buckets.");
+    data.push(...response.data);
+    if (!response.has_more) return { ...response, data };
+    const cursor = response.next_page;
+    if (typeof cursor !== "string" || !cursor || seen.has(cursor)) throw new Error("Usage report pagination is incomplete.");
+    seen.add(cursor);
+    const next = new URL(url);
+    next.searchParams.set("page", cursor);
+    nextUrl = next.toString();
+  }
+  throw new Error("Usage report exceeded its page limit.");
 }
 
 async function fetchJson(url: string, options: RequestInit) {
@@ -365,6 +555,67 @@ function readNestedNumber(value: unknown, path: string[]) {
   return 0;
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function firstNumber(value: Record<string, unknown>, fieldNames: string[]): number | null {
+  for (const fieldName of fieldNames) {
+    const next = value[fieldName];
+    if (typeof next === "number" && Number.isFinite(next)) return next;
+    if (typeof next === "string") {
+      const parsed = Number(next);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
+function normalizeOpenRouterActivity(value: unknown): ProviderModelUsage[] {
+  const rows = readArrayPath(value, ["data"]);
+  const byModel = new Map<string, ProviderModelUsage>();
+
+  for (const row of rows) {
+    const rec = asObject(row);
+    const model =
+      readStringValue(rec, "model") ??
+      readStringValue(rec, "model_permaslug") ??
+      "Unknown model";
+    const providerName = readStringValue(rec, "provider_name");
+    const existing = byModel.get(model) ?? {
+      model,
+      providerName,
+      requests: 0,
+      promptTokens: 0,
+      completionTokens: 0,
+      reasoningTokens: 0,
+      spendUsd: 0,
+    };
+    if (existing.providerName && providerName && existing.providerName !== providerName) {
+      existing.providerName = "Multiple providers";
+    } else if (!existing.providerName) {
+      existing.providerName = providerName;
+    }
+    existing.requests += readNumber(rec, "requests");
+    existing.promptTokens += readNumber(rec, "prompt_tokens");
+    existing.completionTokens += readNumber(rec, "completion_tokens");
+    existing.reasoningTokens += readNumber(rec, "reasoning_tokens");
+    existing.spendUsd += readNumber(rec, "usage");
+    byModel.set(model, existing);
+  }
+
+  return [...byModel.values()].sort(
+    (a, b) => b.spendUsd - a.spendUsd || b.requests - a.requests || a.model.localeCompare(b.model),
+  );
+}
+
+function readStringValue(value: Record<string, unknown>, key: string): string | null {
+  const next = value[key];
+  return typeof next === "string" && next.trim() ? next : null;
+}
+
 function sumFieldsDeep(value: unknown, fieldNames: string[]) {
   let total = 0;
 
@@ -376,25 +627,6 @@ function sumFieldsDeep(value: unknown, fieldNames: string[]) {
   });
 
   return total;
-}
-
-function sumCurrencyFields(value: unknown, fieldNames: string[]) {
-  let cents = 0;
-  let dollars = 0;
-
-  walkUnknown(value, (entry) => {
-    if (!entry || typeof entry !== "object") return;
-    for (const fieldName of fieldNames) {
-      const next = (entry as Record<string, unknown>)[fieldName];
-      if (typeof next !== "number" && typeof next !== "string") continue;
-      const parsed = Number(next);
-      if (!Number.isFinite(parsed)) continue;
-      if (fieldName.includes("cents")) cents += parsed;
-      else dollars += parsed;
-    }
-  });
-
-  return dollars + cents / 100;
 }
 
 function firstNumberDeep(value: unknown, fieldNames: string[]) {

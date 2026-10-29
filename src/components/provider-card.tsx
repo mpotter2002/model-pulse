@@ -4,6 +4,7 @@ import React from "react";
 import { Pressable, View } from "react-native";
 
 import { Card } from "@/components/ui/card";
+import { InputCacheBreakdown } from "@/components/input-cache-breakdown";
 import { RateLimitLine } from "@/components/ui/rate-limit-line";
 import { Text } from "@/components/ui/text";
 import { useTheme } from "@/components/ui/theme";
@@ -66,13 +67,13 @@ export function ProviderPanel({
       </Text>
 
       <View style={{ flexDirection: "row", gap: 16, marginTop: 18 }}>
-        {snapshot.mode === "live" ? (
+        {snapshot.mode === "live" && snapshot.usage.tokensAvailable !== false ? (
           <Stat label="Tokens" value={compact(snapshot.usage.tokensUsed)} style={{ flex: 1 }} />
         ) : null}
         <Stat
           label="Spend"
-          value={`$${snapshot.usage.monthlySpendUsd.toFixed(2)}`}
-          style={{ flex: snapshot.mode === "live" ? 1 : 2 }}
+          value={snapshot.usage.spendAvailable === false ? "Not reported" : `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`}
+          style={{ flex: snapshot.mode === "live" && snapshot.usage.tokensAvailable !== false ? 1 : 2 }}
         />
         <Stat
           label={snapshot.balanceLabel ? "Balance" : "RPM left"}
@@ -81,6 +82,7 @@ export function ProviderPanel({
         />
       </View>
 
+      <InputCacheBreakdown snapshot={snapshot} compact />
       <UtilizationBars snapshot={snapshot} accent={provider.accent} />
     </View>
   );

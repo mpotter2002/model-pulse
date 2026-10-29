@@ -7,6 +7,7 @@ import { Alert, Animated, LayoutAnimation, PanResponder, Pressable, Switch, View
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/card";
+import { NotificationDiagnostics } from "@/components/notification-diagnostics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RateLimitLine } from "@/components/ui/rate-limit-line";
@@ -521,8 +522,9 @@ export default function SettingsScreen() {
           </View>
 
           <Text size="xs" family="mono" color="muted">
-            Background alerts run when iOS schedules them — usually within a few hours of crossing a threshold.
+            Known reset times are scheduled with iOS and can notify while the app is closed. Usage and budget alerts need a fresh usage check; iOS controls background checks and may delay or skip them. Force-quitting stops background checks until you reopen the app.
           </Text>
+          <NotificationDiagnostics />
         </View>
       </Card>
 

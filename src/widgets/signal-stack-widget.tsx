@@ -43,6 +43,7 @@ export type SignalStackWidgetProps = {
   totalBalance: string;
   hasBalanceData?: boolean;
   hasLiveApiData: boolean;
+  hasStaleData?: boolean;
   metricLabel: string;
   updatedAt: string;
   rateLimitStyle: RateLimitStyle;
@@ -78,6 +79,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
     const hasLiveApiData = rawProps.hasLiveApiData === true;
     const metricLabel = rawProps.metricLabel ?? "Spend";
     const updatedAt = rawProps.updatedAt ?? "now";
+    const hasStaleData = rawProps.hasStaleData === true;
     // Number of active/connected providers (falls back to the card count so
     // older timelines without providerCount still render a sensible number).
     const providerCount =
@@ -341,7 +343,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
           {/* 6 compact limit rows or fallback metric rows */}
           <VStack alignment="leading" spacing={4}>
             {hasLimits
-              ? flatLimitRows.slice(0, 6).map((row) => {
+              ? flatLimitRows.slice(0, hasStaleData ? 5 : 6).map((row) => {
                   const ratio = Math.max(0, Math.min(1, row.ratio));
                   const barFill = Math.max(2, Math.round(ratio * 84));
                   const bar = style === "dots" ? (
@@ -394,6 +396,11 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
                   </HStack>
                 ))}
           </VStack>
+          {hasStaleData ? (
+            <Text modifiers={[foregroundStyle(muted), font({ size: 8, family: "SpaceMono-Regular" }), lineLimit(1)]}>
+              Cached usage
+            </Text>
+          ) : null}
         </VStack>
       );
     }
@@ -624,7 +631,7 @@ export const signalStackWidget = createWidget<SignalStackWidgetProps, SignalStac
 
         {/* Footer */}
         <Text modifiers={[foregroundStyle(muted), font({ size: 10, family: "SpaceMono-Regular" }), lineLimit(1), frame({ maxWidth: 10000, alignment: "center" })]}>
-          Updated {updatedAt}
+          {hasStaleData ? "Cached · synced" : "Updated"} {updatedAt}
         </Text>
       </VStack>
     );

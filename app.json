@@ -2,7 +2,7 @@
   "expo": {
     "name": "Model Pulse",
     "slug": "ai-subscriptions-widget",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -118,6 +118,14 @@
                         {
                           "name": "Factory",
                           "value": "factory"
+                        },
+                        {
+                          "name": "OpenRouter",
+                          "value": "openrouter"
+                        },
+                        {
+                          "name": "fal.ai",
+                          "value": "fal"
                         }
                       ]
                     }
