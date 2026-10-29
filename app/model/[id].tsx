@@ -16,7 +16,7 @@ export default function ModelDetailScreen() {
 
   if (!item) {
     return (
-      <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+      <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
         <Card padding={5} style={{ alignItems: "center" }}>
           <Text size="xl" weight="bold" style={{ marginBottom: 6 }}>
             Model not found
@@ -30,7 +30,7 @@ export default function ModelDetailScreen() {
   }
 
   return (
-    <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
       <ModelDetailPanel item={item} />
     </ScreenScrollView>
   );

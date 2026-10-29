@@ -2,9 +2,11 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AIModelCard } from "@/components/ai-model-card";
+import { AIModelCard, ModelDetailPanel } from "@/components/ai-model-card";
+import { AdaptiveCardGrid } from "@/components/ui/adaptive-card-grid";
 import { Card } from "@/components/ui/card";
 import { ScreenScrollView } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
@@ -27,6 +29,12 @@ export default function HomeScreen() {
     setThemeMode,
   } = useAppStore();
   const theme = useTheme();
+  const { width, fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const canSplit = width - insets.left - insets.right >= 820 * Math.max(1, fontScale);
+  const [layout, setLayout] = useState<"split" | "grid">("split");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const split = canSplit && layout === "split";
   const [subRefreshNonce, setSubRefreshNonce] = useState(0);
   const userPulledRef = useRef(false);
   const wasRefreshingRef = useRef(false);
@@ -48,6 +56,12 @@ export default function HomeScreen() {
   const modelCards = makeModelCards()
     .filter((item) => !hiddenModelCardIds.includes(item.id))
     .sort((a, b) => modelCardOrder.indexOf(a.id) - modelCardOrder.indexOf(b.id));
+  const selected = modelCards.find((item) => item.id === selectedId) ?? (split ? modelCards[0] : undefined);
+  const firstModelId = modelCards[0]?.id;
+  useEffect(() => {
+    if (split && !selectedId && firstModelId) setSelectedId(firstModelId);
+  }, [split, selectedId, firstModelId]);
+  const compactDetail = !canSplit && layout === "split" && Boolean(selected);
 
   const totalSubscriptionSpend = modelCards.reduce(
     (sum, card) => sum + parseUsd(widgetConfig.subscriptionPricesUsd[card.id]),
@@ -74,7 +88,10 @@ export default function HomeScreen() {
   }
 
   return (
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: theme.background }}>
+    <View style={{ flex: split ? undefined : 1, width: split ? 352 : undefined, display: compactDetail ? "none" : "flex" }}>
     <ScreenScrollView
+      safeAreaEdges={split ? ["top", "left", "bottom"] : undefined}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -186,14 +203,48 @@ export default function HomeScreen() {
 
       {/* Models */}
       <View style={{ marginBottom: 8 }}>
+        {canSplit ? (
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+            {(["split", "grid"] as const).map((value) => (
+              <Pressable
+                key={value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: layout === value }}
+                onPress={() => { setLayout(value); if (value === "grid") setSelectedId(null); }}
+                style={{ padding: 12, borderRadius: 8, backgroundColor: layout === value ? theme.foreground : theme.muted }}
+              >
+                <Text size="xs" style={{ color: layout === value ? theme.background : theme.foreground }}>
+                  {value === "split" ? "List and detail" : "Grid"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         <Text size="xs" family="mono" weight="bold" color="muted" style={{ marginBottom: 14, letterSpacing: 1.2 }}>
           MODEL GRID
         </Text>
-        {modelCards.map((item) => (
-          <AIModelCard key={item.id} item={item} refreshNonce={subRefreshNonce} />
-        ))}
+        <AdaptiveCardGrid>
+          {modelCards.map((item) => (
+            <AIModelCard key={item.id} item={item} refreshNonce={subRefreshNonce}
+              onSelect={split ? () => setSelectedId(item.id) : undefined}
+              selected={split && selected?.id === item.id}
+            />
+          ))}
+        </AdaptiveCardGrid>
       </View>
     </ScreenScrollView>
+    </View>
+    {(split || compactDetail) && selected ? (
+      <ScreenScrollView safeAreaEdges={split ? ["top", "right", "bottom"] : undefined}>
+        {compactDetail ? (
+          <Pressable accessibilityRole="button" onPress={() => setSelectedId(null)} style={{ paddingVertical: 12, marginBottom: 12 }}>
+            <Text>‹ All models</Text>
+          </Pressable>
+        ) : null}
+        <ModelDetailPanel key={selected.id} item={selected} refreshNonce={subRefreshNonce} />
+      </ScreenScrollView>
+    ) : null}
+    </View>
   );
 }
 

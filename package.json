@@ -36,6 +36,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "postinstall": "node scripts/fix-expo-jsi-xcode27.cjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",

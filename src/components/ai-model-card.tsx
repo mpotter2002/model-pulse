@@ -68,7 +68,12 @@ export function ProviderLogoMark({
   );
 }
 
-export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; refreshNonce: number }) {
+export function AIModelCard({ item, refreshNonce, onSelect, selected = false }: {
+  item: AIModelCardConfig;
+  refreshNonce: number;
+  onSelect?: () => void;
+  selected?: boolean;
+}) {
   const { providerConfigs, snapshots, homeCardSource } = useAppStore();
   const [subscriptionStatus, setSubscriptionStatus] = useState<ConnectionStatus | null>(null);
   const didMountRef = useRef(false);
@@ -108,16 +113,18 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
   const summary = buildHomeSummary(apiConfigured, apiSnapshot, subscriptionStatus, hasApi, hasSubscription, preferredSource);
   const title = item.title.split(" / ")[0];
 
-  return (
-    <Link href={`/model/${item.id}`} asChild>
+  const card = (
       <Pressable
-        onPress={() => Haptics.selectionAsync()}
+        onPress={() => { void Haptics.selectionAsync(); onSelect?.(); }}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${title} details`}
+        accessibilityState={{ selected }}
         style={{ marginBottom: 12 }}
       >
-        <Card padding={4} style={{ overflow: "hidden" }}>
+        <Card padding={4} style={{ overflow: "hidden", ...(selected ? { borderWidth: 1, borderColor: theme.accent } : {}) }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
             <ProviderLogoMark item={item} />
-            <View style={{ flex: 1, gap: 2 }}>
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
               <Text size="xs" family="mono" color="muted" numberOfLines={1} style={{ letterSpacing: 1 }}>
                 {item.subscriptionProviderId && item.apiProviderId
                   ? preferredSource === "api"
@@ -128,7 +135,7 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
                     : "API"}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Text size="2xl" family="sans" weight="bold" numberOfLines={1}>
+                <Text size="2xl" family="sans" weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>
                   {title}
                 </Text>
                 <View
@@ -205,8 +212,8 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
           )}
         </Card>
       </Pressable>
-    </Link>
   );
+  return onSelect ? card : <Link href={`/model/${item.id}`} asChild>{card}</Link>;
 }
 
 
@@ -255,9 +262,10 @@ function UsageRow({ row, accent }: { row: UsageLimitRow; accent: string }) {
   );
 }
 
-export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
+export function ModelDetailPanel({ item, refreshNonce = 0 }: { item: AIModelCardConfig; refreshNonce?: number }) {
   const theme = useTheme();
   const {
+    snapshots,
     providerConfigs,
     saveProviderConfig,
     refreshProvider,
@@ -365,7 +373,7 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
         </>
       ) : null}
 
-      {item.subscriptionProviderId ? <SubscriptionPanel providerId={item.subscriptionProviderId} refreshNonce={localRefreshNonce} /> : null}
+      {item.subscriptionProviderId ? <SubscriptionPanel providerId={item.subscriptionProviderId} refreshNonce={localRefreshNonce + refreshNonce} /> : null}
 
       {item.subscriptionProviderId && item.apiProviderId ? <Separator style={{ marginVertical: 18 }} /> : null}
 
@@ -376,7 +384,7 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
               <Text size="lg" weight="semibold" style={{ marginBottom: 12 }}>
                 API telemetry
               </Text>
-              <ApiSnapshotList snapshot={useAppStore().snapshots[item.apiProviderId]} />
+              <ApiSnapshotList snapshot={snapshots[item.apiProviderId]} />
               {item.apiProviderId === "openrouter" && !providerConfigs.openrouter.adminKey.trim() ? (
                 <OpenRouterManagementKeyPanel
                   config={providerConfigs.openrouter}

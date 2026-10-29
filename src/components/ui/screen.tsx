@@ -1,6 +1,7 @@
 import React from "react";
-import { ScrollView, View, type ScrollViewProps, type ViewProps } from "react-native";
+import { ScrollView, View, useWindowDimensions, type ScrollViewProps, type ViewProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { Edge } from "react-native-safe-area-context";
 
 import { spacing } from "@/design-system/tokens";
 import { useTheme } from "@/components/ui/theme";
@@ -22,20 +23,35 @@ export interface ScreenScrollViewProps extends ScrollViewProps {
   children: React.ReactNode;
   horizontalPadding?: boolean;
   bottomPadding?: boolean;
+  maxContentWidth?: number;
+  safeAreaEdges?: Edge[];
 }
 
 export function ScreenScrollView({
   children,
   horizontalPadding = true,
   bottomPadding = true,
+  maxContentWidth,
+  safeAreaEdges = ["top", "bottom", "left", "right"],
   contentContainerStyle,
   automaticallyAdjustKeyboardInsets = true,
   keyboardShouldPersistTaps = "handled",
   keyboardDismissMode = "on-drag",
   ...props
 }: ScreenScrollViewProps) {
-  const insets = useSafeAreaInsets();
+  const safeInsets = useSafeAreaInsets();
+  const insets = {
+    top: safeAreaEdges.includes("top") ? safeInsets.top : 0,
+    bottom: safeAreaEdges.includes("bottom") ? safeInsets.bottom : 0,
+    left: safeAreaEdges.includes("left") ? safeInsets.left : 0,
+    right: safeAreaEdges.includes("right") ? safeInsets.right : 0,
+  };
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const left = Math.max(insets.left, horizontalPadding ? spacing[4] : 0);
+  const right = Math.max(insets.right, horizontalPadding ? spacing[4] : 0);
+  // Limit reading width on detail/forms while keeping the background edge to edge.
+  const extra = maxContentWidth ? Math.max(0, width - left - right - maxContentWidth) / 2 : 0;
 
   return (
     <ScrollView
@@ -46,7 +62,8 @@ export function ScreenScrollView({
       contentContainerStyle={[
         {
           paddingTop: insets.top + spacing[2],
-          paddingHorizontal: horizontalPadding ? spacing[4] : 0,
+          paddingLeft: left + extra,
+          paddingRight: right + extra,
           paddingBottom: bottomPadding ? spacing[6] + insets.bottom : insets.bottom,
         },
         contentContainerStyle,

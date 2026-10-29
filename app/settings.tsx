@@ -97,7 +97,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
 
   return (
-    <ScreenScrollView scrollEnabled={listScrollEnabled} contentContainerStyle={{ paddingTop: insets.top + 52 }}>
+    <ScreenScrollView maxContentWidth={840} scrollEnabled={listScrollEnabled} contentContainerStyle={{ paddingTop: insets.top + 52 }}>
       <View style={{ marginBottom: 18 }}>
         <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
           CONTROL PANEL // USER CONFIG

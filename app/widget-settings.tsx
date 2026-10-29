@@ -232,7 +232,7 @@ export default function WidgetSettingsScreen() {
   }
 
   return (
-    <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 52 }}>
+    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 52 }}>
       <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
         WIDGETKIT // SURFACE CONFIG
       </Text>

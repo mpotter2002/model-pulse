@@ -48,7 +48,7 @@ export default function ProviderDetailScreen() {
 
   if (!isProviderId(id)) {
     return (
-      <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+      <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
         <Card padding={5} style={{ alignItems: "center" }}>
           <Text size="xl" weight="bold" style={{ marginBottom: 6 }}>
             Provider not found
@@ -62,7 +62,7 @@ export default function ProviderDetailScreen() {
   }
 
   return (
-    <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: provider.accent }} />
