@@ -2,7 +2,7 @@
   "expo": {
     "name": "Model Pulse",
     "slug": "ai-subscriptions-widget",
-    "version": "1.0.5",
+    "version": "1.0.4",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
