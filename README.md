@@ -14,12 +14,16 @@ Privacy policy & support: https://mpotter2002.github.io/model-pulse/
 - **Subscription tracking** — rate-limit windows and reset times for ChatGPT
   (weekly window) and Claude (5-hour / weekly), with secure sign-in flows
   (no terminals, no copy-pasting tokens)
-- **API spend** — month-to-date spend and 24-hour token/request tracking for
-  OpenAI and Anthropic organization accounts via Admin API keys, with
-  optional monthly budgets
+- **API spend** — month-to-date spend for OpenAI, Anthropic, OpenRouter, and
+  fal.ai, plus provider-supported token, request, credit-cap, and account
+  balance telemetry with optional monthly budgets
+- **OpenRouter model breakdown** — optional management-key activity grouped
+  by model for the selected inference API key
 - **Usage alerts** — optional local notifications when you cross thresholds
   you pick (25–95%), for both subscription windows and API budgets. Alerts
-  are scheduled and fire entirely on-device
+  fire on-device after usage checks. Known provider reset times are scheduled
+  ahead with iOS; background threshold checks depend on iOS scheduling. See
+  [notification delivery](docs/notifications.md)
 - **Privacy controls** — no accounts, no analytics, no tracking, and no
   Model Pulse server. Before any direct provider request, the app discloses
   what data is shared and asks for permission; credentials live in the iOS

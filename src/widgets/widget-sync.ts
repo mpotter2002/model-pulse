@@ -1,10 +1,13 @@
 import { makeModelCards } from "@/lib/model-cards";
 import { getConnectionStatus } from "@/lib/oauth/manager";
+import { loadPersistedUsage } from "@/lib/oauth/usage-store";
+import { loadStoredState } from "@/lib/storage";
 import type { SubscriptionUsage } from "@/lib/oauth/types";
 import type { ModelCardId, ProviderId, ProviderSnapshot, RateLimitStyle, WidgetConfig } from "@/types/domain";
 import { signalStackWidget } from "@/widgets/signal-stack-widget";
 
 type SnapshotMap = Record<ProviderId, ProviderSnapshot>;
+let latestSync = 0;
 
 export async function syncSignalStackWidget(
   snapshots: SnapshotMap,
@@ -12,6 +15,10 @@ export async function syncSignalStackWidget(
   rateLimitStyle: RateLimitStyle,
   hiddenModelCardIds: ModelCardId[] = [],
 ) {
+  // Reject stale/default settings rather than replacing a saved subscription
+  // timeline. This also protects against a settings change during a slow fetch.
+  if (!(await hasCurrentWidgetSettings(config, rateLimitStyle, hiddenModelCardIds))) return;
+  const syncId = ++latestSync;
   const modelCards = makeModelCards();
   const visibleModelIds =
     config.visibleModelCardIds.length > 0 ? config.visibleModelCardIds : modelCards.map((card) => card.id);
@@ -31,12 +38,34 @@ export async function syncSignalStackWidget(
   const subscriptionStatuses = await Promise.all(
     visibleCards.map(async (card) => {
       if (!card.subscriptionProviderId) return [card.id, null] as const;
-      return [
-        card.id,
-        await getConnectionStatus(card.subscriptionProviderId, {
-          allowNetwork: card.subscriptionProviderId !== "claude-sub",
-        }),
-      ] as const;
+      try {
+        const status = await getConnectionStatus(card.subscriptionProviderId, {
+          // Usage refreshes run in the store/background task. Widget sync
+          // only renders cached results; it must not start another fetch.
+          allowNetwork: false,
+        });
+        if (status.kind === "connected") {
+          const saved = await loadPersistedUsage(card.subscriptionProviderId);
+          if (saved && Date.now() - saved.fetchedAt > 5 * 60 * 1000) {
+            return [card.id, { ...status, usage: { ...status.usage, fetchState: "rate_limited" as const } }] as const;
+          }
+        }
+        // An expired token should prompt reconnecting, not switch the widget to
+        // API data. Keep its saved subscription usage explicitly marked stale.
+        if (status.kind === "error") {
+          const saved = await loadPersistedUsage(card.subscriptionProviderId);
+          if (saved) {
+            return [card.id, {
+              kind: "connected" as const,
+              usage: { ...saved.usage, fetchState: "rate_limited" as const },
+              updatedAt: new Date(saved.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+            }] as const;
+          }
+        }
+        return [card.id, status] as const;
+      } catch {
+        return [card.id, { kind: "error" as const, message: "Usage unavailable" }] as const;
+      }
     }),
   );
   const subscriptionStatusById = Object.fromEntries(subscriptionStatuses) as Record<
@@ -49,14 +78,9 @@ export async function syncSignalStackWidget(
       const snap = snapshots[card.apiProviderId];
       if (isLiveSnapshot(snap)) spend += snap.usage.monthlySpendUsd;
     }
-    // Match the in-app widget preview: subscription spend is the user's
-    // configured monthly price for each visible subscription card. Do not gate
-    // this on OAuth status; otherwise the home-screen widget can show a
-    // different spend total from the preview whenever provider status is stale,
-    // cache-only, throttled, or temporarily disconnected.
-    // API mode is the exception: it shows API spend alone so the total truly
-    // resets to $0 at month start for prepaid-credit users.
-    if (card.subscriptionProviderId && config.metricMode !== "api") spend += parseUsd(config.subscriptionPricesUsd[card.id]);
+    // The spend tile always combines the user's subscription prices and live
+    // API spend. Metric mode only changes the per-provider usage details below.
+    if (card.subscriptionProviderId) spend += parseUsd(config.subscriptionPricesUsd[card.id]);
     return sum + spend;
   }, 0);
   const totalTokens = visibleCards.reduce((sum, card) => {
@@ -94,21 +118,27 @@ export async function syncSignalStackWidget(
     const apiSnapshot = card.apiProviderId ? snapshots[card.apiProviderId] : null;
     const subStatus = subscriptionStatusById[card.id];
     const subscriptionConnected = subStatus?.kind === "connected";
-    const metric = subscriptionConnected
-      ? subscriptionMetric(subStatus.usage, config.metricMode, config.subscriptionPricesUsd[card.id])
-      : apiSnapshot
-        ? widgetMetric(apiSnapshot, config.metricMode)
-        : "Set up";
-    const ratio = subscriptionConnected
-      ? subscriptionRatio(subStatus.usage)
-      : apiSnapshot
-        ? providerLimitRatio(apiSnapshot)
-        : null;
+    const subscriptionMode = config.metricMode === "subscription";
+    const apiLive = isLiveSnapshot(apiSnapshot);
+    const metric = subscriptionMode
+      ? subscriptionConnected
+        ? subscriptionMetric(subStatus.usage, config.metricMode, config.subscriptionPricesUsd[card.id])
+        : card.subscriptionProviderId ? "Open app to refresh" : "API only"
+      : apiLive
+        ? widgetMetric(apiSnapshot!, config.metricMode)
+        : card.apiProviderId ? "Open app to refresh" : "No API data";
+    const ratio = subscriptionMode
+      ? subscriptionConnected ? subscriptionRatio(subStatus.usage) : null
+      : apiLive ? providerLimitRatio(apiSnapshot!) : null;
     return {
       id: card.id,
       ...(card.apiProviderId ? { providerId: card.apiProviderId } : {}),
       label: card.title.split(" / ")[0],
-      status: subscriptionConnected ? subStatus.usage.planLabel ?? "Subscription connected" : apiSnapshot?.statusLabel ?? "Not connected",
+      status: subscriptionMode
+        ? subscriptionConnected
+          ? subStatus.usage.fetchState === "rate_limited" ? "Last known usage" : subStatus.usage.planLabel ?? "Subscription connected"
+          : "Subscription usage unavailable"
+        : apiLive ? apiSnapshot!.statusLabel : "API usage unavailable",
       metric,
       ...(ratio !== null ? { ratio } : {}),
       ...(() => {
@@ -119,13 +149,9 @@ export async function syncSignalStackWidget(
         const apiRows = isLiveSnapshot(apiSnapshot)
           ? apiLimitRows(label, card.accent, apiSnapshot!)
           : [];
-        // In API mode lead with API bars (budget / req-min); in subscription
-        // mode lead with subscription windows. Either way fall back to the
-        // other so a card never loses its bars just because one side is empty.
-        const limitRows =
-          config.metricMode === "api"
-            ? (apiRows.length > 0 ? apiRows : subRows)
-            : (subRows.length > 0 ? subRows : apiRows);
+        // Respect the selected source even when it is temporarily unavailable.
+        // API budgets must never replace subscription windows (or vice versa).
+        const limitRows = config.metricMode === "api" ? apiRows : subRows;
         return limitRows.length > 0 ? { limitRows } : {};
       })(),
       accent: card.accent,
@@ -148,6 +174,8 @@ export async function syncSignalStackWidget(
     accent: "#8E8E93",
   }];
 
+  if (syncId !== latestSync || !(await hasCurrentWidgetSettings(config, rateLimitStyle, hiddenModelCardIds))) return;
+  if (syncId !== latestSync) return;
   try {
     await signalStackWidget.updateTimeline([
       {
@@ -161,6 +189,9 @@ export async function syncSignalStackWidget(
           totalBalance: `$${totalBalance.toFixed(2)}`,
           hasLiveApiData,
           hasBalanceData,
+          hasStaleData: config.metricMode === "subscription" && subscriptionStatuses.some(([, status]) =>
+            status?.kind === "connected" && status.usage.fetchState === "rate_limited",
+          ),
           metricLabel: metricLabel(config.metricMode),
           updatedAt: new Date().toLocaleTimeString([], {
             hour: "numeric",
@@ -176,8 +207,28 @@ export async function syncSignalStackWidget(
   }
 }
 
+async function hasCurrentWidgetSettings(
+  config: WidgetConfig,
+  rateLimitStyle: RateLimitStyle,
+  hiddenModelCardIds: ModelCardId[],
+): Promise<boolean> {
+  try {
+    const stored = await loadStoredState({ strict: true });
+    return JSON.stringify(stored.widgetConfig) === JSON.stringify(config) &&
+      stored.rateLimitStyle === rateLimitStyle &&
+      JSON.stringify(stored.hiddenModelCardIds) === JSON.stringify(hiddenModelCardIds);
+  } catch (error) {
+    console.warn("[ModelPulse] preserving widget timeline: saved settings unavailable", error);
+    return false;
+  }
+}
+
 function widgetMetric(snapshot: ProviderSnapshot, mode: WidgetConfig["metricMode"]) {
-  if (mode === "api") return snapshot.balanceLabel ?? `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`;
+  if (mode === "api") {
+    if (snapshot.balanceLabel) return snapshot.balanceLabel;
+    if (snapshot.usage.spendAvailable === false) return "Unavailable";
+    return `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`;
+  }
   if (mode === "subscription") return limitMetric(snapshot);
   return `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`;
 }
@@ -194,7 +245,7 @@ function subscriptionMetric(
   if (mode === "api") return usage.planLabel ?? "Sub";
   const summary = firstUsableUsageRow(usage) ?? usage.summary ?? usage.limits[0] ?? null;
   if (mode === "subscription") {
-    if (!summary) return "No limit";
+    if (!summary) return "Usage unavailable";
     if (summary.percentUsed !== null) return `${summary.percentUsed}%`;
     if (summary.used !== null && summary.limit !== null) return `${compact(summary.used)}/${compact(summary.limit)}`;
     return summary.label;

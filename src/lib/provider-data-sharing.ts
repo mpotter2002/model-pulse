@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/background-secure-store";
 import { Platform } from "react-native";
 
 export type ProviderDataSharingConsent = "unknown" | "granted" | "declined";

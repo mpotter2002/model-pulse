@@ -52,7 +52,7 @@ export function ProviderDataConsentModal({
           </DisclosureSection>
 
           <DisclosureSection title="Who receives it">
-            Only the provider you choose: OpenAI/ChatGPT, Anthropic/Claude, Moonshot/Kimi, MiniMax, Z.ai, Google/Gemini, ElevenLabs, Poe, Codebuff, GitHub/Copilot, Chutes, Factory, or OpenCode. Requests go directly from this device to that provider; Model Pulse does not operate a server.
+            Only the provider you choose: OpenAI/ChatGPT, Anthropic/Claude, Moonshot/Kimi, MiniMax, Z.ai, Google/Gemini, ElevenLabs, Poe, Codebuff, GitHub/Copilot, Chutes, Factory, OpenCode, OpenRouter, or fal.ai. Requests go directly from this device to that provider; Model Pulse does not operate a server.
           </DisclosureSection>
 
           <DisclosureSection title="What is not sent">

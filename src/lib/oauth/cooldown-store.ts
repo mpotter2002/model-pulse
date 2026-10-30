@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/background-secure-store";
 
 import type { SubscriptionProviderId } from "@/lib/oauth/types";
 
