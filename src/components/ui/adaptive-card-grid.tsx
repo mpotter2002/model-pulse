@@ -4,11 +4,11 @@ import { View, useWindowDimensions } from "react-native";
 import { getCardGridLayout, getMasonryLayout } from "@/lib/adaptive-layout";
 
 /** Measure the container so rotation, folding and split windows all reflow in place. */
-export function AdaptiveCardGrid({ children }: { children: React.ReactNode }) {
+export function AdaptiveCardGrid({ children, minimumCardWidth = 260 }: { children: React.ReactNode; minimumCardWidth?: number }) {
   const [width, setWidth] = useState(0);
   const [measurements, setMeasurements] = useState<Record<string, { width: number; height: number }>>({});
   const { fontScale } = useWindowDimensions();
-  const { columns, cardWidth, gap } = getCardGridLayout(width, fontScale);
+  const { columns, cardWidth, gap } = getCardGridLayout(width, fontScale, minimumCardWidth);
   const cards = Children.toArray(children);
   const keys = cards.map((child, index) => React.isValidElement(child) ? String(child.key ?? index) : String(index));
   const { positions, height } = getMasonryLayout(keys.map((key) => {

@@ -8,7 +8,27 @@ const code = ts.transpileModule(fs.readFileSync('src/lib/adaptive-layout.ts', 'u
 }).outputText;
 const moduleContext = { exports: {} };
 vm.runInNewContext(code, { exports: moduleContext.exports });
-const { getCardGridLayout, getMasonryLayout } = moduleContext.exports;
+const { getCardGridLayout, getMasonryLayout, getDashboardLayout } = moduleContext.exports;
+
+// iPad mini through 13-inch Pro, including Split View and Stage Manager windows.
+for (const width of [320, 375, 507, 600, 744, 768, 810, 820, 834, 960, 1024, 1032, 1133, 1180, 1194, 1366, 1376]) {
+  for (const scale of [1, 1.3, 2]) {
+    const dashboard = getDashboardLayout(width, scale, true);
+    const contentWidth = width - dashboard.gutter * 2;
+    const grid = getCardGridLayout(contentWidth, scale, dashboard.minimumCardWidth);
+    assert.ok(Math.abs(grid.cardWidth * grid.columns + grid.gap * (grid.columns - 1) - contentWidth) < 0.001);
+    if (dashboard.canSplit) {
+      assert.ok(dashboard.sidebarWidth >= 320 && dashboard.sidebarWidth <= 400);
+      assert.ok(width - dashboard.sidebarWidth - dashboard.gutter * 2 >= 560,
+        'split detail forms retain a usable minimum width');
+    }
+  }
+}
+assert.equal(getDashboardLayout(820, 1, true).canSplit, false, '11-inch portrait avoids cramped side-by-side forms');
+assert.equal(getDashboardLayout(1180, 1, true).canSplit, true, '11-inch landscape supports a sidebar');
+assert.equal(getCardGridLayout(1032 - 48, 1, 320).columns, 2, '13-inch portrait keeps roomy cards');
+assert.equal(getCardGridLayout(1376 - 48, 1, 320).columns, 3, '13-inch landscape grid uses three columns');
+assert.equal(getDashboardLayout(840).canSplit, true, 'Duo split threshold is preserved');
 
 // Available content widths, after safe-area insets and screen padding.
 assert.equal(getCardGridLayout(398).columns, 1, 'portrait iPhone stays single-column');

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, useWindowDimensions, type ScrollViewProps, type ViewProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Edge } from "react-native-safe-area-context";
@@ -34,6 +34,7 @@ export function ScreenScrollView({
   maxContentWidth,
   safeAreaEdges = ["top", "bottom", "left", "right"],
   contentContainerStyle,
+  onLayout,
   automaticallyAdjustKeyboardInsets = true,
   keyboardShouldPersistTaps = "handled",
   keyboardDismissMode = "on-drag",
@@ -48,13 +49,18 @@ export function ScreenScrollView({
   };
   const theme = useTheme();
   const { width } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const left = Math.max(insets.left, horizontalPadding ? spacing[4] : 0);
   const right = Math.max(insets.right, horizontalPadding ? spacing[4] : 0);
   // Limit reading width on detail/forms while keeping the background edge to edge.
-  const extra = maxContentWidth ? Math.max(0, width - left - right - maxContentWidth) / 2 : 0;
+  const extra = maxContentWidth ? Math.max(0, (containerWidth ?? width) - left - right - maxContentWidth) / 2 : 0;
 
   return (
     <ScrollView
+      onLayout={(event) => {
+        setContainerWidth(event.nativeEvent.layout.width);
+        onLayout?.(event);
+      }}
       contentInsetAdjustmentBehavior="never"
       automaticallyAdjustKeyboardInsets={automaticallyAdjustKeyboardInsets}
       keyboardShouldPersistTaps={keyboardShouldPersistTaps}

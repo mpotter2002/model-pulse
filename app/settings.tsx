@@ -1,3 +1,4 @@
+import { useHeaderHeight } from "expo-router/react-navigation";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
@@ -42,6 +43,7 @@ const RATE_LIMIT_STYLE_OPTIONS: Array<{ label: string; value: RateLimitStyle }> 
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const {
     modelCardOrder,
     hiddenModelCardIds,
@@ -97,7 +99,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
 
   return (
-    <ScreenScrollView maxContentWidth={840} scrollEnabled={listScrollEnabled} contentContainerStyle={{ paddingTop: insets.top + 52 }}>
+    <ScreenScrollView maxContentWidth={840} scrollEnabled={listScrollEnabled} contentContainerStyle={{ paddingTop: Math.max(insets.top, headerHeight) + 16 }}>
       <View style={{ marginBottom: 18 }}>
         <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
           CONTROL PANEL // USER CONFIG

@@ -1,3 +1,4 @@
+import { useHeaderHeight } from "expo-router/react-navigation";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import React from "react";
@@ -137,6 +138,7 @@ const BAR_WIDTHS: Record<WidgetSize, number> = {
 
 export default function WidgetSettingsScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const theme = useTheme();
   const { widgetConfig, updateWidgetConfig, snapshots, rateLimitStyle } = useAppStore();
   const modelCards = makeModelCards();
@@ -232,7 +234,7 @@ export default function WidgetSettingsScreen() {
   }
 
   return (
-    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 52 }}>
+    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: Math.max(insets.top, headerHeight) + 16 }}>
       <Text size="xs" family="mono" color="muted" style={{ letterSpacing: 1.1, marginBottom: 6 }}>
         WIDGETKIT // SURFACE CONFIG
       </Text>

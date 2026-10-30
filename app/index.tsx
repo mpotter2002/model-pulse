@@ -2,10 +2,10 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Platform, Pressable, RefreshControl, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AIModelCard, ModelDetailPanel } from "@/components/ai-model-card";
+import { AIModelCard, ModelDetailPanel, ProviderLogoMark } from "@/components/ai-model-card";
 import { AdaptiveCardGrid } from "@/components/ui/adaptive-card-grid";
 import { Card } from "@/components/ui/card";
 import { ScreenScrollView } from "@/components/ui/screen";
@@ -16,6 +16,7 @@ import { PROVIDER_ORDER } from "@/lib/providers";
 import { useAppStore } from "@/store/app-store";
 import type { ThemeMode } from "@/types/domain";
 import { spacing } from "@/design-system/tokens";
+import { getDashboardLayout } from "@/lib/adaptive-layout";
 
 export default function HomeScreen() {
   const {
@@ -31,9 +32,11 @@ export default function HomeScreen() {
   const theme = useTheme();
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const tablet = Platform.OS === "ios" && Platform.isPad;
+  const { canSplit, sidebarWidth, gutter, minimumCardWidth } = getDashboardLayout(width - insets.left - insets.right, fontScale, tablet);
   const expandedLandscape = width > height && height >= 600;
-  const canSplit = width - insets.left - insets.right >= 820 * Math.max(1, fontScale);
-  const [layout, setLayout] = useState<"split" | "grid">("split");
+  const [layoutPreference, setLayout] = useState<"split" | "grid" | null>(null);
+  const layout = layoutPreference ?? (tablet && height >= width ? "grid" : "split");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const split = canSplit && layout === "split";
   const [subRefreshNonce, setSubRefreshNonce] = useState(0);
@@ -90,12 +93,12 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: theme.background }}>
-    <View style={{ flex: split ? undefined : 1, width: split ? 352 : undefined, display: compactDetail ? "none" : "flex" }}>
+    <View style={{ flex: split ? undefined : 1, width: split ? sidebarWidth + insets.left : undefined, display: compactDetail ? "none" : "flex" }}>
     <ScreenScrollView
       safeAreaEdges={split ? ["top", "left", "bottom"] : undefined}
       contentContainerStyle={{
         paddingTop: insets.top + spacing[6],
-        ...(expandedLandscape ? { paddingLeft: insets.left + spacing[6] } : {}),
+        ...(tablet ? { paddingLeft: insets.left + gutter, paddingRight: gutter } : expandedLandscape ? { paddingLeft: insets.left + spacing[6] } : {}),
       }}
       refreshControl={
         <RefreshControl
@@ -124,7 +127,7 @@ export default function HomeScreen() {
           <Text size="xs" family="mono" color="muted" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ letterSpacing: 1.1, marginBottom: 6 }}>
             LOCAL NODE // MODEL PULSE
           </Text>
-          <Text size="3xl" family="sans" weight="extrabold">
+          <Text size={tablet && split ? "2xl" : "3xl"} family="sans" weight="extrabold">
             Model Pulse
           </Text>
           <Text size="sm" family="mono" color="muted" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
@@ -226,21 +229,46 @@ export default function HomeScreen() {
           </View>
         ) : null}
         <Text size="xs" family="mono" weight="bold" color="muted" style={{ marginBottom: 14, letterSpacing: 1.2 }}>
-          MODEL GRID
+          {tablet && split ? "MODELS" : "MODEL GRID"}
         </Text>
-        <AdaptiveCardGrid>
+        {tablet && split ? (
+          <View style={{ gap: 8 }}>
+            {modelCards.map((item) => {
+              const active = selected?.id === item.id;
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show ${item.title} details`}
+                  accessibilityState={{ selected: active }}
+                  onPress={() => { void Haptics.selectionAsync(); setSelectedId(item.id); }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 80, padding: 12, borderRadius: 12, backgroundColor: active ? theme.muted : theme.card, borderWidth: 1, borderColor: active ? theme.accent : theme.border }}
+                >
+                  <ProviderLogoMark item={item} size={36} logoSize={28} />
+                  <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                    <Text weight="semibold">{item.title.split(" / ")[0]}</Text>
+                    <Text size="xs" color="muted">{item.subscriptionProviderId ? item.apiProviderId ? "Subscription + API" : "Subscription" : "API usage"}</Text>
+                  </View>
+                  <Image source="sf:chevron.right" style={{ width: 12, height: 12, tintColor: theme.mutedForeground }} />
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : <AdaptiveCardGrid minimumCardWidth={minimumCardWidth}>
           {modelCards.map((item) => (
             <AIModelCard key={item.id} item={item} refreshNonce={subRefreshNonce}
               onSelect={split ? () => setSelectedId(item.id) : undefined}
               selected={split && selected?.id === item.id}
             />
           ))}
-        </AdaptiveCardGrid>
+        </AdaptiveCardGrid>}
       </View>
     </ScreenScrollView>
     </View>
-    {(split || compactDetail) && selected ? (
+    {selected ? (
+      <View style={{ flex: 1, minWidth: 0, display: split || compactDetail ? "flex" : "none", borderLeftWidth: tablet && split ? 1 : 0, borderLeftColor: theme.border }}>
       <ScreenScrollView
+        maxContentWidth={tablet ? 840 : undefined}
         safeAreaEdges={split ? ["top", "right", "bottom"] : undefined}
         contentContainerStyle={expandedLandscape ? { paddingTop: insets.top + spacing[8] } : undefined}
       >
@@ -251,6 +279,7 @@ export default function HomeScreen() {
         ) : null}
         <ModelDetailPanel key={selected.id} item={selected} refreshNonce={subRefreshNonce} />
       </ScreenScrollView>
+      </View>
     ) : null}
     </View>
   );
