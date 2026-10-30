@@ -51,7 +51,9 @@ cover the inherited changes included with Michael's approval.
 The provided screenshots measure 1371 × 2034 (outer), 2853 × 2007 (inner landscape),
 and 2007 × 2853 (inner portrait). These are screenshot pixels, not React Native
 layout points; they informed proposal proportions, not hardcoded app breakpoints.
-The local simulator inventory contains iPhone 17 Pro Max and iPad mini but no Duo.
-Simulator captures therefore serve as phone/wide-window proxies. Michael must
+A local Xcode 27.1 native debug build passed, including the scene delegate and
+widget extension. Simulator installation/launch timed out on the resource-limited
+laptop, so no reliable runtime screenshots or interaction checks were obtained.
+The installed runtime cannot run the available Duo device type. Michael must
 confirm the real Duo's background/status area, fold transition, and both inner
 orientations, plus the iPhone 17 Pro Max and small/medium/large Home Screen widgets.
