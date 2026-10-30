@@ -33,6 +33,10 @@ requires scene lifecycle support. This project remains on Expo SDK 56:
   of converting a function in a ternary expression. Nil setters remain nil.
   It is idempotent and fails explicitly if the expected SDK 56 source changes.
   Remove this workaround and reassess the scene plugin when upgrading Expo.
+- The EAS post-install hook prepares the JSI device framework after CocoaPods and
+  before archiving. This avoids Xcode 27 treating a nested SPM build's spurious
+  "failed with exit code 0" diagnostic as an archive failure. Nonzero compiler
+  exits still stop the build; Expo's own build phase verifies the cached slice.
 
 App version is 1.0.5; EAS manages and increments the build number. Uploads are for
 TestFlight only. Public App Store review waits for Michael's device-test approval.

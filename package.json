@@ -37,6 +37,7 @@
   },
   "scripts": {
     "postinstall": "node scripts/fix-expo-jsi-xcode27.cjs",
+    "eas-build-post-install": "node scripts/prepare-ios-jsi.cjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
