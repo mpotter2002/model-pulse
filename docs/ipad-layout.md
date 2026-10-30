@@ -23,9 +23,11 @@ windows. No Expo or iOS deployment-target upgrade is introduced.
 
 Validation: TypeScript and adaptive-layout checks cover 320–1376 point windows,
 mini/11/13-inch full screens, large text, column fit, and minimum detail width.
-Actual iPad interaction, rotation, and keyboard behavior require runtime checks.
+Native iOS 26.5 simulator checks on the 13-inch iPad Pro passed: launch, portrait grid, routed provider detail and back, automatic landscape split, provider selection, explicit grid retained across rotation, settings, and widget previews. Empty credential forms correctly disable Save. The simulator touch runner misplaces some landscape taps after rotation, so resulting screens were verified with screenshots and accessibility snapshots. Physical mini/11/13-inch devices, resized multitasking windows, keyboard interaction, and live account connections still need device checks.
 
 The `screenshots` EAS profile produces an embedded-JS simulator app without
 incrementing the store build number, avoiding a heavy native build on the laptop.
 App Store screenshots must use real app captures. Framing and marketing copy may
 surround those captures; phone screenshots must not be stretched into an iPad UI.
+
+Release: EAS production build `bba3ecfa-9a64-4437-8966-ed8354cef96c`, source `0613dd4`, is **1.0.4 (53)**. Apple reports `VALID` and `IN_BETA_TESTING`. Both app and widget archive versions were verified. Public App Store review has not been submitted.
