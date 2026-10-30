@@ -3,7 +3,15 @@
 The wide dashboard defaults to a model list beside the selected model's detail
 panel. A Grid control switches to a full-width overview with up to three columns.
 Compact windows show the existing single-column phone flow; medium windows can
-show two grid columns. Layout decisions use the current window/container size,
+show two grid columns. Cards pack into the shortest available column with a
+consistent 16-point gutter, using measured heights so subscription updates and
+wrapped text do not leave row-sized gaps. Keyed cards stay mounted during reflow.
+Open landscape adds safe-area padding plus 24 points above/left of the overview
+and 32 points above the selected detail card. The home overview also has a
+24-point top gutter on compact/portrait windows. Routed model/provider details
+use the actual navigation header height plus 16 points instead of a fixed
+96-point spacer, so a side-mounted back button does not leave a large top gap.
+Layout decisions use the current window/container size,
 safe-area insets, and text scale, rather than a device-name check.
 
 Selecting a model in the wide list updates its detail pane. Folding or narrowing

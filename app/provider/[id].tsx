@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams } from "expo-router";
+import { useHeaderHeight } from "expo-router/react-navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +20,8 @@ import { radius, spacing } from "@/design-system/tokens";
 
 export default function ProviderDetailScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const paddingTop = Math.max(insets.top, headerHeight) + 16;
   const { id } = useLocalSearchParams<{ id?: string }>();
   const {
     snapshots,
@@ -48,7 +51,7 @@ export default function ProviderDetailScreen() {
 
   if (!isProviderId(id)) {
     return (
-      <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+      <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop }}>
         <Card padding={5} style={{ alignItems: "center" }}>
           <Text size="xl" weight="bold" style={{ marginBottom: 6 }}>
             Provider not found
@@ -62,7 +65,7 @@ export default function ProviderDetailScreen() {
   }
 
   return (
-    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop }}>
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: provider.accent }} />

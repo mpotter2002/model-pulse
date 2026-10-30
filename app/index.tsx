@@ -29,8 +29,9 @@ export default function HomeScreen() {
     setThemeMode,
   } = useAppStore();
   const theme = useTheme();
-  const { width, fontScale } = useWindowDimensions();
+  const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const expandedLandscape = width > height && height >= 600;
   const canSplit = width - insets.left - insets.right >= 820 * Math.max(1, fontScale);
   const [layout, setLayout] = useState<"split" | "grid">("split");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -92,6 +93,10 @@ export default function HomeScreen() {
     <View style={{ flex: split ? undefined : 1, width: split ? 352 : undefined, display: compactDetail ? "none" : "flex" }}>
     <ScreenScrollView
       safeAreaEdges={split ? ["top", "left", "bottom"] : undefined}
+      contentContainerStyle={{
+        paddingTop: insets.top + spacing[6],
+        ...(expandedLandscape ? { paddingLeft: insets.left + spacing[6] } : {}),
+      }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -235,7 +240,10 @@ export default function HomeScreen() {
     </ScreenScrollView>
     </View>
     {(split || compactDetail) && selected ? (
-      <ScreenScrollView safeAreaEdges={split ? ["top", "right", "bottom"] : undefined}>
+      <ScreenScrollView
+        safeAreaEdges={split ? ["top", "right", "bottom"] : undefined}
+        contentContainerStyle={expandedLandscape ? { paddingTop: insets.top + spacing[8] } : undefined}
+      >
         {compactDetail ? (
           <Pressable accessibilityRole="button" onPress={() => setSelectedId(null)} style={{ paddingVertical: 12, marginBottom: 12 }}>
             <Text>‹ All models</Text>

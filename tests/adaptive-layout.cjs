@@ -8,7 +8,7 @@ const code = ts.transpileModule(fs.readFileSync('src/lib/adaptive-layout.ts', 'u
 }).outputText;
 const moduleContext = { exports: {} };
 vm.runInNewContext(code, { exports: moduleContext.exports });
-const { getCardGridLayout } = moduleContext.exports;
+const { getCardGridLayout, getMasonryLayout } = moduleContext.exports;
 
 // Available content widths, after safe-area insets and screen padding.
 assert.equal(getCardGridLayout(398).columns, 1, 'portrait iPhone stays single-column');
@@ -25,4 +25,25 @@ for (const width of [240, 320, 398, 519, 536, 580, 799, 812, 840, 1200, 1600]) {
   }
 }
 assert.equal(getCardGridLayout(0).cardWidth, '100%', 'first render remains visible before measurement');
+// Unequal cards must leave only a gutter, rather than wait for the tallest row.
+const portrait = getMasonryLayout([200, 260, 290, 380, 310], 2, 16);
+assert.equal(portrait.positions[2].column, 0);
+assert.equal(portrait.positions[2].top, 216, 'next card fills space under the shorter card');
+assert.equal(portrait.positions[4].top, 522);
+for (const columns of [1, 2, 3]) {
+  for (const heights of [[200, 260, 290, 380, 310], [400, 260, 290, 180, 310], []]) {
+    const layout = getMasonryLayout(heights, columns, 16);
+    let bottom = 0;
+    for (let column = 0; column < columns; column++) {
+      let nextTop = 0;
+      layout.positions.forEach((position, index) => {
+        if (position.column !== column) return;
+        assert.equal(position.top, nextTop, 'each column has a consistent gutter without row gaps');
+        bottom = Math.max(bottom, position.top + heights[index]);
+        nextTop = position.top + heights[index] + 16;
+      });
+    }
+    assert.equal(layout.height, bottom, 'scroll content includes the bottom of every card');
+  }
+}
 console.log('Adaptive layout checks passed (phone, portrait, landscape, large type, exact container fit).');

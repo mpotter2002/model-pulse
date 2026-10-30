@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
+import { useHeaderHeight } from "expo-router/react-navigation";
 import React from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,12 +12,14 @@ import { getModelCardById } from "@/lib/model-cards";
 
 export default function ModelDetailScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const paddingTop = Math.max(insets.top, headerHeight) + 16;
   const { id } = useLocalSearchParams<{ id?: string }>();
   const item = getModelCardById(id);
 
   if (!item) {
     return (
-      <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+      <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop }}>
         <Card padding={5} style={{ alignItems: "center" }}>
           <Text size="xl" weight="bold" style={{ marginBottom: 6 }}>
             Model not found
@@ -30,7 +33,7 @@ export default function ModelDetailScreen() {
   }
 
   return (
-    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop }}>
       <ModelDetailPanel item={item} />
     </ScreenScrollView>
   );

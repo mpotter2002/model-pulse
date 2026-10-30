@@ -119,7 +119,6 @@ export function AIModelCard({ item, refreshNonce, onSelect, selected = false }: 
         accessibilityRole="button"
         accessibilityLabel={`Open ${title} details`}
         accessibilityState={{ selected }}
-        style={{ marginBottom: 12 }}
       >
         <Card padding={4} style={{ overflow: "hidden", ...(selected ? { borderWidth: 1, borderColor: theme.accent } : {}) }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
