@@ -32,19 +32,13 @@ export interface ThemeTokens {
 
   // Legacy glass tokens (kept for compatibility during migration)
   glassFill: string;
-  glassStroke: string;
-  glassHairline: string;
   glassTint: "light" | "dark" | "default";
   blurTint: "light" | "dark" | "default";
   statusBar: "light" | "dark" | "auto";
 
   // Legacy aliases
-  backgroundElevated: string;
-  panel: string;
   subtlePanel: string;
-  chip: string;
   text: string;
-  action: string;
 }
 
 export const tokens = {
@@ -75,18 +69,12 @@ export const tokens = {
 
     // Legacy
     glassFill: "rgba(255,255,255,0.5)",
-    glassStroke: "rgba(255,255,255,0.72)",
-    glassHairline: "rgba(16,17,18,0.08)",
     glassTint: "light" as const,
     blurTint: "light" as const,
     statusBar: "dark" as const,
 
-    backgroundElevated: "#FCFCFC",
-    panel: "#FCFCFC",
     subtlePanel: "#F1F1F1",
-    chip: "#F1F1F1",
     text: "#101112",
-    action: "#101112",
   } satisfies ThemeTokens,
 
   dark: {
@@ -116,18 +104,12 @@ export const tokens = {
 
     // Legacy
     glassFill: "rgba(27,29,31,0.64)",
-    glassStroke: "rgba(255,255,255,0.1)",
-    glassHairline: "rgba(255,255,255,0.05)",
     glassTint: "dark" as const,
     blurTint: "dark" as const,
     statusBar: "light" as const,
 
-    backgroundElevated: "#141517",
-    panel: "#141517",
     subtlePanel: "#1B1D1F",
-    chip: "#1B1D1F",
     text: "#F1F1F1",
-    action: "#F1F1F1",
   } satisfies ThemeTokens,
 };
 
