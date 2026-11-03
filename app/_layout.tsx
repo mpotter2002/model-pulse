@@ -9,6 +9,7 @@ import {
 import { SpaceMono_400Regular, SpaceMono_700Bold } from "@expo-google-fonts/space-mono";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import { ThemeProvider, DarkTheme, DefaultTheme } from "expo-router/react-navigation";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -94,6 +95,17 @@ function RootNavigator() {
   return (
     <>
       <StatusBar style={theme.statusBar} />
+      <ThemeProvider value={{
+        ...(theme.statusBar === "light" ? DarkTheme : DefaultTheme),
+        colors: {
+          ...(theme.statusBar === "light" ? DarkTheme.colors : DefaultTheme.colors),
+          background: theme.background,
+          card: theme.background,
+          text: theme.text,
+          border: theme.border,
+          primary: theme.accent,
+        },
+      }}>
       <Stack
         screenOptions={{
           headerShadowVisible: false,
@@ -152,6 +164,7 @@ function RootNavigator() {
           }}
         />
       </Stack>
+      </ThemeProvider>
       <ProviderDataConsentModal
         visible={providerDataSharingConsent === "unknown" || providerDataConsentPromptVisible}
         onAllow={() => void setProviderDataSharingConsent("granted")}

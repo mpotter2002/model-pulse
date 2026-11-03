@@ -13,7 +13,8 @@ the app clearly explains:
   retrieve account usage telemetry.
 - The recipients: OpenAI/ChatGPT, Anthropic/Claude, Moonshot/Kimi, MiniMax,
   Z.ai, Google/Gemini, ElevenLabs, Poe, Codebuff, GitHub/Copilot, Chutes,
-  Factory, and OpenCode, depending on the provider the user chooses.
+  Factory, OpenCode, OpenRouter, and fal.ai, depending on the provider the
+  user chooses.
 - The use: retrieving the user's plan, usage and quota windows, reset times,
   token/request totals, balance, organization spend, and rate-limit data for
   display in the app and widget and, if enabled, local alerts.

@@ -1,6 +1,6 @@
 # Model Pulse Privacy Policy
 
-Last updated: August 11, 2026
+Last updated: August 27, 2026
 
 Model Pulse ("the app") helps you view your own AI-provider usage, limits,
 and spend. Model Pulse has no user accounts and does not operate a Model
@@ -60,6 +60,8 @@ The possible recipients are:
 - Chutes
 - Factory
 - OpenCode
+- OpenRouter
+- fal.ai
 
 Model Pulse does not send chat prompts, chat responses, files, contacts,
 analytics identifiers, advertising identifiers, or data to a Model Pulse

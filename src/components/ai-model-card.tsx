@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import * as input from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { InputCacheBreakdown } from "@/components/input-cache-breakdown";
 import { RateLimitLine } from "@/components/ui/rate-limit-line";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
@@ -17,14 +18,62 @@ import { getConnectionStatus, type ConnectionStatus } from "@/lib/oauth/manager"
 import type { AIModelCardConfig } from "@/lib/model-cards";
 import { SubscriptionPanel } from "@/components/subscription-card";
 import { useAppStore } from "@/store/app-store";
-import type { HomeCardSource, ProviderConfig, ProviderId, ProviderSnapshot } from "@/types/domain";
+import type { HomeCardSource, ProviderConfig, ProviderId, ProviderModelUsage, ProviderSnapshot } from "@/types/domain";
 
 const HOME_CARD_SOURCE_OPTIONS: Array<{ label: string; value: HomeCardSource; hint: string }> = [
   { label: "Subscription", value: "subscription", hint: "Plan limits first" },
   { label: "API", value: "api", hint: "Spend & tokens first" },
 ];
 
-export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; refreshNonce: number }) {
+export function ProviderLogoMark({
+  item,
+  size = 52,
+  logoSize = 34,
+}: {
+  item: Pick<AIModelCardConfig, "logo" | "initials" | "accent">;
+  size?: number;
+  logoSize?: number;
+}) {
+  const theme = useTheme();
+  const isDark = theme.background === tokens.dark.background;
+
+  if (item.logo) {
+    return (
+      <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+        <Image
+          source={!isDark && item.logo.sourceLight ? item.logo.sourceLight : item.logo.source}
+          style={{ width: logoSize, height: logoSize }}
+          contentFit="contain"
+          tintColor={item.logo.tint === "foreground" ? theme.foreground : undefined}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.min(12, size / 4),
+        backgroundColor: `${item.accent}18`,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text size={size >= 44 ? "lg" : "sm"} family="sans" weight="bold" style={{ color: item.accent }}>
+        {item.initials}
+      </Text>
+    </View>
+  );
+}
+
+export function AIModelCard({ item, refreshNonce, onSelect, selected = false }: {
+  item: AIModelCardConfig;
+  refreshNonce: number;
+  onSelect?: () => void;
+  selected?: boolean;
+}) {
   const { providerConfigs, snapshots, homeCardSource } = useAppStore();
   const [subscriptionStatus, setSubscriptionStatus] = useState<ConnectionStatus | null>(null);
   const didMountRef = useRef(false);
@@ -56,51 +105,25 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
   }, [item.subscriptionProviderId, refreshNonce]);
 
   const theme = useTheme();
-  const isDark = theme.background === tokens.dark.background;
   const apiConfigured = item.apiProviderId ? isApiConfigured(item.apiProviderId, providerConfigs[item.apiProviderId]) : false;
   const apiSnapshot = item.apiProviderId ? snapshots[item.apiProviderId] : null;
   const hasApi = Boolean(item.apiProviderId);
+  const hasSubscription = Boolean(item.subscriptionProviderId);
   const preferredSource = homeCardSource[item.id] ?? "subscription";
-  const summary = buildHomeSummary(apiConfigured, apiSnapshot, subscriptionStatus, hasApi, preferredSource);
+  const summary = buildHomeSummary(apiConfigured, apiSnapshot, subscriptionStatus, hasApi, hasSubscription, preferredSource);
   const title = item.title.split(" / ")[0];
 
-  return (
-    <Link href={`/model/${item.id}`} asChild>
+  const card = (
       <Pressable
-        onPress={() => Haptics.selectionAsync()}
-        style={{ marginBottom: 12 }}
+        onPress={() => { void Haptics.selectionAsync(); onSelect?.(); }}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${title} details`}
+        accessibilityState={{ selected }}
       >
-        <Card padding={4} style={{ overflow: "hidden" }}>
+        <Card padding={4} style={{ overflow: "hidden", ...(selected ? { borderWidth: 1, borderColor: theme.accent } : {}) }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
-            {/* Provider logo (falls back to initials when no logo is available).
-                Real brand logos render with no background; mono glyphs follow
-                the theme foreground so they read in light and dark. */}
-            {item.logo ? (
-              <View style={{ width: 52, height: 52, alignItems: "center", justifyContent: "center" }}>
-                <Image
-                  source={!isDark && item.logo.sourceLight ? item.logo.sourceLight : item.logo.source}
-                  style={{ width: 34, height: 34 }}
-                  contentFit="contain"
-                  tintColor={item.logo.tint === "foreground" ? theme.foreground : undefined}
-                />
-              </View>
-            ) : (
-              <View
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 12,
-                  backgroundColor: `${item.accent}18`,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text size="lg" family="sans" weight="bold" style={{ color: item.accent }}>
-                  {item.initials}
-                </Text>
-              </View>
-            )}
-            <View style={{ flex: 1, gap: 2 }}>
+            <ProviderLogoMark item={item} />
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
               <Text size="xs" family="mono" color="muted" numberOfLines={1} style={{ letterSpacing: 1 }}>
                 {item.subscriptionProviderId && item.apiProviderId
                   ? preferredSource === "api"
@@ -111,7 +134,7 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
                     : "API"}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Text size="2xl" family="sans" weight="bold" numberOfLines={1}>
+                <Text size="2xl" family="sans" weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>
                   {title}
                 </Text>
                 <View
@@ -168,6 +191,9 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
                   </View>
                 ))}
               </View>
+              {apiSnapshot?.usage.inputCache && apiConfigured && (preferredSource === "api" || !hasSubscription) ? (
+                <InputCacheBreakdown snapshot={apiSnapshot} compact />
+              ) : null}
               {summary.progress ? (
                 <View style={{ marginTop: 12 }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 5 }}>
@@ -185,8 +211,8 @@ export function AIModelCard({ item, refreshNonce }: { item: AIModelCardConfig; r
           )}
         </Card>
       </Pressable>
-    </Link>
   );
+  return onSelect ? card : <Link href={`/model/${item.id}`} asChild>{card}</Link>;
 }
 
 
@@ -235,9 +261,10 @@ function UsageRow({ row, accent }: { row: UsageLimitRow; accent: string }) {
   );
 }
 
-export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
+export function ModelDetailPanel({ item, refreshNonce = 0 }: { item: AIModelCardConfig; refreshNonce?: number }) {
   const theme = useTheme();
   const {
+    snapshots,
     providerConfigs,
     saveProviderConfig,
     refreshProvider,
@@ -269,7 +296,7 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
     <Card padding={5}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: item.accent }} />
+          <ProviderLogoMark item={item} size={40} logoSize={28} />
           <View style={{ flex: 1 }}>
             <Text size="xl" family="sans" weight="bold" numberOfLines={1}>
               {item.title}
@@ -345,7 +372,7 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
         </>
       ) : null}
 
-      {item.subscriptionProviderId ? <SubscriptionPanel providerId={item.subscriptionProviderId} refreshNonce={localRefreshNonce} /> : null}
+      {item.subscriptionProviderId ? <SubscriptionPanel providerId={item.subscriptionProviderId} refreshNonce={localRefreshNonce + refreshNonce} /> : null}
 
       {item.subscriptionProviderId && item.apiProviderId ? <Separator style={{ marginVertical: 18 }} /> : null}
 
@@ -356,7 +383,13 @@ export function ModelDetailPanel({ item }: { item: AIModelCardConfig }) {
               <Text size="lg" weight="semibold" style={{ marginBottom: 12 }}>
                 API telemetry
               </Text>
-              <ApiSnapshotList snapshot={useAppStore().snapshots[item.apiProviderId]} />
+              <ApiSnapshotList snapshot={snapshots[item.apiProviderId]} />
+              {item.apiProviderId === "openrouter" && !providerConfigs.openrouter.adminKey.trim() ? (
+                <OpenRouterManagementKeyPanel
+                  config={providerConfigs.openrouter}
+                  onSave={(next) => saveProviderConfig("openrouter", next)}
+                />
+              ) : null}
               <Link href={`/provider/${item.apiProviderId}`} asChild>
                 <Pressable style={{ marginTop: 14, alignSelf: "flex-start" }}>
                   <Text size="sm" weight="semibold" color="primary">
@@ -382,12 +415,90 @@ function ApiSnapshotList({ snapshot }: { snapshot: ProviderSnapshot }) {
   return (
     <View style={{ gap: 10 }}>
       <StatRow label="Status" value={snapshot.statusLabel} />
-      <StatRow label="Tokens" value={formatInt(snapshot.usage.tokensUsed)} />
-      <StatRow label="Requests" value={formatInt(snapshot.usage.requestsUsed)} />
-      <StatRow label="Monthly spend" value={`$${snapshot.usage.monthlySpendUsd.toFixed(2)}`} />
+      <StatRow label="Tokens" value={snapshot.usage.tokensAvailable === false ? "Not reported" : formatInt(snapshot.usage.tokensUsed)} />
+      <StatRow label="Requests" value={snapshot.usage.requestsAvailable === false ? "Not reported" : formatInt(snapshot.usage.requestsUsed)} />
+      <StatRow label="Monthly spend" value={snapshot.usage.spendAvailable === false ? "Not reported" : `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`} />
+      <InputCacheBreakdown snapshot={snapshot} />
       <StatRow label="Balance" value={snapshot.balanceLabel ?? "—"} />
+      {snapshot.modelBreakdown ? (
+        <ModelBreakdown
+          rows={snapshot.modelBreakdown}
+          windowLabel={snapshot.modelBreakdownWindowLabel}
+        />
+      ) : snapshot.modelBreakdownError ? (
+        <View style={{ gap: 4, marginTop: 8 }}>
+          <Text size="sm" weight="semibold" color="destructive">
+            Model breakdown unavailable
+          </Text>
+          <Text size="xs" color="muted">
+            {snapshot.modelBreakdownError}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
+}
+
+function ModelBreakdown({
+  rows,
+  windowLabel,
+}: {
+  rows: ProviderModelUsage[];
+  windowLabel?: string | null;
+}) {
+  return (
+    <View style={{ gap: 10, marginTop: 10 }}>
+      <Separator />
+      <View style={{ gap: 2 }}>
+        <Text size="sm" weight="semibold">
+          Model breakdown
+        </Text>
+        {windowLabel ? (
+          <Text size="xs" color="muted">
+            {windowLabel}
+          </Text>
+        ) : null}
+      </View>
+      {rows.length > 0 ? (
+        rows.map((row) => <ModelUsageRow key={row.model} row={row} />)
+      ) : (
+        <Text size="sm" color="muted">
+          No completed-day activity was reported for this API key.
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function ModelUsageRow({ row }: { row: ProviderModelUsage }) {
+  const tokenTotal = row.promptTokens + row.completionTokens + row.reasoningTokens;
+  return (
+    <View style={{ gap: 5, paddingVertical: 3 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text size="sm" weight="semibold" numberOfLines={1}>
+            {compactModelName(row.model)}
+          </Text>
+          {row.providerName ? (
+            <Text size="xs" color="muted" numberOfLines={1}>
+              {row.providerName}
+            </Text>
+          ) : null}
+        </View>
+        <Text size="sm" weight="semibold" style={{ fontVariant: ["tabular-nums"] }}>
+          ${row.spendUsd.toFixed(2)}
+        </Text>
+      </View>
+      <Text size="xs" color="muted" style={{ fontVariant: ["tabular-nums"] }}>
+        {formatInt(row.requests)} requests · {compactNumber(tokenTotal)} tokens
+      </Text>
+    </View>
+  );
+}
+
+function compactModelName(value: string) {
+  const parts = value.split("/");
+  return parts[parts.length - 1] || value;
 }
 
 function StatRow({ label, value }: { label: string; value: string }) {
@@ -413,6 +524,7 @@ function ApiSetupPanel({
   onSave: (config: ProviderConfig) => Promise<void>;
 }) {
   const [value, setValue] = useState("");
+  const [managementKey, setManagementKey] = useState(config.adminKey);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const copy = apiSetupCopy(providerId);
@@ -438,7 +550,12 @@ function ApiSetupPanel({
     setError(null);
     setSaving(true);
     try {
-      const next = copy.field === "adminKey" ? { ...config, adminKey: trimmed } : { ...config, apiKey: trimmed };
+      const next =
+        providerId === "openrouter"
+          ? { ...config, apiKey: trimmed, adminKey: managementKey.trim() }
+          : copy.field === "adminKey"
+            ? { ...config, adminKey: trimmed }
+            : { ...config, apiKey: trimmed };
       await onSave(next);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setValue("");
@@ -461,6 +578,24 @@ function ApiSetupPanel({
         placeholder={copy.placeholder}
         invalid={Boolean(error)}
       />
+      {providerId === "openrouter" ? (
+        <View style={{ gap: 5 }}>
+          <Text size="sm" weight="semibold">
+            Management key (per-model breakdown)
+          </Text>
+          <input.Input
+            value={managementKey}
+            onChangeText={setManagementKey}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="OpenRouter management key"
+          />
+          <Text size="xs" color="muted">
+            Optional. Add this now to show the last 30 completed days of activity grouped by model.
+          </Text>
+        </View>
+      ) : null}
       {error ? <Text size="sm" color="destructive">{error}</Text> : null}
       <Button onPress={save} disabled={saving || !value.trim()} size="sm">
         {saving ? "Saving..." : copy.button}
@@ -469,10 +604,63 @@ function ApiSetupPanel({
   );
 }
 
+function OpenRouterManagementKeyPanel({
+  config,
+  onSave,
+}: {
+  config: ProviderConfig;
+  onSave: (config: ProviderConfig) => Promise<void>;
+}) {
+  const [value, setValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { providerDataSharingConsent, requestProviderDataSharingConsent } = useAppStore();
+
+  async function save() {
+    const managementKey = value.trim();
+    if (!managementKey) return;
+    if (providerDataSharingConsent !== "granted") {
+      requestProviderDataSharingConsent();
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({ ...config, adminKey: managementKey });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setValue("");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <View style={{ marginTop: 16, gap: 8 }}>
+      <Text size="sm" weight="semibold">
+        Add a management key for per-model breakdown
+      </Text>
+      <Text size="sm" color="muted">
+        This optional OpenRouter key unlocks the last 30 completed days of activity grouped by model.
+      </Text>
+      <input.Input
+        value={value}
+        onChangeText={setValue}
+        secureTextEntry
+        autoCapitalize="none"
+        autoCorrect={false}
+        placeholder="OpenRouter management key"
+      />
+      <Button onPress={save} disabled={saving || !value.trim()} size="sm" style={{ alignSelf: "flex-start" }}>
+        {saving ? "Saving..." : "Save management key"}
+      </Button>
+    </View>
+  );
+}
+
 
 function isApiConfigured(providerId: ProviderId, config: ProviderConfig) {
-  if (providerId === "kimi") return Boolean(config.apiKey.trim());
-  return Boolean(config.adminKey.trim() || config.apiKey.trim());
+  if (providerId === "kimi" || providerId === "opencode" || providerId === "openrouter") {
+    return Boolean(config.apiKey.trim());
+  }
+  return Boolean(config.adminKey.trim());
 }
 
 function apiSetupCopy(providerId: ProviderId) {
@@ -482,7 +670,16 @@ function apiSetupCopy(providerId: ProviderId) {
   if (providerId === "anthropic") {
     return { field: "adminKey" as const, title: "Add an Anthropic admin key", body: "Usage, cost, and organization rate limits need an Anthropic Admin API key (starts with sk-ant-admin) from console.anthropic.com > Settings > Admin keys.", placeholder: "sk-ant-admin-...", button: "Save admin key" };
   }
-  return { field: "apiKey" as const, title: "Add a Moonshot API key", body: "Kimi API mode can show live account balance once a Moonshot API key is stored.", placeholder: "Moonshot API key", button: "Save API key" };
+  if (providerId === "kimi") {
+    return { field: "apiKey" as const, title: "Add a Moonshot API key", body: "Kimi API mode can show live account balance once a Moonshot API key is stored.", placeholder: "Moonshot API key", button: "Save API key" };
+  }
+  if (providerId === "opencode") {
+    return { field: "apiKey" as const, title: "Add an OpenCode Zen API key", body: "Zen is OpenCode's pay-as-you-go API gateway. Model Pulse stores your key but will not send a billable request just to test it. Zen does not currently expose account spend, credits, token counts, or request counts through the public API.", placeholder: "OpenCode Zen API key", button: "Save Zen API key" };
+  }
+  if (providerId === "openrouter") {
+    return { field: "apiKey" as const, title: "Add an OpenRouter API key", body: "A standard OpenRouter API key can report month-to-date usage and any key-level credit cap.", placeholder: "sk-or-v1-...", button: "Save API key" };
+  }
+  return { field: "adminKey" as const, title: "Add a fal Admin API key", body: "fal Platform APIs require an Admin API key to report model cost and workspace credit balance.", placeholder: "fal admin key", button: "Save admin key" };
 }
 
 function subscriptionSummary(status: ConnectionStatus | null) {
@@ -506,6 +703,7 @@ function buildHomeSummary(
   apiSnapshot: ProviderSnapshot | null,
   subscriptionStatus: ConnectionStatus | null,
   hasApi: boolean,
+  hasSubscription: boolean,
   preferredSource: HomeCardSource,
 ) {
   const subscriptionConnected = subscriptionStatus?.kind === "connected";
@@ -527,11 +725,16 @@ function buildHomeSummary(
 
   return {
     mode: "empty" as const,
-    stats: hasApi
+    stats: hasApi && hasSubscription
       ? [
           { label: "Subscription", value: subscriptionSummary(subscriptionStatus) },
           { label: "API", value: apiSnapshot ? apiSnapshot.statusLabel : "Add key" },
         ]
+      : hasApi
+        ? [
+            { label: "API", value: apiSnapshot?.statusLabel ?? "Add key" },
+            { label: "Telemetry", value: "Spend & credits" },
+          ]
       : [
           { label: "Subscription", value: subscriptionSummary(subscriptionStatus) },
           { label: "Plan", value: "—" },
@@ -557,13 +760,32 @@ function buildSubscriptionSummary(status: Extract<ConnectionStatus, { kind: "con
 }
 
 function buildApiSummary(apiSnapshot: ProviderSnapshot) {
+  if (apiSnapshot.usage.spendAvailable === false && apiSnapshot.usage.tokensAvailable === false && apiSnapshot.usage.requestsAvailable === false) {
+    return {
+      mode: "api" as const,
+      stats: [
+        { label: "API", value: apiSnapshot.statusLabel },
+        { label: "Telemetry", value: "Not reported" },
+      ],
+      progress: computeApiLimitPercent(apiSnapshot),
+      subscriptionRows: undefined,
+    };
+  }
+
+  const stats = [
+    { label: "Monthly spend", value: apiSnapshot.usage.spendAvailable === false ? "Not reported" : `$${apiSnapshot.usage.monthlySpendUsd.toFixed(2)}` },
+  ];
+  if (apiSnapshot.usage.tokensAvailable !== false) {
+    stats.push({ label: "API tokens", value: compactNumber(apiSnapshot.usage.tokensUsed) });
+  }
+  if (apiSnapshot.balanceLabel) {
+    stats.push({ label: "Balance", value: apiSnapshot.balanceLabel });
+  } else if (apiSnapshot.usage.requestsAvailable !== false) {
+    stats.push({ label: "Requests 24h", value: formatInt(apiSnapshot.usage.requestsUsed) });
+  }
   return {
     mode: "api" as const,
-    stats: [
-      { label: "Monthly spend", value: `$${apiSnapshot.usage.monthlySpendUsd.toFixed(2)}` },
-      { label: "API tokens", value: compactNumber(apiSnapshot.usage.tokensUsed) },
-      { label: apiSnapshot.balanceLabel ? "Balance" : "Requests 24h", value: apiSnapshot.balanceLabel ?? formatInt(apiSnapshot.usage.requestsUsed) },
-    ],
+    stats,
     progress: computeApiLimitPercent(apiSnapshot),
     subscriptionRows: undefined,
   };

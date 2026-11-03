@@ -48,6 +48,8 @@ export interface UsageLimitRow {
   limit: number | null;
   percentUsed: number | null;
   resetHint: string | null;
+  /** Exact provider reset time in Unix milliseconds; never derived from display text. */
+  resetAt?: number | null;
 }
 
 export interface SubscriptionUsage {

@@ -1,15 +1,31 @@
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/background-secure-store";
 
 import { DEFAULT_NOTIFICATION_PREFS, DEFAULT_PROVIDER_CONFIG, DEFAULT_STORED_STATE, PROVIDER_ORDER } from "@/lib/providers";
 import type { ModelCardId, NotificationPrefs, ProviderConfig, ProviderId, RateLimitStyle, StoredState, WidgetMetricMode } from "@/types/domain";
 
 const STORAGE_KEY = "signalstack-state-v1";
+const LEGACY_DEFAULT_SUBSCRIPTION_PRICES: Partial<Record<ModelCardId, string>> = {
+  openai: "20",
+  anthropic: "20",
+  kimi: "",
+  minimax: "",
+  zai: "",
+  gemini: "20",
+  elevenlabs: "",
+  poe: "",
+  codebuff: "",
+  copilot: "",
+  chutes: "",
+  factory: "",
+  opencode: "10",
+};
 
-export async function loadStoredState(): Promise<StoredState> {
+export async function loadStoredState(options: { strict?: boolean } = {}): Promise<StoredState> {
   let raw: string | null = null;
   try {
     raw = await SecureStore.getItemAsync(STORAGE_KEY);
   } catch (error) {
+    if (options.strict) throw error;
     console.warn("[SignalStack] SecureStore read failed; using defaults.", error);
     return DEFAULT_STORED_STATE;
   }
@@ -57,6 +73,7 @@ export async function loadStoredState(): Promise<StoredState> {
       },
     };
   } catch (error) {
+    if (options.strict) throw error;
     console.warn("[SignalStack] Stored state was invalid JSON; resetting.", error);
     return DEFAULT_STORED_STATE;
   }
@@ -137,6 +154,7 @@ function mergeSubscriptionPrices(value: unknown): Record<ModelCardId, string> {
   const defaults = DEFAULT_STORED_STATE.widgetConfig.subscriptionPricesUsd;
   if (!value || typeof value !== "object" || Array.isArray(value)) return defaults;
   const record = value as Partial<Record<ModelCardId, unknown>>;
+  if (hasLegacyDefaultSubscriptionPrices(record)) return defaults;
   return DEFAULT_STORED_STATE.modelCardOrder.reduce(
     (acc, id) => {
       const stored = record[id];
@@ -147,12 +165,18 @@ function mergeSubscriptionPrices(value: unknown): Record<ModelCardId, string> {
   );
 }
 
+function hasLegacyDefaultSubscriptionPrices(value: Partial<Record<ModelCardId, unknown>>): boolean {
+  return Object.entries(LEGACY_DEFAULT_SUBSCRIPTION_PRICES).every(
+    ([id, price]) => value[id as ModelCardId] === price,
+  );
+}
+
 function isModelCardId(value: unknown): value is ModelCardId {
   return typeof value === "string" && DEFAULT_STORED_STATE.modelCardOrder.includes(value as ModelCardId);
 }
 
 function isProviderId(value: unknown): value is ProviderId {
-  return value === "openai" || value === "anthropic" || value === "kimi";
+  return value === "openai" || value === "anthropic" || value === "kimi" || value === "opencode" || value === "openrouter" || value === "fal";
 }
 
 function migrateMetricMode(value: unknown): WidgetMetricMode {

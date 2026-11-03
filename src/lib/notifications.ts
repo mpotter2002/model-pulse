@@ -1,8 +1,11 @@
 import * as Notifications from "expo-notifications";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/background-secure-store";
 
 import { SUBSCRIPTION_PROVIDERS } from "@/lib/oauth/providers";
 import type { SubscriptionProviderId, SubscriptionUsage } from "@/lib/oauth/types";
+import { isProviderDataSharingAllowed } from "@/lib/provider-data-sharing";
+import { cancelScheduledResetAlerts, syncScheduledResetAlerts, type ResetAlertMetric } from "@/lib/scheduled-reset-alerts";
+import { loadStoredState } from "@/lib/storage";
 import { PROVIDERS } from "@/lib/providers";
 import type { NotificationPrefs, ProviderId, ProviderSnapshot } from "@/types/domain";
 
@@ -44,20 +47,22 @@ interface AlertMetric {
   percent: number;
   /** Extra context appended to the body (reset hint or spend-vs-budget). */
   detail: string | null;
+  resetAt?: number | null;
+  canNotify?: boolean;
 }
 
 /** metric key -> thresholds already fired for the current window instance. */
 type FiredMap = Record<string, number[]>;
 
 async function loadFired(): Promise<FiredMap> {
-  try {
-    const raw = await SecureStore.getItemAsync(ALERT_STATE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as FiredMap;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
+  const raw = await SecureStore.getItemAsync(ALERT_STATE_KEY);
+  if (!raw) return {};
+  const parsed = JSON.parse(raw) as FiredMap;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) ||
+      Object.values(parsed).some((value) => !Array.isArray(value) || value.some((threshold) => typeof threshold !== "number"))) {
+    throw new Error("Notification history is unreadable; skipping duplicate-prone alerts.");
   }
+  return parsed;
 }
 
 async function saveFired(map: FiredMap): Promise<void> {
@@ -70,6 +75,8 @@ async function saveFired(map: FiredMap): Promise<void> {
 
 export interface EvaluateUsageAlertsArgs {
   prefs: NotificationPrefs;
+  /** Cached preference reconciliation can schedule resets, but cannot detect crossings. */
+  notifyThresholds?: boolean;
   apiSnapshots: Partial<Record<ProviderId, ProviderSnapshot>>;
   subscriptionUsages: Array<{ providerId: SubscriptionProviderId; usage: SubscriptionUsage }>;
 }
@@ -87,10 +94,32 @@ export interface EvaluateUsageAlertsArgs {
  *
  * Returns the number of notifications delivered.
  */
-export async function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promise<number> {
-  const { prefs } = args;
-  if (!prefs.enabled) return 0;
-  if ((await getNotificationPermission()) !== "granted") return 0;
+// Foreground refreshes, preference changes and background work can overlap.
+// Serialize read/modify/write so they cannot send duplicate alerts.
+let alertQueue: Promise<unknown> = Promise.resolve();
+
+export function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promise<number> {
+  const result = alertQueue.then(() => evaluateUsageAlertsInternal(args));
+  alertQueue = result.catch(() => undefined);
+  return result;
+}
+
+export function cancelUsageResetAlerts(providerId?: SubscriptionProviderId): Promise<void> {
+  const result = alertQueue.then(() => cancelScheduledResetAlerts(providerId));
+  alertQueue = result.catch(() => undefined);
+  return result;
+}
+
+async function evaluateUsageAlertsInternal(args: EvaluateUsageAlertsArgs): Promise<number> {
+  // Re-read preferences so a refresh started before a toggle cannot re-enable
+  // alerts after the user has turned them off.
+  const { notificationPrefs: prefs } = await loadStoredState({ strict: true });
+  if (!prefs.enabled || !(await isProviderDataSharingAllowed()) ||
+      (await getNotificationPermission()) !== "granted") {
+    await cancelScheduledResetAlerts();
+    return 0;
+  }
+  if (!prefs.resetAlerts || !prefs.subscriptionAlerts) await cancelScheduledResetAlerts();
   const thresholds = [...prefs.thresholds].sort((a, b) => a - b);
   if (thresholds.length === 0) return 0;
 
@@ -106,6 +135,8 @@ export async function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promis
           title: `${short} · ${row.label}`,
           percent: Math.round(row.percentUsed),
           detail: row.resetHint,
+          resetAt: row.resetAt,
+          canNotify: args.notifyThresholds !== false && usage.fetchState !== "rate_limited",
         });
       }
     }
@@ -128,15 +159,30 @@ export async function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promis
 
   const fired = await loadFired();
   let sent = 0;
+  const reminders: ResetAlertMetric[] = [];
 
   for (const metric of metrics) {
-    let already = fired[metric.key] ?? [];
+    const hasResetTime = typeof metric.resetAt === "number" && Number.isFinite(metric.resetAt);
+    // Never alert on cached usage from a window that has already ended.
+    if (hasResetTime && metric.resetAt! <= Date.now()) continue;
+    const stateKey = hasResetTime ? `${metric.key}:${metric.resetAt}` : metric.key;
+    // Keep only the current window's dedupe state for this metric.
+    if (hasResetTime) {
+      for (const key of Object.keys(fired)) {
+        if (key.startsWith(`${metric.key}:`) && key !== stateKey) delete fired[key];
+      }
+    }
+    let already = fired[stateKey] ?? fired[metric.key] ?? [];
+    if (hasResetTime) {
+      delete fired[metric.key];
+      fired[stateKey] = already;
+    }
     if (already.length > 0 && metric.percent < Math.min(...already) - 5) {
       // Window reset: usage fell well below the lowest fired threshold. Tell
       // the user their limit is back to full, but only for subscription
       // windows they actually got an alert on (avoids noise for windows they
       // never came close to hitting).
-      if (prefs.resetAlerts && metric.key.startsWith("sub:")) {
+      if (metric.canNotify !== false && prefs.resetAlerts && metric.key.startsWith("sub:") && !hasResetTime) {
         try {
           await Notifications.scheduleNotificationAsync({
             content: {
@@ -155,13 +201,17 @@ export async function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promis
       }
       already = [];
     }
+    if (prefs.resetAlerts && hasResetTime && metric.key.startsWith("sub:") &&
+        (already.length > 0 || thresholds.some((threshold) => metric.percent >= threshold))) {
+      reminders.push({ key: metric.key, title: metric.title, resetAt: metric.resetAt! });
+    }
+    if (metric.canNotify === false || args.notifyThresholds === false) continue;
     const newlyCrossed = thresholds.filter((t) => metric.percent >= t && !already.includes(t));
     if (newlyCrossed.length === 0) {
-      if (already.length !== (fired[metric.key] ?? []).length) fired[metric.key] = already;
+      if (already.length !== (fired[stateKey] ?? []).length) fired[stateKey] = already;
       continue;
     }
     const highest = newlyCrossed[newlyCrossed.length - 1];
-    fired[metric.key] = [...new Set([...already, ...newlyCrossed])].sort((a, b) => a - b);
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -173,6 +223,7 @@ export async function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promis
         },
         trigger: null, // deliver immediately
       });
+      fired[stateKey] = [...new Set([...already, ...newlyCrossed])].sort((a, b) => a - b);
       sent += 1;
     } catch (error) {
       console.warn("[ModelPulse] failed to deliver usage alert", error);
@@ -180,5 +231,8 @@ export async function evaluateUsageAlerts(args: EvaluateUsageAlertsArgs): Promis
   }
 
   await saveFired(fired);
+  if (prefs.resetAlerts && prefs.subscriptionAlerts) {
+    await syncScheduledResetAlerts(metrics.filter((metric) => metric.key.startsWith("sub:")).map((metric) => metric.key), reminders);
+  }
   return sent;
 }

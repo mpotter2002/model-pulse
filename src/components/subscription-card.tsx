@@ -1,7 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { Linking, Pressable, TextInput, View } from "react-native";
+import { Linking, Platform, Pressable, TextInput, View } from "react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -248,7 +248,19 @@ export function SubscriptionPanel({
               {def.deviceFlow?.verificationHint ?? "Approve in your browser. Enter this code if asked:"}
             </Text>
             <Pressable onPress={() => Clipboard.setStringAsync(pending.authorization.userCode)}>
-              <Text size="2xl" weight="extrabold" style={{ letterSpacing: 4, fontVariant: ["tabular-nums"] }}>
+              <Text
+                size="2xl"
+                family="mono"
+                weight="bold"
+                style={{
+                  // Menlo's slashed zero distinguishes 0 from O. Only the
+                  // font changes: display, accessibility and copying use the
+                  // exact provider-issued code, without Unicode substitutions.
+                  fontFamily: Platform.OS === "ios" ? "Menlo-Bold" : "SpaceMono_700Bold",
+                  letterSpacing: 4,
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
                 {pending.authorization.userCode}
               </Text>
             </Pressable>

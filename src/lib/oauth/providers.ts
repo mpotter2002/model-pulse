@@ -106,6 +106,7 @@ function kimiRow(raw: unknown, defaultLabel: string): UsageLimitRow | null {
     limit,
     percentUsed: percent(used, limit),
     resetHint: resetHint(raw),
+    resetAt: parseResetAt(raw.reset_at ?? raw.resetAt ?? raw.reset_time ?? raw.resetTime),
   };
 }
 
@@ -375,6 +376,7 @@ async function fetchClaudeUsage(
       limit: null,
       percentUsed: Math.min(100, Math.max(0, util)),
       resetHint: resetAtHint(win.resets_at),
+      resetAt: parseResetAt(win.resets_at),
     });
   }
   console.log(`[SignalStack] Claude usage fetch OK — ${limits.length} window(s)`);
@@ -500,6 +502,7 @@ function codexWindow(raw: unknown, label: string): UsageLimitRow | null {
     limit: null,
     percentUsed: Math.min(100, Math.max(0, pct)),
     resetHint: resetAt !== null ? resetEpochHint(resetAt) : null,
+    resetAt: resetAt !== null && resetAt > 0 ? resetAt * 1000 : null,
   };
 }
 
@@ -582,6 +585,7 @@ function geminiRows(raw: unknown): UsageLimitRow[] {
       limit: null,
       percentUsed: Math.round(100 - quota.percentLeft),
       resetHint: resetAtHint(quota.reset),
+      resetAt: parseResetAt(quota.reset),
     }));
 }
 
@@ -649,6 +653,7 @@ async function fetchElevenLabsUsage(tokens: StoredTokens): Promise<SubscriptionU
     limit: characterLimit,
     percentUsed: Math.round(pct),
     resetHint: nextResetUnix !== null ? resetEpochHint(nextResetUnix) : null,
+    resetAt: nextResetUnix !== null && nextResetUnix > 0 ? nextResetUnix * 1000 : null,
   });
 
   if (voiceLimit !== null || voiceSlotsUsed !== null) {
@@ -743,6 +748,7 @@ async function fetchCodebuffUsage(tokens: StoredTokens): Promise<SubscriptionUsa
       limit: total,
       percentUsed: Math.round(pct),
       resetHint: nextReset ? `resets ${nextReset}` : `Remaining: ${remaining.toFixed(2)}`,
+      resetAt: parseResetAt(nextReset),
     });
   }
 
@@ -754,6 +760,7 @@ async function fetchCodebuffUsage(tokens: StoredTokens): Promise<SubscriptionUsa
       limit: weeklyLimit,
       percentUsed: wpct !== null ? Math.round(wpct) : null,
       resetHint: weeklyResetsAt ? `resets ${weeklyResetsAt}` : null,
+      resetAt: parseResetAt(weeklyResetsAt),
     });
   }
 
@@ -855,6 +862,7 @@ async function fetchChutesUsage(tokens: StoredTokens): Promise<SubscriptionUsage
       limit: rollingLimit,
       percentUsed: pct !== null ? Math.round(pct) : null,
       resetHint: readString(rollingWindow, "resets_at") ?? null,
+      resetAt: parseResetAt(rollingWindow.resets_at),
     });
   }
 
@@ -868,6 +876,7 @@ async function fetchChutesUsage(tokens: StoredTokens): Promise<SubscriptionUsage
       limit: monthlyLimit,
       percentUsed: pct !== null ? Math.round(pct) : null,
       resetHint: readString(monthlyWindow, "resets_at") ?? null,
+      resetAt: parseResetAt(monthlyWindow.resets_at),
     });
   }
 
@@ -914,31 +923,51 @@ async function fetchFactoryUsage(tokens: StoredTokens): Promise<SubscriptionUsag
   return { summary: limits[0] ?? null, limits, planLabel };
 }
 
-async function fetchOpenCodeUsage(tokens: StoredTokens): Promise<SubscriptionUsage> {
-  void tokens;
+const OPENCODE_GO_USAGE_URL = "https://opencode.ai/zen/go/v1/usage";
 
-  const limits: UsageLimitRow[] = [
-    {
-      label: "Monthly spend limit",
-      used: null,
-      limit: 200,
-      percentUsed: null,
-      resetHint: "$200/mo included",
-    },
-    {
-      label: "Premium models",
-      used: null,
-      limit: 50,
-      percentUsed: null,
-      resetHint: "$50/mo pool",
-    },
+async function fetchOpenCodeUsage(tokens: StoredTokens): Promise<SubscriptionUsage> {
+  const json = await getJson(OPENCODE_GO_USAGE_URL, {
+    Authorization: `Bearer ${tokens.accessToken}`,
+  });
+  const usage = asRecord(asRecord(json).usage);
+  const windows: Array<{ key: string; label: string }> = [
+    { key: "rolling", label: "5-hour" },
+    { key: "weekly", label: "Weekly" },
+    { key: "monthly", label: "Monthly" },
   ];
+
+  const limits = windows.flatMap(({ key, label }) => {
+    const window = asRecord(usage[key]);
+    const percentUsed = toNumber(window.percent ?? window.usagePercent ?? window.usage_percent);
+    if (percentUsed === null) return [];
+
+    const resetAt =
+      readString(window, "resetsAt") ??
+      readString(window, "resetAt") ??
+      readString(window, "resets_at") ??
+      readString(window, "reset_at");
+    const resetInSeconds =
+      toNumber(window.resetInSec ?? window.reset_in_sec ?? window.resetSeconds ?? window.reset_seconds);
+
+    return [{
+      label,
+      used: toNumber(window.used ?? window.usage),
+      limit: toNumber(window.limit ?? window.quota ?? window.total),
+      percentUsed: Math.max(0, Math.min(100, Math.round(percentUsed))),
+      resetHint: resetAtHint(resetAt) ?? secondsHint(resetInSeconds),
+      resetAt: parseResetAt(resetAt),
+    }];
+  });
+
+  if (limits.length === 0) {
+    throw new Error("OpenCode Go did not return any usage windows for this API key.");
+  }
 
   return {
     summary: limits[0],
     limits,
     planLabel: "OpenCode Go",
-    debugDetail: "OpenCode docs expose exact usage in the console; Model Pulse stores the key locally and shows documented plan limits.",
+    fetchState: "live",
   };
 }
 
@@ -1227,13 +1256,14 @@ export const SUBSCRIPTION_PROVIDERS: Record<SubscriptionProviderId, Subscription
     shortLabel: "OpenCode",
     accent: "#FF7A59",
     authKind: "api-token",
-    tokenHint: "Paste your OpenCode API key from the OpenCode console. OpenCode Go tracks exact usage in the console; Model Pulse stores the key locally and shows documented plan limits.",
+    tokenHint: "Paste your OpenCode Go API key from the OpenCode console. Model Pulse reads the live 5-hour, weekly, and monthly usage windows directly from OpenCode.",
     setupSteps: [
       "Open opencode.ai and sign in.",
       "Create or copy an API key from the OpenCode console.",
-      "Paste the key here to track OpenCode Go alongside your other providers.",
+      "Paste the key here to show OpenCode Go's live 5-hour, weekly, and monthly limits.",
     ],
     fetchUsage: fetchOpenCodeUsage,
+    minFetchIntervalMs: 5 * 60 * 1000,
   },
 };
 export const SUBSCRIPTION_PROVIDER_ORDER: SubscriptionProviderId[] = [
@@ -1443,6 +1473,12 @@ function resetHint(raw: Record<string, unknown>): string | null {
     if (value) return `resets ${value}`;
   }
   return secondsHint(raw.reset_in ?? raw.resetIn ?? raw.ttl);
+}
+
+function parseResetAt(value: unknown): number | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
 }
 
 function resetAtHint(value: unknown): string | null {

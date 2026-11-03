@@ -1,11 +1,13 @@
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams } from "expo-router";
+import { useHeaderHeight } from "expo-router/react-navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { InputCacheBreakdown } from "@/components/input-cache-breakdown";
 import { Input } from "@/components/ui/input";
 import { ScreenScrollView } from "@/components/ui/screen";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +20,8 @@ import { radius, spacing } from "@/design-system/tokens";
 
 export default function ProviderDetailScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const paddingTop = Math.max(insets.top, headerHeight) + 16;
   const { id } = useLocalSearchParams<{ id?: string }>();
   const {
     snapshots,
@@ -47,7 +51,7 @@ export default function ProviderDetailScreen() {
 
   if (!isProviderId(id)) {
     return (
-      <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+      <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop }}>
         <Card padding={5} style={{ alignItems: "center" }}>
           <Text size="xl" weight="bold" style={{ marginBottom: 6 }}>
             Provider not found
@@ -61,7 +65,7 @@ export default function ProviderDetailScreen() {
   }
 
   return (
-    <ScreenScrollView contentContainerStyle={{ paddingTop: insets.top + 96 }}>
+    <ScreenScrollView maxContentWidth={840} contentContainerStyle={{ paddingTop }}>
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: provider.accent }} />
@@ -124,15 +128,21 @@ export default function ProviderDetailScreen() {
       <MetricBlock
         title="Usage"
         rows={[
-          ["Tokens tracked", formatInteger(snapshot.usage.tokensUsed)],
-          ["Requests tracked", formatInteger(snapshot.usage.requestsUsed)],
-          ["Monthly spend", `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`],
-          ...(snapshot.monthlyBudgetUsd
+          ["Tokens tracked", snapshot.usage.tokensAvailable === false ? "Not reported by API" : formatInteger(snapshot.usage.tokensUsed)],
+          ["Requests tracked", snapshot.usage.requestsAvailable === false ? "Not reported by API" : formatInteger(snapshot.usage.requestsUsed)],
+          ["Monthly spend", snapshot.usage.spendAvailable === false ? "Not reported by API" : `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`],
+          ...(snapshot.monthlyBudgetUsd && snapshot.usage.spendAvailable !== false
             ? ([["Budget used", budgetUsedLabel(snapshot.usage.monthlySpendUsd, snapshot.monthlyBudgetUsd)]] as [string, string][])
             : []),
           ["Window", snapshot.usage.windowLabel],
         ]}
       />
+
+      {snapshot.mode === "live" || snapshot.usage.inputCache ? (
+        <Card padding={4} style={{ marginBottom: 16 }}>
+          <InputCacheBreakdown snapshot={snapshot} />
+        </Card>
+      ) : null}
 
       <MetricBlock
         title="Limits"
@@ -144,9 +154,9 @@ export default function ProviderDetailScreen() {
         ]}
       />
 
-      {providerId !== "kimi" ? (
+      {RATE_LIMIT_NOTE[providerId] ? (
         <Text size="xs" color="muted" style={{ marginTop: -8, marginBottom: 16 }}>
-          Live rate-limit remaining is not reported by the {providerId === "openai" ? "OpenAI" : "Anthropic"} usage API - Requests/min and Tokens/min use the manual caps you set below.
+          {RATE_LIMIT_NOTE[providerId]}
         </Text>
       ) : null}
 
@@ -155,20 +165,21 @@ export default function ProviderDetailScreen() {
         rows={[
           ["Mode", config.mode],
           [KEY_FIELD_META[providerId].label, config[KEY_FIELD_META[providerId].field].trim() ? "Stored" : "Missing"],
+          ...(providerId === "openrouter"
+            ? ([["Management key", config.adminKey.trim() ? "Stored" : "Optional"]] as [string, string][])
+            : []),
           ...(snapshot.balanceLabel != null
             ? ([["Balance", snapshot.balanceLabel]] as [string, string][])
             : providerId === "kimi"
               ? ([["Balance", "Unknown"]] as [string, string][])
-              : ([["Monthly spend (API)", `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`]] as [string, string][])),
+              : ([["Monthly spend (API)", snapshot.usage.spendAvailable === false ? "Not reported by API" : `$${snapshot.usage.monthlySpendUsd.toFixed(2)}`]] as [string, string][])),
           ["Last updated", snapshot.updatedAtLabel],
         ]}
       />
 
-      {providerId !== "kimi" ? (
+      {BALANCE_NOTE[providerId] ? (
         <Text size="xs" color="muted" style={{ marginTop: -8, marginBottom: 16 }}>
-          {providerId === "openai"
-            ? "OpenAI does not share prepaid credit balances over the API. Tip: set Monthly budget (USD) below to your credit amount and Model Pulse will track spend against it."
-            : "Anthropic does not expose an account balance over the API. Usage, cost, and rate limits are tracked instead."}
+          {BALANCE_NOTE[providerId]}
         </Text>
       ) : null}
 
@@ -230,6 +241,25 @@ export default function ProviderDetailScreen() {
             </Button>
           ) : null}
 
+          {providerId === "openrouter" ? (
+            <View style={{ gap: 5 }}>
+              <Text size="xs" weight="medium" color="muted">
+                Management key (model breakdown)
+              </Text>
+              <Input
+                value={currentDraft.adminKey}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="OpenRouter management key"
+                onChangeText={(value) => updateDraft({ adminKey: value })}
+              />
+              <Text size="xs" color="muted">
+                Optional. OpenRouter requires a management key for per-model activity. Model Pulse hashes the API key locally and requests activity for that hash.
+              </Text>
+            </View>
+          ) : null}
+
           <LabeledInput label="Workspace / org / project" value={currentDraft.workspaceId} onChangeText={(value) => updateDraft({ workspaceId: value })} />
           <LabeledInput label="Requests per minute" value={currentDraft.requestsPerMinuteLimit} keyboardType="number-pad" onChangeText={(value) => updateDraft({ requestsPerMinuteLimit: value })} />
           <LabeledInput label="Tokens per minute" value={currentDraft.tokensPerMinuteLimit} keyboardType="number-pad" onChangeText={(value) => updateDraft({ tokensPerMinuteLimit: value })} />
@@ -267,7 +297,12 @@ export default function ProviderDetailScreen() {
 
   async function disconnectApi() {
     const meta = KEY_FIELD_META[providerId];
-    const cleared = meta.field === "adminKey" ? { ...config, adminKey: "" } : { ...config, apiKey: "" };
+    const cleared =
+      providerId === "openrouter"
+        ? { ...config, apiKey: "", adminKey: "" }
+        : meta.field === "adminKey"
+          ? { ...config, adminKey: "" }
+          : { ...config, apiKey: "" };
     try {
       await saveProviderConfig(providerId, cleared);
       setKeyError(null);
@@ -330,11 +365,51 @@ const KEY_FIELD_META: Record<ProviderId, { field: "apiKey" | "adminKey"; label: 
     help: "A standard Moonshot API key is all that is needed. Create one at platform.moonshot.ai > API Keys.",
     prefixError: "",
   },
+  opencode: {
+    field: "apiKey",
+    label: "Zen API key",
+    placeholder: "OpenCode Zen API key",
+    help: "Create a key in the OpenCode Zen workspace console. Model Pulse stores it without making a billable validation request; Zen does not expose account usage or balance telemetry through its public API.",
+    prefixError: "",
+  },
+  openrouter: {
+    field: "apiKey",
+    label: "API key",
+    placeholder: "sk-or-v1-...",
+    help: "Create a standard key at openrouter.ai/settings/keys. Model Pulse reads only the key's usage and limit metadata.",
+    prefix: "sk-or-",
+    prefixError: "OpenRouter API keys normally start with sk-or-. Check that the full key was pasted.",
+  },
+  fal: {
+    field: "adminKey",
+    label: "Admin API key",
+    placeholder: "key-id:key-secret",
+    help: "Create an Admin API key in the fal dashboard. Standard keys cannot access the account billing and usage Platform APIs.",
+    prefixError: "",
+  },
 };
 
 function isProviderId(value: string | undefined): value is ProviderId {
-  return value === "openai" || value === "anthropic" || value === "kimi";
+  return value === "openai" || value === "anthropic" || value === "kimi" || value === "opencode" || value === "openrouter" || value === "fal";
 }
+
+const RATE_LIMIT_NOTE: Record<ProviderId, string | null> = {
+  openai: "Live rate-limit remaining is not reported by the OpenAI usage API - Requests/min and Tokens/min use the manual caps you set below.",
+  anthropic: "Anthropic reports organization rate limits, but not live remaining capacity. Manual caps remain available below.",
+  kimi: null,
+  opencode: "OpenCode Zen does not publish account rate-limit telemetry through its public API. Requests/min and Tokens/min use the manual caps you set below.",
+  openrouter: "OpenRouter's key endpoint reports credit usage, not live RPM or TPM remaining. Manual caps remain available below.",
+  fal: "fal's account usage API reports billed model usage, not live RPM or TPM remaining. Manual caps remain available below.",
+};
+
+const BALANCE_NOTE: Record<ProviderId, string | null> = {
+  openai: "OpenAI does not share prepaid credit balances over the API. Tip: set Monthly budget (USD) below to your credit amount and Model Pulse will track spend against it.",
+  anthropic: "Anthropic does not expose an account balance over the API. Usage, cost, and rate limits are tracked instead.",
+  kimi: null,
+  opencode: "OpenCode Zen's public API does not expose account spend, credits, or balance. Set a monthly budget below if you want to keep a manual limit in Model Pulse.",
+  openrouter: "OpenRouter exposes a key's remaining credit cap when that key has a limit. This is not the same as the account's total purchased credit balance.",
+  fal: "fal Agent Pro and Max include monthly credits, but those credits appear in the same workspace balance as pay-as-you-go API credits rather than a separate subscription quota.",
+};
 
 function MetricBlock({
   title,

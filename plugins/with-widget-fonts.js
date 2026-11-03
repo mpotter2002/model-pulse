@@ -102,7 +102,7 @@ function withWidgetFonts(config) {
     for (const key in groups) {
       if (key.endsWith('_comment')) continue;
       const group = groups[key];
-      if (group.name === TARGET_NAME) {
+      if (group.name === TARGET_NAME && (group.path === TARGET_NAME || group.path === `"${TARGET_NAME}"`)) {
         widgetGroupKey = key;
         break;
       }
@@ -117,7 +117,18 @@ function withWidgetFonts(config) {
         for (const key in fileRefs) {
           if (key.endsWith('_comment')) continue;
           const refPath = fileRefs[key].path;
-          if (refPath === relPath || refPath === `"${relPath}"`) {
+          const rootedPath = `${TARGET_NAME}/${relPath}`;
+          if ([relPath, `"${relPath}"`, rootedPath, `"${rootedPath}"`].includes(refPath)) {
+            // CocoaPods can create another group named ExpoWidgetsTarget with
+            // no directory. Root the resource path so repeated prebuilds cannot
+            // accidentally resolve it as ios/Fonts instead of the widget folder.
+            fileRefs[key].path = `"${rootedPath}"`;
+            fileRefs[key].sourceTree = 'SOURCE_ROOT';
+            for (const [groupKey, candidate] of Object.entries(groups)) {
+              if (!groupKey.endsWith('_comment') && groupKey !== widgetGroupKey && candidate.name === TARGET_NAME) {
+                candidate.children = (candidate.children || []).filter((child) => child.value !== key);
+              }
+            }
             if (!existingChildren.has(key)) {
               widgetGroup.children.push({ value: key, comment: path.basename(relPath) });
               existingChildren.add(key);

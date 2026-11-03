@@ -2,14 +2,14 @@
   "expo": {
     "name": "Model Pulse",
     "slug": "ai-subscriptions-widget",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    "version": "1.0.4",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "signalstack",
     "ios": {
       "bundleIdentifier": "com.michaelpotter.signalstack",
-      "supportsTablet": false,
+      "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -33,6 +33,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/with-ios-scene.js",
       "expo-secure-store",
       "expo-image",
       "./plugins/with-widget-fonts.js",
@@ -118,6 +119,14 @@
                         {
                           "name": "Factory",
                           "value": "factory"
+                        },
+                        {
+                          "name": "OpenRouter",
+                          "value": "openrouter"
+                        },
+                        {
+                          "name": "fal.ai",
+                          "value": "fal"
                         }
                       ]
                     }
